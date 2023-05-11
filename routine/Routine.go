@@ -1,5 +1,3 @@
 package routine
 
-import "spacetraders/entity"
-
-type Routine func(state *entity.State) RoutineResult
+type Routine func(state *State) RoutineResult

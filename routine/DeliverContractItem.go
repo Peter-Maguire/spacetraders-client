@@ -7,7 +7,7 @@ import (
 )
 
 func DeliverContractItem(item string, returnTo entity.Waypoint) Routine {
-	return func(state *entity.State) RoutineResult {
+	return func(state *State) RoutineResult {
 
 		_ = state.Ship.EnsureNavState(entity.NavDocked)
 
@@ -21,7 +21,7 @@ func DeliverContractItem(item string, returnTo entity.Waypoint) Routine {
 		deliverable := deliverResult.Contract.Terms.GetDeliverable(item)
 
 		if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
-			fmt.Println("Contract completed")
+			state.Log("Contract completed")
 			err := state.Contract.Fulfill()
 			fmt.Println(err)
 			// TODO: new contract

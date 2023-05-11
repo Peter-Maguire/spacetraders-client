@@ -5,7 +5,7 @@ import (
 	"spacetraders/entity"
 )
 
-func SellExcessInventory(state *entity.State) RoutineResult {
+func SellExcessInventory(state *State) RoutineResult {
 	inventory := state.Ship.Cargo.Inventory
 
 	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
@@ -13,7 +13,7 @@ func SellExcessInventory(state *entity.State) RoutineResult {
 	contractTarget := state.Contract.Terms.Deliver[0]
 	targetItem := contractTarget.TradeSymbol
 
-	fmt.Println("We are delivering ", contractTarget)
+	state.Log("We are delivering " + contractTarget.TradeSymbol)
 
 	// Sellable = not antimatter, not required for the contract and sellable at this market
 	sellable := make([]entity.ShipInventorySlot, 0)
@@ -32,7 +32,7 @@ func SellExcessInventory(state *entity.State) RoutineResult {
 
 	if len(sellable) == 0 {
 		if state.Ship.Cargo.GetSlotWithItem(targetItem) != nil {
-			fmt.Println("All we have left is what we are selling, time to take it away")
+			state.Log("All we have left is what we are selling, time to take it away")
 
 			return RoutineResult{
 				SetRoutine: NavigateTo(contractTarget.DestinationSymbol, DeliverContractItem(targetItem, state.Ship.Nav.WaypointSymbol)),

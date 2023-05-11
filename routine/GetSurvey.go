@@ -6,21 +6,29 @@ import (
 	"spacetraders/http"
 )
 
-func GetSurvey(state *entity.State) RoutineResult {
+func GetSurvey(state *State) RoutineResult {
 	state.Survey = nil
+
+	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") {
+		state.Log("No surveyor mount")
+		return RoutineResult{
+			SetRoutine: MineOres,
+		}
+	}
+
 	_ = state.Ship.EnsureNavState(entity.NavOrbit)
-	fmt.Println("Finding a survey")
+	state.Log("Finding a survey")
 	surveyResult, err := state.Ship.Survey()
 
 	if err != nil {
 		switch err.Code {
 		case http.ErrCooldown:
-			fmt.Println("We are on cooldown from a previous running routine")
+			state.Log("We are on cooldown from a previous running routine")
 			return RoutineResult{
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),
 			}
 		}
-		fmt.Println("Unknown error", err.Data)
+		fmt.Println("Unknown error", err)
 		// No idea
 		return RoutineResult{
 			WaitSeconds: 10,
@@ -35,7 +43,7 @@ func GetSurvey(state *entity.State) RoutineResult {
 		state.Survey = bestSurvey
 		fmt.Printf("Good survey found: %s\n", bestSurvey.Signature)
 	} else {
-		fmt.Println("No survey available that satisfies our needs")
+		state.Log("No survey available that satisfies our needs")
 	}
 
 	fmt.Printf("Waiting %d seconds\n", surveyResult.Cooldown.RemainingSeconds)

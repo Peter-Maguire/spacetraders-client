@@ -8,11 +8,19 @@ import (
 
 type Waypoint string
 
-func (w *Waypoint) GetSystem() string {
+func (w *Waypoint) GetSystemName() string {
 	strw := string(*w)
 	return strw[:strings.LastIndex(strw, "-")]
 }
 
+func (w *Waypoint) GetSystem() (*System, error) {
+	return http.Request[System]("GET", fmt.Sprintf("systems/%s", w.GetSystemName()), nil)
+}
+
 func (w *Waypoint) GetMarket() (*Market, error) {
-	return http.Request[Market]("GET", fmt.Sprintf("systems/%s/waypoints/%s/market", w.GetSystem(), *w), nil)
+	return http.Request[Market]("GET", fmt.Sprintf("systems/%s/waypoints/%s/market", w.GetSystemName(), *w), nil)
+}
+
+func (w *Waypoint) GetWaypointData() (*WaypointData, error) {
+	return http.Request[WaypointData]("GET", fmt.Sprintf("systems/%s/waypoints/%s", w.GetSystemName(), *w), nil)
 }

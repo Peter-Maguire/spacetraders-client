@@ -21,6 +21,15 @@ type Ship struct {
 	Cargo        ShipCargo        `json:"cargo"`
 }
 
+func (s *Ship) HasMount(mountSymbol string) bool {
+	for _, mount := range s.Mounts {
+		if mount.Symbol == mountSymbol {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {
 	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/navigate", s.Symbol), NavigateRequest{
 		WaypointSymbol: waypoint,
@@ -86,8 +95,8 @@ func (s *Ship) Extract() (*ExtractionResult, *http.HttpError) {
 	return extractionResult, err
 }
 
-func (s *Ship) ExtractSurvey(survey string) (*ExtractionResult, *http.HttpError) {
-	extractionResult, err := http.Request[ExtractionResult]("POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), map[string]string{
+func (s *Ship) ExtractSurvey(survey *Survey) (*ExtractionResult, *http.HttpError) {
+	extractionResult, err := http.Request[ExtractionResult]("POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), map[string]*Survey{
 		"survey": survey,
 	})
 	if extractionResult != nil {

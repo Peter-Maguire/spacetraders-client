@@ -1,5 +1,7 @@
 package http
 
+import "fmt"
+
 type HttpResponse[T any] struct {
 	Data          *T             `json:"data"`
 	PaginatedMeta *PaginatedMeta `json:"meta"`
@@ -20,7 +22,10 @@ type HttpError struct {
 }
 
 func (e *HttpError) Error() string {
-	return e.Message
+	if e.InternalError != nil {
+		return "Internal Error: " + e.InternalError.Error()
+	}
+	return fmt.Sprintf("[%d] %s ", e.Code, e.Message)
 }
 
 func InternalError(err error) *HttpError {

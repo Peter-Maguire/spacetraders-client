@@ -8,7 +8,7 @@ import (
 )
 
 func NavigateTo(waypoint entity.Waypoint, nextState Routine) Routine {
-	return func(state *entity.State) RoutineResult {
+	return func(state *State) RoutineResult {
 		fmt.Println("Navigating to ", waypoint)
 
 		_ = state.Ship.EnsureNavState(entity.NavOrbit)
@@ -17,12 +17,12 @@ func NavigateTo(waypoint entity.Waypoint, nextState Routine) Routine {
 		if err != nil {
 			switch err.Code {
 			case http.ErrInsufficientFuelForNav:
-				fmt.Println("Refuelling and trying again")
+				state.Log("Refuelling and trying again")
 				_ = state.Ship.EnsureNavState(entity.NavDocked)
 				_ = state.Ship.Refuel()
 				return RoutineResult{}
 			}
-			fmt.Println("Unknown error ", err.Data)
+			fmt.Println("Unknown error ", err)
 		}
 
 		waitingTime := nav.Route.Arrival.Sub(time.Now())
