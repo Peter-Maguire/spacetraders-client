@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-var currentRoutine routine.Routine
-
 func main() {
 	http.Init()
 
@@ -20,26 +18,35 @@ func main() {
 	}
 	contracts, _ := agent.Contracts()
 
-	state := entity.State{
-		Agent:    agent,
-		Contract: &(*contracts)[0],
+	ships, _ := agent.Ships()
+
+	fmt.Println("Starting Routines")
+	for _, ship := range *ships {
+		shipPtr := ship
+		state := routine.State{
+			Agent:    agent,
+			Contract: &(*contracts)[0],
+			Ship:     &shipPtr,
+		}
+
+		go routineLoop(&state)
 	}
 
-	ships, _ := agent.Ships()
-	miningShip := (*ships)[0]
+	forever := make(chan bool)
+	<-forever
+}
 
-	currentRoutine = routine.GetSurvey
-
-	fmt.Println("Starting Routine")
+func routineLoop(state *routine.State) {
+	currentRoutine := routine.GoToAsteroidField
 	for {
-		routineResult := currentRoutine(&state, &miningShip)
+		routineResult := currentRoutine(state)
 		if routineResult.WaitSeconds > 0 {
-			fmt.Printf("Waiting for %d seconds\n", routineResult.WaitSeconds)
+			state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
 			time.Sleep(time.Duration(routineResult.WaitSeconds) * time.Second)
 		}
 
 		if routineResult.SetRoutine != nil {
-			fmt.Println("Switching Routine")
+			state.Log("Switching Routine")
 			currentRoutine = routineResult.SetRoutine
 		}
 	}
