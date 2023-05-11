@@ -2,4 +2,4 @@ package routine
 
 import "spacetraders/entity"
 
-type Routine func(state *entity.State, targetShip *entity.Ship) RoutineResult
+type Routine func(state *entity.State) RoutineResult

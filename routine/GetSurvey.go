@@ -6,11 +6,11 @@ import (
 	"spacetraders/http"
 )
 
-func GetSurvey(state *entity.State, ship *entity.Ship) RoutineResult {
+func GetSurvey(state *entity.State) RoutineResult {
 	state.Survey = nil
-	_ = ship.EnsureNavState(entity.NavOrbit)
+	_ = state.Ship.EnsureNavState(entity.NavOrbit)
 	fmt.Println("Finding a survey")
-	surveyResult, err := ship.Survey()
+	surveyResult, err := state.Ship.Survey()
 
 	if err != nil {
 		switch err.Code {

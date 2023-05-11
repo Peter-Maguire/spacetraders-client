@@ -5,10 +5,10 @@ import (
 	"spacetraders/entity"
 )
 
-func SellExcessInventory(state *entity.State, ship *entity.Ship) RoutineResult {
-	inventory := ship.Cargo.Inventory
+func SellExcessInventory(state *entity.State) RoutineResult {
+	inventory := state.Ship.Cargo.Inventory
 
-	market, _ := ship.Nav.WaypointSymbol.GetMarket()
+	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
 
 	contractTarget := state.Contract.Terms.Deliver[0]
 	targetItem := contractTarget.TradeSymbol
@@ -31,11 +31,11 @@ func SellExcessInventory(state *entity.State, ship *entity.Ship) RoutineResult {
 	}
 
 	if len(sellable) == 0 {
-		if ship.Cargo.GetSlotWithItem(targetItem) != nil {
+		if state.Ship.Cargo.GetSlotWithItem(targetItem) != nil {
 			fmt.Println("All we have left is what we are selling, time to take it away")
 
 			return RoutineResult{
-				SetRoutine: NavigateTo(contractTarget.DestinationSymbol, DeliverContractItem(targetItem, ship.Nav.WaypointSymbol)),
+				SetRoutine: NavigateTo(contractTarget.DestinationSymbol, DeliverContractItem(targetItem, state.Ship.Nav.WaypointSymbol)),
 			}
 
 		}
@@ -44,11 +44,11 @@ func SellExcessInventory(state *entity.State, ship *entity.Ship) RoutineResult {
 	fmt.Printf("Got %d items to sell\n", len(sellable))
 
 	// dock ship
-	_ = ship.EnsureNavState(entity.NavDocked)
+	_ = state.Ship.EnsureNavState(entity.NavDocked)
 
 	for _, sellableSlot := range sellable {
 		fmt.Printf("Selling %dx %s\n", sellableSlot.Units, sellableSlot.Symbol)
-		sellResult, err := ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
+		sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
 		if err != nil {
 			fmt.Println("Failed to sell:", err.Data)
 		}
@@ -56,15 +56,7 @@ func SellExcessInventory(state *entity.State, ship *entity.Ship) RoutineResult {
 		state.Agent = &sellResult.Agent
 	}
 
-	// Turns out you can't do this
-	//if state.Agent.Credits > 20000 {
-	//    fmt.Println("Using excess money to buy target items")
-	//    return RoutineResult{
-	//        SetRoutine: BuyTargetItem,
-	//    }
-	//}
-
 	return RoutineResult{
-		SetRoutine: MineOres,
+		SetRoutine: GetSurvey,
 	}
 }

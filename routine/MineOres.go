@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func MineOres(state *entity.State, ship *entity.Ship) RoutineResult {
-	_ = ship.EnsureNavState(entity.NavOrbit)
+func MineOres(state *entity.State) RoutineResult {
+	_ = state.Ship.EnsureNavState(entity.NavOrbit)
 
 	var result *entity.ExtractionResult
 	var err *http.HttpError
@@ -20,9 +20,9 @@ func MineOres(state *entity.State, ship *entity.Ship) RoutineResult {
 				SetRoutine: GetSurvey,
 			}
 		}
-		result, err = ship.ExtractSurvey(state.Survey.Signature)
+		result, err = state.Ship.ExtractSurvey(state.Survey)
 	} else {
-		result, err = ship.Extract()
+		result, err = state.Ship.Extract()
 	}
 
 	if err != nil {
@@ -38,7 +38,7 @@ func MineOres(state *entity.State, ship *entity.Ship) RoutineResult {
 				SetRoutine: SellExcessInventory,
 			}
 		}
-		fmt.Println("Unknown error", err.Data)
+		fmt.Println("Unknown error", err)
 		// No idea
 		return RoutineResult{
 			WaitSeconds: 10,

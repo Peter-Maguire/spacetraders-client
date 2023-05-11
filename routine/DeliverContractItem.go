@@ -6,14 +6,14 @@ import (
 	"spacetraders/entity"
 )
 
-func DeliverContractItem(item string, returnTo entity.Waypoint) func(state *entity.State, ship *entity.Ship) RoutineResult {
-	return func(state *entity.State, ship *entity.Ship) RoutineResult {
+func DeliverContractItem(item string, returnTo entity.Waypoint) Routine {
+	return func(state *entity.State) RoutineResult {
 
-		_ = ship.EnsureNavState(entity.NavDocked)
+		_ = state.Ship.EnsureNavState(entity.NavDocked)
 
-		slot := ship.Cargo.GetSlotWithItem(item)
+		slot := state.Ship.Cargo.GetSlotWithItem(item)
 		fmt.Printf("Deliver %dx %s\n", slot.Units, item)
-		deliverResult, err := state.Contract.Deliver(ship.Symbol, item, slot.Units)
+		deliverResult, err := state.Contract.Deliver(state.Ship.Symbol, item, slot.Units)
 		if err != nil {
 			fmt.Println(err)
 		}
