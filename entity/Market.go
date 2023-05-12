@@ -6,8 +6,8 @@ import (
 
 type Market struct {
 	Symbol       Waypoint            `json:"symbol"`
-	Imports      []interface{}       `json:"imports"`
-	Exports      []interface{}       `json:"exports"`
+	Imports      []ExchangeItem      `json:"imports"`
+	Exports      []ExchangeItem      `json:"exports"`
 	Exchange     []ExchangeItem      `json:"exchange"`
 	Transactions []MarketTransaction `json:"transactions"`
 	TradeGoods   []MarketGood        `json:"tradeGoods"`

@@ -1,7 +1,7 @@
 package routine
 
 func DetermineObjective(state *State) RoutineResult {
-	if state.Ship.HasMount("MOUNT_MINING_LASER_I") {
+	if state.Ship.IsMiningShip() {
 		if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity-5 {
 			state.Log("We're full up here")
 			return RoutineResult{
@@ -15,6 +15,6 @@ func DetermineObjective(state *State) RoutineResult {
 
 	state.Log("This type of ship isn't supported yet")
 	return RoutineResult{
-		WaitSeconds: 3600,
+		Stop: true,
 	}
 }

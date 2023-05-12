@@ -30,6 +30,10 @@ func (s *Ship) HasMount(mountSymbol string) bool {
 	return false
 }
 
+func (s *Ship) IsMiningShip() bool {
+	return s.HasMount("MOUNT_MINING_LASER_I")
+}
+
 func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {
 	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/navigate", s.Symbol), NavigateRequest{
 		WaypointSymbol: waypoint,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
 	"spacetraders/routine"
@@ -9,6 +10,7 @@ import (
 )
 
 func main() {
+	database.Init()
 	http.Init()
 
 	agent, err := http.Request[entity.Agent]("GET", "my/agent", nil)
@@ -22,8 +24,10 @@ func main() {
 
 	orchestorChan := make(chan routine.OrchestratorEvent)
 
+	states := make([]*routine.State, len(*ships))
+
 	fmt.Println("Starting Routines")
-	for _, ship := range *ships {
+	for i, ship := range *ships {
 		shipPtr := ship
 		state := routine.State{
 			Agent:    agent,
@@ -31,6 +35,7 @@ func main() {
 			Ship:     &shipPtr,
 			EventBus: orchestorChan,
 		}
+		states[i] = &state
 
 		go routineLoop(&state)
 	}
@@ -45,6 +50,13 @@ func main() {
 				fmt.Println(err)
 			}
 			fmt.Println("Credits now: ", agent.Credits)
+		case "goodSurveyFound":
+			fmt.Println("Someone found a good survey")
+			for _, state := range states {
+				if state.Ship.IsMiningShip() && state.Survey == nil {
+					state.Survey = event.Data.(*entity.Survey)
+				}
+			}
 		}
 	}
 
@@ -69,6 +81,11 @@ func routineLoop(state *routine.State) {
 		if routineResult.SetRoutine != nil {
 			state.Log("Switching Routine")
 			currentRoutine = routineResult.SetRoutine
+		}
+
+		if routineResult.Stop {
+			state.Log("Stopping Routine")
+			break
 		}
 	}
 }

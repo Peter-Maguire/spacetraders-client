@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/database"
 	"spacetraders/entity"
 )
 
@@ -9,6 +10,8 @@ func SellExcessInventory(state *State) RoutineResult {
 	inventory := state.Ship.Cargo.Inventory
 
 	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
+
+	go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
 	contractTarget := state.Contract.Terms.Deliver[0]
 	targetItem := contractTarget.TradeSymbol
@@ -51,9 +54,10 @@ func SellExcessInventory(state *State) RoutineResult {
 		sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
+		} else {
+			state.Agent = &sellResult.Agent
 		}
 
-		state.Agent = &sellResult.Agent
 	}
 
 	state.FireEvent("sellComplete", state.Agent)
