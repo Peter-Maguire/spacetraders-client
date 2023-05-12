@@ -38,7 +38,7 @@ func MineOres(state *State) RoutineResult {
 				SetRoutine: SellExcessInventory,
 			}
 		}
-		fmt.Println("Unknown error", err)
+		state.Log(fmt.Sprintf("Unknown error: %s", err))
 		// No idea
 		return RoutineResult{
 			WaitSeconds: 10,

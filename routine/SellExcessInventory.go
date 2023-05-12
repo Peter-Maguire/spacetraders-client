@@ -47,14 +47,16 @@ func SellExcessInventory(state *State) RoutineResult {
 	_ = state.Ship.EnsureNavState(entity.NavDocked)
 
 	for _, sellableSlot := range sellable {
-		fmt.Printf("Selling %dx %s\n", sellableSlot.Units, sellableSlot.Symbol)
+		state.Log(fmt.Sprintf("Selling %dx %s", sellableSlot.Units, sellableSlot.Symbol))
 		sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
 		if err != nil {
-			fmt.Println("Failed to sell:", err.Data)
+			state.Log("Failed to sell:" + err.Error())
 		}
 
 		state.Agent = &sellResult.Agent
 	}
+
+	state.FireEvent("sellComplete", state.Agent)
 
 	return RoutineResult{
 		SetRoutine: GetSurvey,

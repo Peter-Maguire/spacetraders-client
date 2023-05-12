@@ -28,7 +28,7 @@ func GetSurvey(state *State) RoutineResult {
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),
 			}
 		}
-		fmt.Println("Unknown error", err)
+		state.Log(fmt.Sprintf("Unknown error: %s", err))
 		// No idea
 		return RoutineResult{
 			WaitSeconds: 10,

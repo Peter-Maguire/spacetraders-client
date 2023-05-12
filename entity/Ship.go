@@ -34,9 +34,12 @@ func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {
 	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/navigate", s.Symbol), NavigateRequest{
 		WaypointSymbol: waypoint,
 	})
-	s.Nav = shipUpdate.Nav
-	s.Fuel = shipUpdate.Fuel
-	return &shipUpdate.Nav, err
+	if err == nil {
+		s.Nav = shipUpdate.Nav
+		s.Fuel = shipUpdate.Fuel
+		return &shipUpdate.Nav, err
+	}
+	return nil, err
 }
 
 func (s *Ship) Dock() error {

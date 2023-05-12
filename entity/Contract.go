@@ -18,14 +18,16 @@ func (c *Contract) Accept() *http.HttpError {
 	return err
 }
 
-func (c *Contract) Deliver(shipSymbol string, tradeSymbol string, units int) (*ContractDeliverResult, error) {
+func (c *Contract) Deliver(shipSymbol string, tradeSymbol string, units int) (*ContractDeliverResult, *http.HttpError) {
 	deliverResult, err := http.Request[ContractDeliverResult]("POST", fmt.Sprintf("my/contracts/%s/deliver", c.Id), ContractDeliveryRequest{
 		ShipSymbol:  shipSymbol,
 		TradeSymbol: tradeSymbol,
 		Units:       units,
 	})
 
-	c.Terms = deliverResult.Contract.Terms
+	if deliverResult != nil {
+		c.Terms = deliverResult.Contract.Terms
+	}
 
 	return deliverResult, err
 }

@@ -20,6 +20,8 @@ func main() {
 
 	ships, _ := agent.Ships()
 
+	orchestorChan := make(chan routine.OrchestratorEvent)
+
 	fmt.Println("Starting Routines")
 	for _, ship := range *ships {
 		shipPtr := ship
@@ -27,22 +29,41 @@ func main() {
 			Agent:    agent,
 			Contract: &(*contracts)[0],
 			Ship:     &shipPtr,
+			EventBus: orchestorChan,
 		}
 
 		go routineLoop(&state)
 	}
 
-	forever := make(chan bool)
-	<-forever
+	for {
+		event := <-orchestorChan
+		switch event.Name {
+		case "sellComplete":
+			agent := event.Data.(*entity.Agent)
+			if agent.Credits >= 87720 {
+				err := agent.BuyShip("X1-DF55-69207D", "SHIP_MINING_DRONE")
+				fmt.Println(err)
+			}
+			fmt.Println("Credits now: ", agent.Credits)
+		}
+	}
+
 }
 
 func routineLoop(state *routine.State) {
-	currentRoutine := routine.GoToAsteroidField
+	currentRoutine := routine.DetermineObjective
 	for {
 		routineResult := currentRoutine(state)
 		if routineResult.WaitSeconds > 0 {
 			state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
 			time.Sleep(time.Duration(routineResult.WaitSeconds) * time.Second)
+		}
+
+		if state.ForceRoutine != nil {
+			state.Log("Forced routine change")
+			currentRoutine = state.ForceRoutine
+			state.ForceRoutine = nil
+			continue
 		}
 
 		if routineResult.SetRoutine != nil {

@@ -9,7 +9,7 @@ import (
 
 func NavigateTo(waypoint entity.Waypoint, nextState Routine) Routine {
 	return func(state *State) RoutineResult {
-		fmt.Println("Navigating to ", waypoint)
+		state.Log(fmt.Sprint("Navigating to ", waypoint))
 
 		_ = state.Ship.EnsureNavState(entity.NavOrbit)
 
@@ -22,11 +22,11 @@ func NavigateTo(waypoint entity.Waypoint, nextState Routine) Routine {
 				_ = state.Ship.Refuel()
 				return RoutineResult{}
 			}
-			fmt.Println("Unknown error ", err)
+			state.Log(fmt.Sprintf("Unknown error: %s", err))
 		}
 
 		waitingTime := nav.Route.Arrival.Sub(time.Now())
-		fmt.Printf("Arriving at %s in %.f seconds", waypoint, waitingTime.Seconds())
+		state.Log(fmt.Sprintf("Arriving at %s in %.f seconds", waypoint, waitingTime.Seconds()))
 
 		return RoutineResult{
 			WaitSeconds: int(waitingTime.Seconds()),
