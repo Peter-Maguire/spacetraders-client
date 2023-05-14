@@ -11,6 +11,9 @@ type Contract struct {
 	FactionSymbol string        `json:"factionSymbol"`
 	Type          string        `json:"type"`
 	Terms         ContractTerms `json:"terms"`
+	Accepted      bool          `json:"accepted"`
+	Fulfilled     bool          `json:"fulfilled"`
+	Expiration    time.Time     `json:"expiration"`
 }
 
 func (c *Contract) Accept() *http.HttpError {

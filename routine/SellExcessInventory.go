@@ -11,7 +11,12 @@ type SellExcessInventory struct {
 func (s SellExcessInventory) Run(state *State) RoutineResult {
 	inventory := state.Ship.Cargo.Inventory
 
-	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
+	market, err := state.Ship.Nav.WaypointSymbol.GetMarket()
+
+	if err != nil {
+		state.Log("Market error" + err.Error())
+		return RoutineResult{WaitSeconds: 10}
+	}
 
 	//go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 

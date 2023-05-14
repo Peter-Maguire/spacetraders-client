@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/jellydator/ttlcache/v3"
 	"io"
 	"net/http"
 	"os"
@@ -20,6 +21,10 @@ type OutgoingRequest struct {
 	ReturnChannel chan IncomingResponse
 }
 
+var cache = ttlcache.New[string, http.Response](
+	ttlcache.WithTTL[string, http.Response](30 * time.Minute),
+)
+
 var requestBuffer = make([]*OutgoingRequest, 0)
 
 var Waiting = 0
@@ -29,39 +34,44 @@ var IsRunningRequests = false
 var token = fmt.Sprintf("Bearer %s", os.Getenv("TOKEN"))
 
 func Request[T any](method string, path string, body any) (*T, *HttpError) {
-	// We can't set this to bytes.Buffer type because net/http assumes data of that type will not be nil
-	var buf io.Reader = nil
-	if body != nil {
-		data, err := json.Marshal(body)
-		//fmt.Println(string(data))
+	httpResponse := getCached(method, path)
+	if httpResponse == nil {
+		// We can't set this to bytes.Buffer type because net/http assumes data of that type will not be nil
+		var buf io.Reader = nil
+		if body != nil {
+			data, err := json.Marshal(body)
+			//fmt.Println(string(data))
+			if err != nil {
+				return nil, InternalError(err)
+			}
+			buf = bytes.NewBuffer(data)
+		}
+		req, err := http.NewRequest(method, fmt.Sprintf("https://api.spacetraders.io/v2/%s", path), buf)
 		if err != nil {
 			return nil, InternalError(err)
 		}
-		buf = bytes.NewBuffer(data)
+		if body != nil {
+			req.Header.Set("content-type", "application/json")
+		}
+		req.Header.Add("authorization", token)
+		returnChan := make(chan IncomingResponse)
+		Waiting++
+		requestBuffer = append(requestBuffer, &OutgoingRequest{
+			Req:           req,
+			ReturnChannel: returnChan,
+		})
+		if !IsRunningRequests {
+			requestLoop()
+		}
+		resp := <-returnChan
+		Waiting--
+		if resp.Error != nil {
+			return nil, InternalError(resp.Error)
+		}
+		//cache.Set(path, *resp.Response, time.Minute)
+		httpResponse = resp.Response
 	}
-	req, err := http.NewRequest(method, fmt.Sprintf("https://api.spacetraders.io/v2/%s", path), buf)
-	if err != nil {
-		return nil, InternalError(err)
-	}
-	if body != nil {
-		req.Header.Set("content-type", "application/json")
-	}
-	req.Header.Add("authorization", token)
-	returnChan := make(chan IncomingResponse)
-	Waiting++
-	requestBuffer = append(requestBuffer, &OutgoingRequest{
-		Req:           req,
-		ReturnChannel: returnChan,
-	})
-	if !IsRunningRequests {
-		requestLoop()
-	}
-	resp := <-returnChan
-	Waiting--
-	if resp.Error != nil {
-		return nil, InternalError(resp.Error)
-	}
-	data, err := io.ReadAll(resp.Response.Body)
+	data, err := io.ReadAll(httpResponse.Body)
 	//fmt.Println(string(data))
 	if err != nil {
 		return nil, InternalError(err)
@@ -75,6 +85,17 @@ func Request[T any](method string, path string, body any) (*T, *HttpError) {
 		return output.Data, InternalError(err)
 	}
 	return output.Data, nil
+}
+
+func getCached(method string, path string) *http.Response {
+	if method == "GET" {
+		cachedItem := cache.Get(path)
+		if cachedItem != nil && !cachedItem.IsExpired() {
+			cacheValue := cachedItem.Value()
+			return &cacheValue
+		}
+	}
+	return nil
 }
 
 func doRequests() bool {
@@ -102,4 +123,8 @@ func requestLoop() {
 			<-time.Tick(time.Second * 1)
 		}
 	}()
+}
+
+func Init() {
+	go cache.Start()
 }

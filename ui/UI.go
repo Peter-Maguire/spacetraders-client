@@ -49,11 +49,13 @@ func MainLog(str string) {
 			drawUpdateWaiting = false
 			_, _ = fmt.Fprint(logView, str)
 		})
+	} else {
+		fmt.Print(str)
 	}
 }
 
 func WriteShipState(shipStates string) {
-	if drawUpdateWaiting {
+	if drawUpdateWaiting || shipView == nil {
 		return
 	}
 	drawUpdateWaiting = true
