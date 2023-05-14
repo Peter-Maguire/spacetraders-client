@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -12,8 +13,14 @@ import (
 
 var states []*routine.State
 
+var enableUi = false
+
 func main() {
-	go ui.Init()
+	enableUi = os.Getenv("DISABLE_UI") != "1"
+	if enableUi {
+		go ui.Init()
+	}
+	http.Init()
 	database.Init()
 
 	agent, err := http.Request[entity.Agent]("GET", "my/agent", nil)
@@ -43,7 +50,9 @@ func main() {
 		go routineLoop(&state)
 	}
 
-	updateShipStates()
+	if enableUi {
+		updateShipStates()
+	}
 
 	waypoints, _ := agent.Headquarters.GetSystemWaypoints()
 
@@ -103,6 +112,27 @@ func main() {
 			for _, state := range states {
 				if state.Ship.IsMiningShip() && state.Survey == nil {
 					state.Survey = event.Data.(*entity.Survey)
+				}
+			}
+		case "contractComplete":
+			ui.MainLog("Contract completed")
+			contracts, err := agent.Contracts()
+			if err != nil {
+				ui.MainLog("Contract get error " + err.Error())
+				os.Exit(1)
+			}
+			for _, c := range *contracts {
+				if c.Accepted == false {
+					err = c.Accept()
+					if err != nil {
+						ui.MainLog("Contract accept error " + err.Error())
+						os.Exit(1)
+					} else {
+						ui.MainLog("Accepted new contract " + c.Id)
+						for _, state := range states {
+							state.Contract = &c
+						}
+					}
 				}
 			}
 		}

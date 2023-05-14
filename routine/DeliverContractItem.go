@@ -27,8 +27,10 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 	if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
 		state.Log("Contract completed")
 		err := state.Contract.Fulfill()
+		if err == nil {
+			state.FireEvent("contractComplete", nil)
+		}
 		state.Log(fmt.Sprintf("Contract fulfill err: %s", err))
-		// TODO: new contract
 		os.Exit(1)
 	}
 
