@@ -47,7 +47,8 @@ func main() {
 			agent := event.Data.(*entity.Agent)
 			if agent.Credits >= 87720 {
 				result, err := agent.BuyShip("X1-ZA40-68707C", "SHIP_MINING_DRONE")
-				if err != nil {
+				if err == nil && result != nil {
+					fmt.Println(result)
 					state := routine.State{
 						Contract: &(*contracts)[0],
 						Ship:     result.Ship,

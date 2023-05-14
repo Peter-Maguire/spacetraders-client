@@ -42,6 +42,10 @@ func MineOres(state *State) RoutineResult {
 			return RoutineResult{
 				SetRoutine: GoToAsteroidField,
 			}
+		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
+			state.Log("Something went wrong with the survey")
+			state.Survey = nil
+			return RoutineResult{}
 		}
 
 		state.Log(fmt.Sprintf("Unknown error: %s", err))
