@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"spacetraders/http"
+	"strings"
 	"time"
 )
 
@@ -31,7 +32,12 @@ func (s *Ship) HasMount(mountSymbol string) bool {
 }
 
 func (s *Ship) IsMiningShip() bool {
-	return s.HasMount("MOUNT_MINING_LASER_I")
+	for _, mount := range s.Mounts {
+		if strings.HasPrefix(mount.Symbol, "MOUNT_MINING_LASER") {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {

@@ -29,7 +29,7 @@ func (g GoToAsteroidField) Run(state *State) RoutineResult {
 
 	state.Log("Couldn't find a waypoint pointing to an asteroid field")
 	return RoutineResult{
-		WaitSeconds: 3600,
+		WaitSeconds: 60,
 	}
 }
 

@@ -39,7 +39,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			_ = state.Ship.EnsureNavState(entity.NavDocked)
 			_ = state.Ship.Refuel()
 			return RoutineResult{}
-		case http.ErrShipInTransit:
+		case http.ErrShipInTransit, http.ErrNavigateInTransit:
 			state.Log("Ship in transit")
 			return RoutineResult{
 				WaitSeconds: 30,

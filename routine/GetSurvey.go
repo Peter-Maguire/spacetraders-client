@@ -5,6 +5,7 @@ import (
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
+	"spacetraders/ui"
 )
 
 type GetSurvey struct {
@@ -39,7 +40,7 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 		}
 	}
 
-	fmt.Println(surveyResult)
+	//fmt.Println(surveyResult)
 
 	for _, survey := range surveyResult.Surveys {
 		database.StoreSurvey(state.Ship.Nav.WaypointSymbol, survey)
@@ -49,13 +50,13 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 
 	if bestSurvey != nil {
 		state.Survey = bestSurvey
-		fmt.Printf("Good survey found: %s\n", bestSurvey.Signature)
+		state.Log(fmt.Sprintf("Good survey found: %s\n", bestSurvey.Signature))
 		state.FireEvent("goodSurveyFound", state.Survey)
 	} else {
 		state.Log("No survey available that satisfies our needs")
 	}
 
-	fmt.Printf("Waiting %d seconds\n", surveyResult.Cooldown.RemainingSeconds)
+	ui.MainLog(fmt.Sprintf("Waiting %d seconds\n", surveyResult.Cooldown.RemainingSeconds))
 
 	return RoutineResult{
 		SetRoutine: MineOres{},
@@ -70,7 +71,7 @@ func (g GetSurvey) Name() string {
 func findBestSurvey(surveys []entity.Survey, deliverables []entity.ContractDeliverable) *entity.Survey {
 	for _, survey := range surveys {
 		for _, deposit := range survey.Deposits {
-			fmt.Printf("Survey %s has deposit of %s\n", survey.Signature, deposit.Symbol)
+			//fmt.Printf("Survey %s has deposit of %s\n", survey.Signature, deposit.Symbol)
 			for _, deliverable := range deliverables {
 				if deposit.Symbol == deliverable.TradeSymbol {
 					return &survey

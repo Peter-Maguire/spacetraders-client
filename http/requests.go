@@ -22,6 +22,10 @@ type OutgoingRequest struct {
 
 var requestBuffer = make([]*OutgoingRequest, 0)
 
+var Waiting = 0
+
+var IsRunningRequests = false
+
 var token = fmt.Sprintf("Bearer %s", os.Getenv("TOKEN"))
 
 func Request[T any](method string, path string, body any) (*T, *HttpError) {
@@ -44,11 +48,16 @@ func Request[T any](method string, path string, body any) (*T, *HttpError) {
 	}
 	req.Header.Add("authorization", token)
 	returnChan := make(chan IncomingResponse)
+	Waiting++
 	requestBuffer = append(requestBuffer, &OutgoingRequest{
 		Req:           req,
 		ReturnChannel: returnChan,
 	})
+	if !IsRunningRequests {
+		requestLoop()
+	}
 	resp := <-returnChan
+	Waiting--
 	if resp.Error != nil {
 		return nil, InternalError(resp.Error)
 	}
@@ -68,9 +77,9 @@ func Request[T any](method string, path string, body any) (*T, *HttpError) {
 	return output.Data, nil
 }
 
-func doRequests() {
+func doRequests() bool {
 	if len(requestBuffer) == 0 {
-		return
+		return false
 	}
 	or := requestBuffer[0]
 	requestBuffer = requestBuffer[1:]
@@ -79,13 +88,18 @@ func doRequests() {
 		Response: res,
 		Error:    err,
 	}
+	return true
 }
 
-func Init() {
+func requestLoop() {
+	IsRunningRequests = true
 	go func() {
 		for {
+			if !doRequests() {
+				IsRunningRequests = false
+				break
+			}
 			<-time.Tick(time.Second * 1)
-			doRequests()
 		}
 	}()
 }

@@ -3,6 +3,8 @@ package routine
 import (
 	"fmt"
 	"spacetraders/entity"
+	"spacetraders/ui"
+	"time"
 )
 
 type State struct {
@@ -13,6 +15,8 @@ type State struct {
 
 	EventBus chan OrchestratorEvent
 
+	AsleepUntil          *time.Time
+	CurrentRoutine       Routine
 	ForceRoutine         Routine
 	LastVisitedWaypoints []entity.Waypoint
 }
@@ -23,7 +27,7 @@ type OrchestratorEvent struct {
 }
 
 func (s *State) Log(message string) {
-	fmt.Printf("[%s] %s\n", s.Ship.Registration.Name, message)
+	go ui.MainLog(fmt.Sprintf("[%s] %s\n", s.Ship.Registration.Name, message))
 }
 
 func (s *State) FireEvent(event string, data any) {

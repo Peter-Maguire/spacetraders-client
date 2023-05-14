@@ -30,7 +30,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		}
 		tradeGood := market.GetTradeGood(slot.Symbol)
 		if tradeGood != nil {
-			fmt.Printf("We can trade our %s here for %d credits\n", tradeGood.Symbol, tradeGood.SellPrice)
+			state.Log(fmt.Sprintf("We can trade our %s here for %d credits", tradeGood.Symbol, tradeGood.SellPrice))
 			sellable = append(sellable, slot)
 		}
 	}
@@ -46,7 +46,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		}
 	}
 
-	fmt.Printf("Got %d items to sell\n", len(sellable))
+	//fmt.Printf("Got %d items to sell\n", len(sellable))
 
 	// dock ship
 	_ = state.Ship.EnsureNavState(entity.NavDocked)
