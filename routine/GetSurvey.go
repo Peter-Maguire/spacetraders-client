@@ -14,8 +14,8 @@ type GetSurvey struct {
 func (g GetSurvey) Run(state *State) RoutineResult {
 	state.Survey = nil
 
-	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") {
-		state.Log("No surveyor mount")
+	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") || state.Survey != nil {
+		state.Log("No surveyor mount or survey exists")
 		return RoutineResult{
 			SetRoutine: MineOres{},
 		}
