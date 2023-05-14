@@ -37,7 +37,13 @@ func MineOres(state *State) RoutineResult {
 			return RoutineResult{
 				SetRoutine: SellExcessInventory,
 			}
+		case http.ErrCannotExtractHere:
+			state.Log("We're not at an asteroid field")
+			return RoutineResult{
+				SetRoutine: GoToAsteroidField,
+			}
 		}
+
 		state.Log(fmt.Sprintf("Unknown error: %s", err))
 		// No idea
 		return RoutineResult{

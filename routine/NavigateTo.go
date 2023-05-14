@@ -11,6 +11,22 @@ func NavigateTo(waypoint entity.Waypoint, nextState Routine) Routine {
 	return func(state *State) RoutineResult {
 		state.Log(fmt.Sprint("Navigating to ", waypoint))
 
+		if state.Ship.Nav.WaypointSymbol == waypoint && state.Ship.Nav.Status != "IN_TRANSIT" {
+			state.Log("We're already at our destination")
+			return RoutineResult{
+				SetRoutine: nextState,
+			}
+		}
+
+		if state.Ship.Nav.Status == "IN_TRANSIT" && state.Ship.Nav.Route.Destination.Symbol == waypoint {
+			state.Log("We're already on our way there")
+			waitingTime := state.Ship.Nav.Route.Arrival.Sub(time.Now())
+			return RoutineResult{
+				WaitSeconds: int(waitingTime.Seconds()),
+				SetRoutine:  nextState,
+			}
+		}
+
 		_ = state.Ship.EnsureNavState(entity.NavOrbit)
 
 		nav, err := state.Ship.Navigate(waypoint)
@@ -21,8 +37,21 @@ func NavigateTo(waypoint entity.Waypoint, nextState Routine) Routine {
 				_ = state.Ship.EnsureNavState(entity.NavDocked)
 				_ = state.Ship.Refuel()
 				return RoutineResult{}
+			case http.ErrShipInTransit:
+				state.Log("Ship in transit")
+				return RoutineResult{
+					WaitSeconds: 30,
+				}
+			case http.ErrShipAtDestination:
+				state.Log("Oh we're already there")
+				return RoutineResult{
+					SetRoutine: nextState,
+				}
 			}
 			state.Log(fmt.Sprintf("Unknown error: %s", err))
+			return RoutineResult{
+				WaitSeconds: 10,
+			}
 		}
 
 		waitingTime := nav.Route.Arrival.Sub(time.Now())

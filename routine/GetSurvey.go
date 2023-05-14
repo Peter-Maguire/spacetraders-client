@@ -42,6 +42,7 @@ func GetSurvey(state *State) RoutineResult {
 	if bestSurvey != nil {
 		state.Survey = bestSurvey
 		fmt.Printf("Good survey found: %s\n", bestSurvey.Signature)
+		state.FireEvent("goodSurveyFound", state.Survey)
 	} else {
 		state.Log("No survey available that satisfies our needs")
 	}

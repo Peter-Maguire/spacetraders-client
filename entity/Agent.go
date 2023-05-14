@@ -17,10 +17,10 @@ func (a *Agent) Contracts() (*[]Contract, error) {
 	return http.Request[[]Contract]("GET", "my/contracts", nil)
 }
 
-func (a *Agent) BuyShip(shipyard Waypoint, shipType string) error {
-	_, err := http.Request[any]("POST", "my/ships", ShipPurchaseRequest{
+func (a *Agent) BuyShip(shipyard Waypoint, shipType string) (*ShipPurchaseResult, error) {
+	result, err := http.Request[ShipPurchaseResult]("POST", "my/ships", ShipPurchaseRequest{
 		ShipType:       shipType,
 		WaypointSymbol: shipyard,
 	})
-	return err
+	return result, err
 }

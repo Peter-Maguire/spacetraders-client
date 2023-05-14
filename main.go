@@ -46,8 +46,19 @@ func main() {
 		case "sellComplete":
 			agent := event.Data.(*entity.Agent)
 			if agent.Credits >= 87720 {
-				err := agent.BuyShip("X1-DF55-69207D", "SHIP_MINING_DRONE")
-				fmt.Println(err)
+				result, err := agent.BuyShip("X1-ZA40-68707C", "SHIP_MINING_DRONE")
+				if err != nil {
+					state := routine.State{
+						Contract: &(*contracts)[0],
+						Ship:     result.Ship,
+						EventBus: orchestorChan,
+					}
+					fmt.Println("New ship", result.Ship.Symbol)
+					states = append(states, &state)
+					go routineLoop(&state)
+				} else {
+					fmt.Println("Purchase error", err)
+				}
 			}
 			fmt.Println("Credits now: ", agent.Credits)
 		case "goodSurveyFound":
