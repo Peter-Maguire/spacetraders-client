@@ -40,15 +40,40 @@ func main() {
 		go routineLoop(&state)
 	}
 
-	creditTarget := 87720
+	waypoints, _ := agent.Headquarters.GetSystemWaypoints()
+
+	var shipyard entity.Waypoint
+
+	for _, waypoint := range *waypoints {
+		if waypoint.HasTrait("SHIPYARD") {
+			fmt.Println("Found shipyard at ", waypoint.Symbol)
+			shipyard = waypoint.Symbol
+			break
+		}
+	}
+
+	var shipToBuy = "SHIP_ORE_HOUND"
+
+	creditTarget := 185702
+
+	shipyardStock, err := shipyard.GetShipyard()
+	if err == nil {
+		go database.StoreShipCosts(shipyardStock)
+		for _, stock := range shipyardStock.Ships {
+			if stock.Name == shipToBuy {
+				fmt.Printf("Ship %s is available to buy at %s for %d credits\n", shipToBuy, shipyard, stock.PurchasePrice)
+				creditTarget = stock.PurchasePrice
+			}
+		}
+	}
 
 	for {
 		event := <-orchestorChan
 		switch event.Name {
 		case "sellComplete":
 			agent := event.Data.(*entity.Agent)
-			if agent.Credits >= creditTarget {
-				result, err := agent.BuyShip("X1-ZA40-68707C", "SHIP_MINING_DRONE")
+			if agent.Credits >= creditTarget && shipyard != "" {
+				result, err := agent.BuyShip(shipyard, shipToBuy)
 				if err == nil && result != nil {
 					fmt.Println(result)
 					state := routine.State{
@@ -81,12 +106,18 @@ func main() {
 }
 
 func routineLoop(state *routine.State) {
-	currentRoutine := routine.DetermineObjective
+	var currentRoutine routine.Routine = routine.DetermineObjective{}
 	for {
-		routineResult := currentRoutine(state)
+		routineResult := currentRoutine.Run(state)
 		if routineResult.WaitSeconds > 0 {
 			state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
 			time.Sleep(time.Duration(routineResult.WaitSeconds) * time.Second)
+		}
+
+		if routineResult.WaitUntil != nil {
+			waitTime := routineResult.WaitUntil.Sub(time.Now())
+			state.Log(fmt.Sprintf("Waiting until %s (%.f seconds)", routineResult.WaitUntil, waitTime.Seconds()))
+			time.Sleep(waitTime)
 		}
 
 		if state.ForceRoutine != nil {
@@ -97,7 +128,7 @@ func routineLoop(state *routine.State) {
 		}
 
 		if routineResult.SetRoutine != nil {
-			state.Log("Switching Routine")
+			state.Log(fmt.Sprintf("%s -> %s", currentRoutine.Name(), routineResult.SetRoutine.Name()))
 			currentRoutine = routineResult.SetRoutine
 		}
 

@@ -2,16 +2,18 @@ package routine
 
 import (
 	"fmt"
-	"spacetraders/database"
 	"spacetraders/entity"
 )
 
-func SellExcessInventory(state *State) RoutineResult {
+type SellExcessInventory struct {
+}
+
+func (s SellExcessInventory) Run(state *State) RoutineResult {
 	inventory := state.Ship.Cargo.Inventory
 
 	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
 
-	go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
+	//go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
 	contractTarget := state.Contract.Terms.Deliver[0]
 	targetItem := contractTarget.TradeSymbol
@@ -38,7 +40,7 @@ func SellExcessInventory(state *State) RoutineResult {
 			state.Log("All we have left is what we are selling, time to take it away")
 
 			return RoutineResult{
-				SetRoutine: NavigateTo(contractTarget.DestinationSymbol, DeliverContractItem(targetItem, state.Ship.Nav.WaypointSymbol)),
+				SetRoutine: NavigateTo{waypoint: contractTarget.DestinationSymbol, next: DeliverContractItem{item: targetItem, returnTo: state.Ship.Nav.WaypointSymbol}},
 			}
 
 		}
@@ -63,6 +65,10 @@ func SellExcessInventory(state *State) RoutineResult {
 	state.FireEvent("sellComplete", state.Agent)
 
 	return RoutineResult{
-		SetRoutine: GetSurvey,
+		SetRoutine: GetSurvey{},
 	}
+}
+
+func (s SellExcessInventory) Name() string {
+	return "Sell Excess Inventory"
 }

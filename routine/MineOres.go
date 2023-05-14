@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-func MineOres(state *State) RoutineResult {
+type MineOres struct {
+}
+
+func (m MineOres) Run(state *State) RoutineResult {
 	_ = state.Ship.EnsureNavState(entity.NavOrbit)
 
 	var result *entity.ExtractionResult
@@ -17,7 +20,7 @@ func MineOres(state *State) RoutineResult {
 		if state.Survey.Expiration.Before(time.Now()) {
 			state.Log("Survey has expired")
 			return RoutineResult{
-				SetRoutine: GetSurvey,
+				SetRoutine: GetSurvey{},
 			}
 		}
 		result, err = state.Ship.ExtractSurvey(state.Survey)
@@ -35,12 +38,12 @@ func MineOres(state *State) RoutineResult {
 		case http.ErrCargoFull:
 			state.Log("Cargo is full")
 			return RoutineResult{
-				SetRoutine: SellExcessInventory,
+				SetRoutine: SellExcessInventory{},
 			}
 		case http.ErrCannotExtractHere:
 			state.Log("We're not at an asteroid field")
 			return RoutineResult{
-				SetRoutine: GoToAsteroidField,
+				SetRoutine: GoToAsteroidField{},
 			}
 		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
 			state.Log("Something went wrong with the survey")
@@ -60,13 +63,16 @@ func MineOres(state *State) RoutineResult {
 	if result.Cargo.Units >= result.Cargo.Capacity-5 {
 		state.Log("Inventory is near to or completely full, time to sell")
 		return RoutineResult{
-			SetRoutine:  SellExcessInventory,
-			WaitSeconds: result.Cooldown.RemainingSeconds,
+			SetRoutine: SellExcessInventory{},
+			WaitUntil:  &result.Cooldown.Expiration,
 		}
 	}
 
 	return RoutineResult{
-		WaitSeconds: result.Cooldown.RemainingSeconds,
+		WaitUntil: &result.Cooldown.Expiration,
 	}
+}
 
+func (m MineOres) Name() string {
+	return "Mine Ores"
 }

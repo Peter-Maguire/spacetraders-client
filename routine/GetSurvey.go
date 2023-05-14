@@ -2,17 +2,21 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
 )
 
-func GetSurvey(state *State) RoutineResult {
+type GetSurvey struct {
+}
+
+func (g GetSurvey) Run(state *State) RoutineResult {
 	state.Survey = nil
 
 	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") {
 		state.Log("No surveyor mount")
 		return RoutineResult{
-			SetRoutine: MineOres,
+			SetRoutine: MineOres{},
 		}
 	}
 
@@ -37,6 +41,10 @@ func GetSurvey(state *State) RoutineResult {
 
 	fmt.Println(surveyResult)
 
+	for _, survey := range surveyResult.Surveys {
+		database.StoreSurvey(state.Ship.Nav.WaypointSymbol, survey)
+	}
+
 	bestSurvey := findBestSurvey(surveyResult.Surveys, state.Contract.Terms.Deliver)
 
 	if bestSurvey != nil {
@@ -50,9 +58,13 @@ func GetSurvey(state *State) RoutineResult {
 	fmt.Printf("Waiting %d seconds\n", surveyResult.Cooldown.RemainingSeconds)
 
 	return RoutineResult{
-		SetRoutine:  MineOres,
-		WaitSeconds: surveyResult.Cooldown.RemainingSeconds,
+		SetRoutine: MineOres{},
+		WaitUntil:  &surveyResult.Cooldown.Expiration,
 	}
+}
+
+func (g GetSurvey) Name() string {
+	return "Get Survey"
 }
 
 func findBestSurvey(surveys []entity.Survey, deliverables []entity.ContractDeliverable) *entity.Survey {

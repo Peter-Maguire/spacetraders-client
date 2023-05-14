@@ -1,3 +1,6 @@
 package routine
 
-type Routine func(state *State) RoutineResult
+type Routine interface {
+	Run(state *State) RoutineResult
+	Name() string
+}

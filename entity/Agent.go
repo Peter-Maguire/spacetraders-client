@@ -10,7 +10,7 @@ type Agent struct {
 }
 
 func (a *Agent) Ships() (*[]Ship, error) {
-	return http.Request[[]Ship]("GET", "my/ships", nil)
+	return http.Request[[]Ship]("GET", "my/ships?limit=20", nil)
 }
 
 func (a *Agent) Contracts() (*[]Contract, error) {

@@ -6,31 +6,37 @@ import (
 	"spacetraders/entity"
 )
 
-func DeliverContractItem(item string, returnTo entity.Waypoint) Routine {
-	return func(state *State) RoutineResult {
+type DeliverContractItem struct {
+	item     string
+	returnTo entity.Waypoint
+}
 
-		_ = state.Ship.EnsureNavState(entity.NavDocked)
+func (r DeliverContractItem) Run(state *State) RoutineResult {
+	_ = state.Ship.EnsureNavState(entity.NavDocked)
 
-		slot := state.Ship.Cargo.GetSlotWithItem(item)
-		state.Log(fmt.Sprintf("Deliver %dx %s", slot.Units, item))
-		deliverResult, err := state.Contract.Deliver(state.Ship.Symbol, item, slot.Units)
-		if err != nil {
-			state.Log(fmt.Sprintf("Error delivering contract: %s", err))
-			os.Exit(1)
-		}
-
-		deliverable := deliverResult.Contract.Terms.GetDeliverable(item)
-
-		if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
-			state.Log("Contract completed")
-			err := state.Contract.Fulfill()
-			state.Log(fmt.Sprintf("Contract fulfill err: %s", err))
-			// TODO: new contract
-			os.Exit(1)
-		}
-
-		return RoutineResult{
-			SetRoutine: NavigateTo(returnTo, GetSurvey),
-		}
+	slot := state.Ship.Cargo.GetSlotWithItem(r.item)
+	state.Log(fmt.Sprintf("Deliver %dx %s", slot.Units, r.item))
+	deliverResult, err := state.Contract.Deliver(state.Ship.Symbol, r.item, slot.Units)
+	if err != nil {
+		state.Log(fmt.Sprintf("Error delivering contract: %s", err))
+		os.Exit(1)
 	}
+
+	deliverable := deliverResult.Contract.Terms.GetDeliverable(r.item)
+
+	if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
+		state.Log("Contract completed")
+		err := state.Contract.Fulfill()
+		state.Log(fmt.Sprintf("Contract fulfill err: %s", err))
+		// TODO: new contract
+		os.Exit(1)
+	}
+
+	return RoutineResult{
+		SetRoutine: NavigateTo{r.returnTo, GetSurvey{}},
+	}
+}
+
+func (r DeliverContractItem) Name() string {
+	return fmt.Sprintf("Deliver Contract Item (%s)", r.item)
 }

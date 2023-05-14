@@ -1,10 +1,11 @@
 package routine
 
-import (
-	"spacetraders/entity"
-)
+import "spacetraders/entity"
 
-func GoToAsteroidField(state *State) RoutineResult {
+type GoToAsteroidField struct {
+}
+
+func (g GoToAsteroidField) Run(state *State) RoutineResult {
 	_ = state.Ship.EnsureNavState(entity.NavOrbit)
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
 
@@ -12,7 +13,7 @@ func GoToAsteroidField(state *State) RoutineResult {
 	if waypointData.Type == "ASTEROID_FIELD" {
 		state.Log("We are already in an asteroid field, convenient!")
 		return RoutineResult{
-			SetRoutine: GetSurvey,
+			SetRoutine: GetSurvey{},
 		}
 	}
 
@@ -21,7 +22,7 @@ func GoToAsteroidField(state *State) RoutineResult {
 	for _, waypoint := range system.Waypoints {
 		if waypoint.Type == "ASTEROID_FIELD" {
 			return RoutineResult{
-				SetRoutine: NavigateTo(waypoint.Symbol, GetSurvey),
+				SetRoutine: NavigateTo{waypoint.Symbol, GetSurvey{}},
 			}
 		}
 	}
@@ -30,4 +31,8 @@ func GoToAsteroidField(state *State) RoutineResult {
 	return RoutineResult{
 		WaitSeconds: 3600,
 	}
+}
+
+func (g GoToAsteroidField) Name() string {
+	return "Go To Asteroid Field"
 }
