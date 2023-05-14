@@ -64,6 +64,12 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	state.FireEvent("sellComplete", state.Agent)
 
+	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") {
+		return RoutineResult{
+			SetRoutine: MineOres{},
+		}
+	}
+
 	return RoutineResult{
 		SetRoutine: GetSurvey{},
 	}
