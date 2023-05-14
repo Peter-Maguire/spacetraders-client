@@ -40,12 +40,14 @@ func main() {
 		go routineLoop(&state)
 	}
 
+	creditTarget := 87720
+
 	for {
 		event := <-orchestorChan
 		switch event.Name {
 		case "sellComplete":
 			agent := event.Data.(*entity.Agent)
-			if agent.Credits >= 87720 {
+			if agent.Credits >= creditTarget {
 				result, err := agent.BuyShip("X1-ZA40-68707C", "SHIP_MINING_DRONE")
 				if err == nil && result != nil {
 					fmt.Println(result)
@@ -58,6 +60,10 @@ func main() {
 					states = append(states, &state)
 					go routineLoop(&state)
 				} else {
+					if err.Data != nil && err.Data["creditsNeeded"] != nil {
+						creditTarget = err.Data["creditsNeeded"].(int)
+						fmt.Println("Need ", creditTarget)
+					}
 					fmt.Println("Purchase error", err)
 				}
 			}

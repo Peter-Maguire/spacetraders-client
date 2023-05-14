@@ -17,7 +17,7 @@ func (a *Agent) Contracts() (*[]Contract, error) {
 	return http.Request[[]Contract]("GET", "my/contracts", nil)
 }
 
-func (a *Agent) BuyShip(shipyard Waypoint, shipType string) (*ShipPurchaseResult, error) {
+func (a *Agent) BuyShip(shipyard Waypoint, shipType string) (*ShipPurchaseResult, *http.HttpError) {
 	result, err := http.Request[ShipPurchaseResult]("POST", "my/ships", ShipPurchaseRequest{
 		ShipType:       shipType,
 		WaypointSymbol: shipyard,
