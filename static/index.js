@@ -1,6 +1,4 @@
-const ws = new WebSocket("ws://192.168.1.11:8080/ws")
-
-
+const ws = new WebSocket(`ws://${location.host}/ws`)
 
 const logMessages = [];
 
