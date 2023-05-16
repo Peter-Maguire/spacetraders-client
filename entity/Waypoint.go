@@ -18,7 +18,7 @@ func (w *Waypoint) GetSystem() (*System, error) {
 }
 
 func (w *Waypoint) GetSystemWaypoints() (*[]WaypointData, *http.HttpError) {
-	return http.Request[[]WaypointData]("GET", fmt.Sprintf("systems/%s/waypoints", w.GetSystemName()), nil)
+	return http.PaginatedRequest[WaypointData](fmt.Sprintf("systems/%s/waypoints", w.GetSystemName()), 1, 0)
 }
 
 func (w *Waypoint) GetMarket() (*Market, *http.HttpError) {

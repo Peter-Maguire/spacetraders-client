@@ -11,7 +11,9 @@ type SellExcessInventory struct {
 func (s SellExcessInventory) Run(state *State) RoutineResult {
 	inventory := state.Ship.Cargo.Inventory
 
+	state.WaitingForHttp = true
 	market, err := state.Ship.Nav.WaypointSymbol.GetMarket()
+	state.WaitingForHttp = false
 
 	if err != nil {
 		state.Log("Market error" + err.Error())
@@ -20,10 +22,13 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	//go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
-	contractTarget := state.Contract.Terms.Deliver[0]
-	targetItem := contractTarget.TradeSymbol
-
-	state.Log("We are delivering " + contractTarget.TradeSymbol)
+	var contractTarget *entity.ContractDeliverable
+	targetItem := ""
+	if state.Contract != nil {
+		contractTarget = &state.Contract.Terms.Deliver[0]
+		targetItem = contractTarget.TradeSymbol
+		state.Log("We are delivering " + contractTarget.TradeSymbol)
+	}
 
 	// Sellable = not antimatter, not required for the contract and sellable at this market
 	sellable := make([]entity.ShipInventorySlot, 0)
@@ -40,7 +45,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		}
 	}
 
-	if len(sellable) == 0 {
+	if len(sellable) == 0 && contractTarget != nil {
 		if state.Ship.Cargo.GetSlotWithItem(targetItem) != nil {
 			state.Log("All we have left is what we are selling, time to take it away")
 
@@ -54,11 +59,15 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	//fmt.Printf("Got %d items to sell\n", len(sellable))
 
 	// dock ship
+	state.WaitingForHttp = true
 	_ = state.Ship.EnsureNavState(entity.NavDocked)
+	state.WaitingForHttp = false
 
 	for _, sellableSlot := range sellable {
 		state.Log(fmt.Sprintf("Selling %dx %s", sellableSlot.Units, sellableSlot.Symbol))
+		state.WaitingForHttp = true
 		sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
+		state.WaitingForHttp = false
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
@@ -69,7 +78,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	state.FireEvent("sellComplete", state.Agent)
 
-	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") {
+	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") || state.Survey != nil {
 		return RoutineResult{
 			SetRoutine: MineOres{},
 		}

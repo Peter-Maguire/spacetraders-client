@@ -6,12 +6,18 @@ type DetermineObjective struct {
 }
 
 func (d DetermineObjective) Run(state *State) RoutineResult {
-
 	if state.Ship.Nav.Status == "IN_TRANSIT" && state.Ship.Nav.Route.Arrival.After(time.Now()) {
 		state.Log("We are currently going somewhere")
 		arrivalTime := state.Ship.Nav.Route.Arrival
 		return RoutineResult{
 			WaitUntil: &arrivalTime,
+		}
+	}
+
+	if state.Ship.Registration.Role == "COMMAND" && state.Contract == nil {
+		state.Log("Command ship can go exploring")
+		return RoutineResult{
+			SetRoutine: Explore{},
 		}
 	}
 

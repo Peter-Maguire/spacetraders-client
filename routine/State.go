@@ -15,10 +15,11 @@ type State struct {
 
 	EventBus chan OrchestratorEvent
 
-	AsleepUntil          *time.Time
-	CurrentRoutine       Routine
-	ForceRoutine         Routine
-	LastVisitedWaypoints []entity.Waypoint
+	AsleepUntil    *time.Time
+	CurrentRoutine Routine
+	ForceRoutine   Routine
+
+	WaitingForHttp bool
 }
 
 type OrchestratorEvent struct {

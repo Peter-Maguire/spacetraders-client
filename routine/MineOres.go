@@ -11,11 +11,14 @@ type MineOres struct {
 }
 
 func (m MineOres) Run(state *State) RoutineResult {
+	state.WaitingForHttp = true
 	_ = state.Ship.EnsureNavState(entity.NavOrbit)
+	state.WaitingForHttp = false
 
 	var result *entity.ExtractionResult
 	var err *http.HttpError
 
+	state.WaitingForHttp = true
 	if state.Survey != nil {
 		if state.Survey.Expiration.Before(time.Now()) {
 			state.Log("Survey has expired")
@@ -27,6 +30,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 	} else {
 		result, err = state.Ship.Extract()
 	}
+	state.WaitingForHttp = false
 
 	if err != nil {
 		switch err.Code {
@@ -46,7 +50,8 @@ func (m MineOres) Run(state *State) RoutineResult {
 				SetRoutine: GoToAsteroidField{},
 			}
 		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
-			state.Log("Something went wrong with the survey")
+			state.Log("Something went wrong with the survey " + err.Error())
+			state.FireEvent("surveyExhausted", state.Survey)
 			state.Survey = nil
 			return RoutineResult{}
 		}

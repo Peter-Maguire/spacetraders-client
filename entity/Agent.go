@@ -1,6 +1,9 @@
 package entity
 
-import "spacetraders/http"
+import (
+	"fmt"
+	"spacetraders/http"
+)
 
 type Agent struct {
 	AccountId    string   `json:"accountId"`
@@ -9,12 +12,20 @@ type Agent struct {
 	Credits      int      `json:"credits"`
 }
 
+func GetAgent() (*Agent, *http.HttpError) {
+	return http.Request[Agent]("GET", "my/agent", nil)
+}
+
 func (a *Agent) Ships() (*[]Ship, error) {
-	return http.Request[[]Ship]("GET", "my/ships?limit=20", nil)
+	return http.PaginatedRequest[Ship]("my/ships", 1, 0)
 }
 
 func (a *Agent) Contracts() (*[]Contract, error) {
 	return http.Request[[]Contract]("GET", "my/contracts", nil)
+}
+
+func (a *Agent) Systems(page int) (*[]System, error) {
+	return http.Request[[]System]("GET", fmt.Sprintf("systems?total=20&page=%d", page), nil)
 }
 
 func (a *Agent) BuyShip(shipyard Waypoint, shipType string) (*ShipPurchaseResult, *http.HttpError) {

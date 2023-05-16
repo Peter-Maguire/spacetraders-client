@@ -8,24 +8,32 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
+	"strings"
+	"sync"
 	"time"
 )
 
 type IncomingResponse struct {
 	Response *http.Response
+	Data     []byte
 	Error    error
 }
 
 type OutgoingRequest struct {
-	Req           *http.Request
-	ReturnChannel chan IncomingResponse
+	Req            *http.Request
+	ReturnChannels []chan IncomingResponse
+	Mutex          sync.Mutex
+	Priority       int
 }
 
 var cache = ttlcache.New[string, http.Response](
 	ttlcache.WithTTL[string, http.Response](30 * time.Minute),
 )
 
-var requestBuffer = make([]*OutgoingRequest, 0)
+var RequestBuffer = make([]*OutgoingRequest, 0)
+
+var RBufferLock sync.Mutex
 
 var Waiting = 0
 
@@ -33,82 +41,134 @@ var IsRunningRequests = false
 
 var token = fmt.Sprintf("Bearer %s", os.Getenv("TOKEN"))
 
-func Request[T any](method string, path string, body any) (*T, *HttpError) {
-	httpResponse := getCached(method, path)
-	if httpResponse == nil {
-		// We can't set this to bytes.Buffer type because net/http assumes data of that type will not be nil
-		var buf io.Reader = nil
-		if body != nil {
-			data, err := json.Marshal(body)
-			//fmt.Println(string(data))
-			if err != nil {
-				return nil, InternalError(err)
-			}
-			buf = bytes.NewBuffer(data)
-		}
-		req, err := http.NewRequest(method, fmt.Sprintf("https://api.spacetraders.io/v2/%s", path), buf)
+func makeRequest[T any](method string, path string, body any) (*HttpResponse[T], *HttpError) {
+	// We can't set this to bytes.Buffer type because net/http assumes data of that type will not be nil
+	var buf io.Reader = nil
+	if body != nil {
+		data, err := json.Marshal(body)
+		//fmt.Println(string(data))
 		if err != nil {
 			return nil, InternalError(err)
 		}
-		if body != nil {
-			req.Header.Set("content-type", "application/json")
-		}
-		req.Header.Add("authorization", token)
-		returnChan := make(chan IncomingResponse)
-		Waiting++
-		requestBuffer = append(requestBuffer, &OutgoingRequest{
-			Req:           req,
-			ReturnChannel: returnChan,
-		})
-		if !IsRunningRequests {
-			requestLoop()
-		}
-		resp := <-returnChan
-		Waiting--
-		if resp.Error != nil {
-			return nil, InternalError(resp.Error)
-		}
-		//cache.Set(path, *resp.Response, time.Minute)
-		httpResponse = resp.Response
+		buf = bytes.NewBuffer(data)
 	}
-	data, err := io.ReadAll(httpResponse.Body)
-	//fmt.Println(string(data))
+	req, err := http.NewRequest(method, fmt.Sprintf("https://api.spacetraders.io/v2/%s", path), buf)
 	if err != nil {
 		return nil, InternalError(err)
 	}
-	output := &HttpResponse[T]{}
-	err = json.Unmarshal(data, output)
-	if output.Error != nil {
-		return output.Data, output.Error
+	if body != nil {
+		req.Header.Set("content-type", "application/json")
 	}
-	if err != nil {
-		return output.Data, InternalError(err)
-	}
-	return output.Data, nil
-}
+	req.Header.Add("authorization", token)
+	returnChan := make(chan IncomingResponse)
 
-func getCached(method string, path string) *http.Response {
+	usingExistingRequest := false
+
 	if method == "GET" {
-		cachedItem := cache.Get(path)
-		if cachedItem != nil && !cachedItem.IsExpired() {
-			cacheValue := cachedItem.Value()
-			return &cacheValue
+		RBufferLock.Lock()
+		for _, bufferedRequest := range RequestBuffer {
+			if bufferedRequest.Req.Method == "GET" && bufferedRequest.Req.URL.Path == "/v2/"+path {
+				bufferedRequest.Mutex.Lock()
+				bufferedRequest.ReturnChannels = append(bufferedRequest.ReturnChannels, returnChan)
+				bufferedRequest.Mutex.Unlock()
+				fmt.Println("Found request to piggyback on")
+				bufferedRequest.Priority += 10
+				usingExistingRequest = true
+				break
+			}
+		}
+		RBufferLock.Unlock()
+	}
+	Waiting++
+	if !usingExistingRequest {
+		RBufferLock.Lock()
+		RequestBuffer = append(RequestBuffer, &OutgoingRequest{
+			Req:            req,
+			ReturnChannels: []chan IncomingResponse{returnChan},
+			Priority:       getRequestPriority(path),
+		})
+		RBufferLock.Unlock()
+		if !IsRunningRequests {
+			requestLoop()
 		}
 	}
-	return nil
+	resp := <-returnChan
+	Waiting--
+	if err != nil {
+		return nil, InternalError(err)
+	}
+	if resp.Error != nil {
+		return nil, InternalError(resp.Error)
+	}
+	output := &HttpResponse[T]{}
+	err = json.Unmarshal(resp.Data, output)
+	if output.Error != nil {
+		return output, output.Error
+	}
+	if err != nil {
+		return output, InternalError(err)
+	}
+	return output, nil
+}
+
+func PaginatedRequest[T any](path string, startPage int, maxPages int) (*[]T, *HttpError) {
+	var currentPage = startPage
+	output := make([]T, 0)
+	for {
+		resp, err := makeRequest[[]T]("GET", fmt.Sprintf("%s?limit=20&page=%d", path, currentPage), nil)
+		if err != nil {
+			return &output, err
+		}
+		output = append(output, *resp.Data...)
+		if maxPages > 0 && resp.PaginatedMeta.Page >= maxPages {
+			// Reached max page count
+			return &output, nil
+		}
+
+		if resp.PaginatedMeta.Page+1 >= resp.PaginatedMeta.Total/resp.PaginatedMeta.Limit || len(*resp.Data) == 0 {
+			// Reached last page
+			return &output, nil
+		}
+		currentPage++
+	}
+
+}
+
+func Request[T any](method string, path string, body any) (*T, *HttpError) {
+	resp, err := makeRequest[T](method, path, body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+	return resp.Data, nil
 }
 
 func doRequests() bool {
-	if len(requestBuffer) == 0 {
+	if len(RequestBuffer) == 0 {
 		return false
 	}
-	or := requestBuffer[0]
-	requestBuffer = requestBuffer[1:]
+	RBufferLock.Lock()
+	or := RequestBuffer[0]
+	RequestBuffer = RequestBuffer[1:]
+	RBufferLock.Unlock()
 	res, err := http.DefaultClient.Do(or.Req)
-	or.ReturnChannel <- IncomingResponse{
-		Response: res,
-		Error:    err,
+
+	var data []byte
+
+	if err == nil {
+		data, err = io.ReadAll(res.Body)
 	}
+
+	for _, ch := range or.ReturnChannels {
+		ch <- IncomingResponse{
+			Response: res,
+			Error:    err,
+			Data:     data,
+		}
+	}
+
 	return true
 }
 
@@ -116,6 +176,9 @@ func requestLoop() {
 	IsRunningRequests = true
 	go func() {
 		for {
+			sort.Slice(RequestBuffer, func(i, j int) bool {
+				return RequestBuffer[i].Priority > RequestBuffer[j].Priority
+			})
 			if !doRequests() {
 				IsRunningRequests = false
 				break
@@ -123,6 +186,22 @@ func requestLoop() {
 			<-time.Tick(time.Second * 1)
 		}
 	}()
+}
+
+func getRequestPriority(path string) int {
+	// Navigate is top priority as it takes the longest
+	if strings.HasSuffix(path, "/navigate") {
+		return 15
+	}
+	// Survey should happen before mining
+	if strings.HasSuffix(path, "/survey") {
+		return 11
+	}
+	// Mining should happen before other things
+	if strings.HasSuffix(path, "/extract") {
+		return 10
+	}
+	return 1
 }
 
 func Init() {

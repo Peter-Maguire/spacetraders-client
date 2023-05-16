@@ -122,6 +122,36 @@ func (s *Ship) Survey() (*SurveyResult, *http.HttpError) {
 	return http.Request[SurveyResult]("POST", fmt.Sprintf("my/ships/%s/survey", s.Symbol), nil)
 }
 
+func (s *Ship) Jump(system string) (*ShipJumpResult, error) {
+	jumpResult, err := http.Request[ShipJumpResult]("POST", fmt.Sprintf("my/ships/%s/jump", s.Symbol), map[string]string{
+		"systemSymbol": system,
+	})
+	if err == nil {
+		s.Nav = jumpResult.Nav
+		return jumpResult, nil
+	}
+	return jumpResult, err
+}
+
+func (s *Ship) Warp(system string) (*ShipWarpResult, *http.HttpError) {
+	warpResult, err := http.Request[ShipWarpResult]("POST", fmt.Sprintf("my/ships/%s/warp", s.Symbol), map[string]string{
+		"systemSymbol": system,
+	})
+	if err == nil {
+		s.Fuel = warpResult.Fuel
+		s.Nav = warpResult.Nav
+	}
+	return warpResult, err
+}
+
+func (s *Ship) Chart() (*ShipChartResult, *http.HttpError) {
+	return http.Request[ShipChartResult]("POST", fmt.Sprintf("my/ships/%s/chart", s.Symbol), nil)
+}
+
+func (s *Ship) ScanWaypoints() (*ShipScanWaypointsResult, *http.HttpError) {
+	return http.Request[ShipScanWaypointsResult]("POST", fmt.Sprintf("my/ships/%s/scan/waypoints", s.Symbol), nil)
+}
+
 type ShipNav struct {
 	SystemSymbol   string   `json:"systemSymbol"`
 	WaypointSymbol Waypoint `json:"waypointSymbol"`

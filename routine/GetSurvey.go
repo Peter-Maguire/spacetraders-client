@@ -46,14 +46,19 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 		database.StoreSurvey(state.Ship.Nav.WaypointSymbol, survey)
 	}
 
-	bestSurvey := findBestSurvey(surveyResult.Surveys, state.Contract.Terms.Deliver)
-
-	if bestSurvey != nil {
-		state.Survey = bestSurvey
-		state.Log(fmt.Sprintf("Good survey found: %s\n", bestSurvey.Signature))
+	if state.Contract == nil {
+		state.Survey = &surveyResult.Surveys[0]
 		state.FireEvent("goodSurveyFound", state.Survey)
 	} else {
-		state.Log("No survey available that satisfies our needs")
+		bestSurvey := findBestSurvey(surveyResult.Surveys, state.Contract.Terms.Deliver)
+
+		if bestSurvey != nil {
+			state.Survey = bestSurvey
+			state.Log(fmt.Sprintf("Good survey found: %s\n", bestSurvey.Signature))
+			state.FireEvent("goodSurveyFound", state.Survey)
+		} else {
+			state.Log("No survey available that satisfies our needs")
+		}
 	}
 
 	ui.MainLog(fmt.Sprintf("Waiting %d seconds\n", surveyResult.Cooldown.RemainingSeconds))
