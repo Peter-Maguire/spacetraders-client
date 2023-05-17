@@ -14,6 +14,7 @@ type Orchestrator struct {
     States       []*routine.State
     Agent        *entity.Agent
     Contract     *entity.Contract
+    Haulers      []*entity.Ship
     Channel      chan routine.OrchestratorEvent
     CreditTarget int
     ShipToBuy    string
@@ -62,6 +63,14 @@ func Init() *Orchestrator {
 
     ships, _ := orc.Agent.Ships()
 
+    for _, ship := range *ships {
+        if ship.Registration.Role == "HAULER" {
+            ui.MainLog(fmt.Sprintf("Hauler is %s", ship.Registration))
+            orc.Haulers = append(orc.Haulers, &ship)
+            break
+        }
+    }
+
     shipCount := len(*ships)
 
     ui.MainLog(fmt.Sprintf("We have %d ships", shipCount))
@@ -96,6 +105,7 @@ func Init() *Orchestrator {
             Agent:    agent,
             Contract: contract,
             Ship:     &shipPtr,
+            Haulers:  orc.Haulers,
             EventBus: orc.Channel,
         }
         orc.States[i] = &state
@@ -111,26 +121,26 @@ func (o *Orchestrator) runEvents() {
         switch event.Name {
         case "sellComplete":
             agent := event.Data.(*entity.Agent)
-            if agent.Credits >= o.CreditTarget && o.Shipyard != "" {
-                result, err := agent.BuyShip(o.Shipyard, o.ShipToBuy)
-                if err == nil && result != nil {
-                    ui.MainLog(fmt.Sprintln(result))
-                    state := routine.State{
-                        Contract: o.Contract,
-                        Ship:     result.Ship,
-                        EventBus: o.Channel,
-                    }
-                    ui.MainLog(fmt.Sprintln("New ship", result.Ship.Symbol))
-                    o.States = append(o.States, &state)
-                    go o.routineLoop(&state)
-                } else {
-                    if err.Data != nil && err.Data["creditsNeeded"] != nil {
-                        o.CreditTarget = int(err.Data["creditsNeeded"].(float64))
-                        ui.MainLog(fmt.Sprintln("Need ", o.CreditTarget))
-                    }
-                    ui.MainLog(fmt.Sprintln("Purchase error", err))
-                }
-            }
+            //if agent.Credits >= o.CreditTarget && o.Shipyard != "" {
+            //    result, err := agent.BuyShip(o.Shipyard, o.ShipToBuy)
+            //    if err == nil && result != nil {
+            //        ui.MainLog(fmt.Sprintln(result))
+            //        state := routine.State{
+            //            Contract: o.Contract,
+            //            Ship:     result.Ship,
+            //            EventBus: o.Channel,
+            //        }
+            //        ui.MainLog(fmt.Sprintln("New ship", result.Ship.Symbol))
+            //        o.States = append(o.States, &state)
+            //        go o.routineLoop(&state)
+            //    } else {
+            //        if err.Data != nil && err.Data["creditsNeeded"] != nil {
+            //            o.CreditTarget = int(err.Data["creditsNeeded"].(float64))
+            //            ui.MainLog(fmt.Sprintln("Need ", o.CreditTarget))
+            //        }
+            //        ui.MainLog(fmt.Sprintln("Purchase error", err))
+            //    }
+            //}
             ui.MainLog(fmt.Sprintf("Credits now: %d/%d\n", agent.Credits, o.CreditTarget))
         case "goodSurveyFound":
             ui.MainLog("Someone found a good survey\n")

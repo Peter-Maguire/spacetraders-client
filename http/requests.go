@@ -22,6 +22,7 @@ type IncomingResponse struct {
 
 type OutgoingRequest struct {
     Req            *http.Request
+    OriginalPath   string
     ReturnChannels []chan IncomingResponse
     Mutex          sync.Mutex
     Priority       int
@@ -67,7 +68,7 @@ func makeRequest[T any](method string, path string, body any) (*HttpResponse[T],
     if method == "GET" {
         RBufferLock.Lock()
         for _, bufferedRequest := range RequestBuffer {
-            if bufferedRequest.Req.Method == "GET" && bufferedRequest.Req.URL.Path == "/v2/"+path {
+            if bufferedRequest.Req.Method == "GET" && bufferedRequest.OriginalPath == path {
                 bufferedRequest.Mutex.Lock()
                 bufferedRequest.ReturnChannels = append(bufferedRequest.ReturnChannels, returnChan)
                 bufferedRequest.Mutex.Unlock()
@@ -86,6 +87,7 @@ func makeRequest[T any](method string, path string, body any) (*HttpResponse[T],
             Req:            req,
             ReturnChannels: []chan IncomingResponse{returnChan},
             Priority:       getRequestPriority(path),
+            OriginalPath:   path,
         })
         RBufferLock.Unlock()
         if !IsRunningRequests {
@@ -189,7 +191,10 @@ func requestLoop() {
 }
 
 func getRequestPriority(path string) int {
-    // Navigate is top priority as it takes the longest
+    // Navigation is top priority as it takes the longest
+    if strings.HasSuffix(path, "/jump") || strings.HasSuffix(path, "/warp") {
+        return 16
+    }
     if strings.HasSuffix(path, "/navigate") {
         return 15
     }
@@ -198,8 +203,12 @@ func getRequestPriority(path string) int {
         return 11
     }
     // Mining should happen before other things
-    if strings.HasSuffix(path, "/extract") {
+    if strings.HasSuffix(path, "/extract") || strings.HasSuffix(path, "/jettison") {
         return 10
+    }
+    // Selling has to have priority over transfers for haulers
+    if strings.HasSuffix(path, "/sell") || strings.HasSuffix(path, "/cargo") {
+        return 2
     }
     return 1
 }
