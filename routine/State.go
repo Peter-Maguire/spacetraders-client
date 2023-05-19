@@ -4,6 +4,7 @@ import (
     "fmt"
     "spacetraders/entity"
     "spacetraders/ui"
+    "sync"
     "time"
 )
 
@@ -13,13 +14,16 @@ type State struct {
     Survey   *entity.Survey
     Ship     *entity.Ship
 
-    Haulers []*entity.Ship
-
+    Haulers  []*entity.Ship
     EventBus chan OrchestratorEvent
 
     AsleepUntil    *time.Time
     CurrentRoutine Routine
     ForceRoutine   Routine
+
+    States *[]*State
+
+    StatesMutex *sync.Mutex
 
     WaitingForHttp bool
 }

@@ -11,6 +11,13 @@ type MineOres struct {
 }
 
 func (m MineOres) Run(state *State) RoutineResult {
+
+    if state.Ship.Cargo.Units == state.Ship.Cargo.Capacity {
+        return RoutineResult{
+            SetRoutine: FullWait{},
+        }
+    }
+
     state.WaitingForHttp = true
     _ = state.Ship.EnsureNavState(entity.NavOrbit)
     state.WaitingForHttp = false
@@ -43,18 +50,20 @@ func (m MineOres) Run(state *State) RoutineResult {
         case http.ErrCargoFull:
             hasJettisoned := false
             state.Log("Cargo is full")
-            for _, slot := range state.Ship.Cargo.Inventory {
-                if m.IsUseless(slot.Symbol) {
-                    state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))
-                    err = state.Ship.JettisonCargo(slot.Symbol, slot.Units)
-                    hasJettisoned = hasJettisoned || err == nil
-                }
-            }
+            //for _, slot := range state.Ship.Cargo.Inventory {
+            //    if m.IsUseless(slot.Symbol) {
+            //        state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))
+            //        err = state.Ship.JettisonCargo(slot.Symbol, slot.Units)
+            //        hasJettisoned = hasJettisoned || err == nil
+            //    }
+            //}
+            //return RoutineResult{WaitSeconds: 10}
             if hasJettisoned {
                 return RoutineResult{}
             }
             return RoutineResult{
-                SetRoutine: SellExcessInventory{MineOres{}},
+                WaitSeconds: 30,
+                //SetRoutine: SellExcessInventory{MineOres{}},
             }
         case http.ErrCannotExtractHere:
             state.Log("We're not at an asteroid field")
@@ -77,22 +86,14 @@ func (m MineOres) Run(state *State) RoutineResult {
 
     state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
 
-    if result.Cargo.Units >= result.Cargo.Capacity-5 {
-        if state.Contract == nil {
-            for _, slot := range result.Cargo.Inventory {
-                if m.IsUseless(slot.Symbol) {
-                    state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))
-                    _ = state.Ship.JettisonCargo(slot.Symbol, slot.Units)
-                }
-            }
-        } else {
-            state.Log("Inventory is near to or completely full, time to sell")
-            return RoutineResult{
-                SetRoutine: SellExcessInventory{GetSurvey{}},
-                WaitUntil:  &result.Cooldown.Expiration,
-            }
-        }
-    }
+    //if state.Contract == nil {
+    //    for _, slot := range result.Cargo.Inventory {
+    //        if m.IsUseless(slot.Symbol) {
+    //            state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))
+    //            err = state.Ship.JettisonCargo(slot.Symbol, slot.Units)
+    //        }
+    //    }
+    //}
 
     return RoutineResult{
         WaitUntil: &result.Cooldown.Expiration,

@@ -28,7 +28,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
     //    state.Log(err.Error())
     //}
     if f.startFromPage == 0 {
-        f.startFromPage = 90
+        f.startFromPage = 120
     }
     state.Log(fmt.Sprintf("Starting on page %d", f.startFromPage))
 

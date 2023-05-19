@@ -147,10 +147,11 @@ func Request[T any](method string, path string, body any) (*T, *HttpError) {
     return resp.Data, nil
 }
 
-func doRequests() bool {
+func doRequests() (bool, time.Duration) {
     if len(RequestBuffer) == 0 {
-        return false
+        return false, 0
     }
+    requestStart := time.Now()
     RBufferLock.Lock()
     or := RequestBuffer[0]
     RequestBuffer = RequestBuffer[1:]
@@ -171,7 +172,9 @@ func doRequests() bool {
         }
     }
 
-    return true
+    requestStop := time.Now()
+    requestTime := requestStop.Sub(requestStart)
+    return true, requestTime
 }
 
 func requestLoop() {
@@ -181,11 +184,12 @@ func requestLoop() {
             sort.Slice(RequestBuffer, func(i, j int) bool {
                 return RequestBuffer[i].Priority > RequestBuffer[j].Priority
             })
-            if !doRequests() {
+            requests, timing := doRequests()
+            if !requests {
                 IsRunningRequests = false
                 break
             }
-            <-time.Tick(time.Second * 1)
+            time.Sleep(time.Second - timing)
         }
     }()
 }

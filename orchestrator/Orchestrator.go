@@ -7,11 +7,14 @@ import (
     "spacetraders/entity"
     "spacetraders/routine"
     "spacetraders/ui"
+    "strings"
+    "sync"
     "time"
 )
 
 type Orchestrator struct {
     States       []*routine.State
+    StatesMutex  sync.Mutex
     Agent        *entity.Agent
     Contract     *entity.Contract
     Haulers      []*entity.Ship
@@ -22,6 +25,9 @@ type Orchestrator struct {
 }
 
 func Init() *Orchestrator {
+
+    shipFilter := os.Getenv("SHIP_FILTER")
+
     agent, err := entity.GetAgent()
 
     if err != nil {
@@ -41,7 +47,7 @@ func Init() *Orchestrator {
     }
 
     if contract == nil {
-        ui.MainLog("No current Contract")
+        ui.MainLog("No current Contract\n")
     }
 
     orc := Orchestrator{
@@ -55,7 +61,7 @@ func Init() *Orchestrator {
 
     for _, waypoint := range *waypoints {
         if waypoint.HasTrait("SHIPYARD") {
-            ui.MainLog(fmt.Sprintln("Found Shipyard at ", waypoint.Symbol))
+            ui.MainLog(fmt.Sprintln("Found Shipyard at ", waypoint.Symbol, "\n"))
             orc.Shipyard = waypoint.Symbol
             break
         }
@@ -65,9 +71,9 @@ func Init() *Orchestrator {
 
     for _, ship := range *ships {
         if ship.Registration.Role == "HAULER" {
-            ui.MainLog(fmt.Sprintf("Hauler is %s", ship.Registration))
-            orc.Haulers = append(orc.Haulers, &ship)
-            break
+            ui.MainLog(fmt.Sprintf("%s is HAULER\n", ship.Registration))
+            shipCopy := ship
+            orc.Haulers = append(orc.Haulers, &shipCopy)
         }
     }
 
@@ -75,12 +81,13 @@ func Init() *Orchestrator {
 
     ui.MainLog(fmt.Sprintf("We have %d ships", shipCount))
 
+    // TODO: this logic should be more nuanced
     if shipCount < 10 {
         orc.ShipToBuy = "SHIP_MINING_DRONE"
-    } else if shipCount > 30 {
+    } else if shipCount < 30 {
         orc.ShipToBuy = "SHIP_ORE_HOUND"
     } else {
-        orc.ShipToBuy = "SHIP_REFINING_FREIGHTER"
+        orc.ShipToBuy = "SHIP_LIGHT_HAULER"
     }
 
     shipyardStock, err := orc.Shipyard.GetShipyard()
@@ -98,20 +105,28 @@ func Init() *Orchestrator {
 
     orc.States = make([]*routine.State, len(*ships))
 
-    ui.MainLog(fmt.Sprint("Starting Routines"))
+    ui.MainLog(fmt.Sprint("Starting Routines\n"))
+    //orc.StatesMutex.Lock()
     for i, ship := range *ships {
+        if shipFilter != "" && !strings.Contains(shipFilter, ship.Symbol) {
+            ui.MainLog(fmt.Sprintf("Skipping %s because it's not in the ship filter\n", ship.Symbol))
+            continue
+        }
         shipPtr := ship
         state := routine.State{
-            Agent:    agent,
-            Contract: contract,
-            Ship:     &shipPtr,
-            Haulers:  orc.Haulers,
-            EventBus: orc.Channel,
+            Agent:       agent,
+            Contract:    contract,
+            Ship:        &shipPtr,
+            States:      &orc.States,
+            StatesMutex: &orc.StatesMutex,
+            Haulers:     orc.Haulers,
+            EventBus:    orc.Channel,
         }
         orc.States[i] = &state
 
         go orc.routineLoop(&state)
     }
+    //orc.StatesMutex.Unlock()
     return &orc
 }
 
@@ -120,42 +135,25 @@ func (o *Orchestrator) runEvents() {
         event := <-o.Channel
         switch event.Name {
         case "sellComplete":
-            agent := event.Data.(*entity.Agent)
-            //if agent.Credits >= o.CreditTarget && o.Shipyard != "" {
-            //    result, err := agent.BuyShip(o.Shipyard, o.ShipToBuy)
-            //    if err == nil && result != nil {
-            //        ui.MainLog(fmt.Sprintln(result))
-            //        state := routine.State{
-            //            Contract: o.Contract,
-            //            Ship:     result.Ship,
-            //            EventBus: o.Channel,
-            //        }
-            //        ui.MainLog(fmt.Sprintln("New ship", result.Ship.Symbol))
-            //        o.States = append(o.States, &state)
-            //        go o.routineLoop(&state)
-            //    } else {
-            //        if err.Data != nil && err.Data["creditsNeeded"] != nil {
-            //            o.CreditTarget = int(err.Data["creditsNeeded"].(float64))
-            //            ui.MainLog(fmt.Sprintln("Need ", o.CreditTarget))
-            //        }
-            //        ui.MainLog(fmt.Sprintln("Purchase error", err))
-            //    }
-            //}
-            ui.MainLog(fmt.Sprintf("Credits now: %d/%d\n", agent.Credits, o.CreditTarget))
+            o.onSellComplete(event.Data.(*entity.Agent))
         case "goodSurveyFound":
             ui.MainLog("Someone found a good survey\n")
+            //o.StatesMutex.Lock()
             for _, state := range o.States {
                 if state.Ship.IsMiningShip() && state.Survey == nil {
                     state.Survey = event.Data.(*entity.Survey)
                 }
             }
+            //o.StatesMutex.Unlock()
         case "surveyExhausted":
             ui.MainLog("Survey bad\n")
+            //o.StatesMutex.Lock()
             for _, state := range o.States {
                 if state.Survey == event.Data.(*entity.Survey) {
                     state.Survey = nil
                 }
             }
+            //o.StatesMutex.Unlock()
         case "contractComplete":
             ui.MainLog("Contract completed")
             contracts, err := o.Agent.Contracts()
@@ -171,9 +169,11 @@ func (o *Orchestrator) runEvents() {
                         os.Exit(1)
                     } else {
                         ui.MainLog("Accepted new Contract " + c.Id)
+                        //o.StatesMutex.Lock()
                         for _, state := range o.States {
                             state.Contract = &c
                         }
+                        //o.StatesMutex.Unlock()
                     }
                 }
             }
@@ -187,7 +187,7 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
         routineResult := state.CurrentRoutine.Run(state)
         state.WaitingForHttp = false
         if routineResult.WaitSeconds > 0 {
-            state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
+            //state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
             sleepTime := time.Duration(routineResult.WaitSeconds) * time.Second
             asleepUntil := time.Now().Add(sleepTime)
             state.AsleepUntil = &asleepUntil
@@ -196,7 +196,7 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
         if routineResult.WaitUntil != nil {
             waitTime := routineResult.WaitUntil.Sub(time.Now())
-            state.Log(fmt.Sprintf("Waiting until %s (%.f seconds)", routineResult.WaitUntil, waitTime.Seconds()))
+            //state.Log(fmt.Sprintf("Waiting until %s (%.f seconds)", routineResult.WaitUntil, waitTime.Seconds()))
             state.AsleepUntil = routineResult.WaitUntil
             time.Sleep(waitTime)
         }

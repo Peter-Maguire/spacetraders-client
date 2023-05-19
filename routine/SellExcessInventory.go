@@ -2,7 +2,6 @@ package routine
 
 import (
     "fmt"
-    "math"
     "spacetraders/entity"
 )
 
@@ -12,23 +11,6 @@ type SellExcessInventory struct {
 
 func (s SellExcessInventory) Run(state *State) RoutineResult {
     inventory := state.Ship.Cargo.Inventory
-
-    minInventoryAmount := 1000
-
-    for _, slot := range inventory {
-        if slot.Symbol != "ANTIMATTER" && slot.Units < minInventoryAmount {
-            minInventoryAmount = slot.Units
-        }
-    }
-
-    // TransferToHauler ignores items less than 10 in the inventory
-    minInventoryAmount = int(math.Max(float64(minInventoryAmount), 10))
-
-    for _, hauler := range state.Haulers {
-        if hauler.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol && state.Ship.Symbol != hauler.Symbol && hauler.Cargo.Units+minInventoryAmount < hauler.Cargo.Capacity {
-            return RoutineResult{SetRoutine: TransferToHauler{s.next, hauler}}
-        }
-    }
 
     state.WaitingForHttp = true
     market, err := state.Ship.Nav.WaypointSymbol.GetMarket()

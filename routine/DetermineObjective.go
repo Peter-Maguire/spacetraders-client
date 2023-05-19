@@ -1,6 +1,8 @@
 package routine
 
-import "time"
+import (
+    "time"
+)
 
 type DetermineObjective struct {
 }
@@ -28,14 +30,22 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
     }
 
     if state.Ship.IsMiningShip() {
-        if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity-5 {
+        if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
             state.Log("We're full up here")
             return RoutineResult{
-                SetRoutine: SellExcessInventory{MineOres{}},
+                SetRoutine: FullWait{},
+                //SetRoutine: SellExcessInventory{MineOres{}},
             }
         }
-        return RoutineResult{
-            SetRoutine: GoToAsteroidField{GetSurvey{}},
+
+        if state.Contract != nil {
+            return RoutineResult{
+                SetRoutine: GoToAsteroidField{GetSurvey{}},
+            }
+        } else {
+            return RoutineResult{
+                SetRoutine: GoToAsteroidField{MineOres{}},
+            }
         }
     }
 
