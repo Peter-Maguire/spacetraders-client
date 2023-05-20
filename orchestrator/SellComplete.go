@@ -2,13 +2,24 @@ package orchestrator
 
 import (
     "fmt"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
     "spacetraders/entity"
     "spacetraders/routine"
     "spacetraders/ui"
 )
 
+var (
+    numCredits = promauto.NewGauge(prometheus.GaugeOpts{
+        Name: "st_agent_credits",
+        Help: "Number of credits",
+    })
+)
+
 func (o *Orchestrator) onSellComplete(agent *entity.Agent) {
     ui.MainLog(fmt.Sprintf("Credits now: %d\n", agent.Credits))
+
+    numCredits.Set(float64(agent.Credits))
 
     // We have 35 or more ships, we're at the limit of how many ships are useful
     if len(o.States) >= 35 {

@@ -1,7 +1,8 @@
 package main
 
 import (
-    "fmt"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
     "os"
     "spacetraders/database"
     "spacetraders/http"
@@ -13,6 +14,25 @@ import (
 var enableUi = false
 
 var orc *orchestrator.Orchestrator
+
+var (
+    httpBacklog = promauto.NewGauge(prometheus.GaugeOpts{
+        Name: "st_http_backlog",
+        Help: "Backlog of HTTP Requests",
+    })
+    routineWaiting = promauto.NewGauge(prometheus.GaugeOpts{
+        Name: "st_routine_num_waiting",
+        Help: "Number of routines waiting for HTTP requests",
+    })
+    routineStopped = promauto.NewGauge(prometheus.GaugeOpts{
+        Name: "st_routine_num_stopped",
+        Help: "Number of routines stopped",
+    })
+    routineSleeping = promauto.NewGauge(prometheus.GaugeOpts{
+        Name: "st_routine_num_sleeping",
+        Help: "Number of routines sleeping",
+    })
+)
 
 func main() {
     enableUi = os.Getenv("DISABLE_UI") != "1"
@@ -33,38 +53,57 @@ func updateShipStates() {
     ticker := time.NewTicker(1 * time.Second)
     for {
         <-ticker.C
-        output := ""
-        //orc.StatesMutex.Lock()
-        for _, state := range orc.States {
+        shipData := make([]ui.ShipData, len(orc.States))
+        numWaiting := 0
+        numSleeping := 0
+        numStopped := 0
+        for i, state := range orc.States {
             if state != nil && state.Ship != nil {
-                output += state.Ship.Symbol
-                if state.CurrentRoutine != nil {
-                    output += fmt.Sprintf(" (%s)", state.CurrentRoutine.Name())
-                } else {
-                    output += " Stopped"
+                shipData[i] = ui.ShipData{
+                    Stopped:        state.CurrentRoutine == nil,
+                    Routine:        state.CurrentRoutine.Name(),
+                    WaitingForHttp: state.WaitingForHttp,
+                    AsleepUntil:    state.AsleepUntil,
+                    ShipName:       state.Ship.Symbol,
+                    ShipType:       state.Ship.Registration.Role,
+                }
+                if state.CurrentRoutine == nil {
+                    numStopped++
                 }
                 if state.WaitingForHttp {
-                    output += " Waiting for HTTP"
+                    numWaiting++
                 }
                 if state.AsleepUntil != nil {
-                    output += fmt.Sprintf(" Sleeping for %.f seconds", state.AsleepUntil.Sub(time.Now()).Seconds())
+                    numSleeping++
                 }
-                output += "\n"
             }
         }
-        //orc.StatesMutex.Unlock()
 
-        httpOutput := fmt.Sprintf("Request Backlog: %d (%d)", len(http.RequestBuffer), http.Waiting)
-        if http.IsRunningRequests {
-            httpOutput += " (Active)"
+        httpData := ui.HttpData{
+            Active: http.IsRunningRequests,
         }
-        httpOutput += "\n"
+
+        numBacklog := 0
         http.RBufferLock.Lock()
+        httpList := make([]ui.HttpRequestList, len(http.RequestBuffer))
         for i, request := range http.RequestBuffer {
-            httpOutput += fmt.Sprintf("%d x%d [%d] %s %s %s\n", i+1, len(request.ReturnChannels), request.Priority, request.Req.Method, request.Req.URL.Path, request.Req.URL.Query().Encode())
+            numBacklog++
+            httpList[i] = ui.HttpRequestList{
+                Receivers: len(request.ReturnChannels),
+                Priority:  request.Priority,
+                Method:    request.Req.Method,
+                Path:      request.OriginalPath,
+            }
         }
         http.RBufferLock.Unlock()
 
-        ui.WriteShipState(output, httpOutput)
+        httpData.Requests = httpList
+
+        routineWaiting.Set(float64(numWaiting))
+        routineSleeping.Set(float64(numSleeping))
+        routineStopped.Set(float64(numStopped))
+        httpBacklog.Set(float64(numBacklog))
+
+        ui.WriteShipState(shipData, httpData)
     }
 }

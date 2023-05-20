@@ -1,7 +1,7 @@
 body {
-    background: black;
-    color: white;
-    font-family: monospace;
+    background: #1f1f1f;
+    color: #efefef;
+    font-family: sans-serif;
 }
 
 #container {
@@ -15,10 +15,24 @@ body {
     flex-direction: row;
 }
 
-#container div {
+#container .inner {
     width: 30%;
     border-left: 1px solid white;
     border-right: 1px solid white;
     padding: 5px;
 }
 
+#shipState {
+    display: flex;
+    flex-wrap: wrap;
+    overflow-y: scroll;
+
+}
+
+.ship {
+    border: none;
+    background: #2a2a2a;
+    padding: 2px;
+    font-size: 14px;
+    flex-basis: 30%;
+}

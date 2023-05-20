@@ -8,15 +8,21 @@
 </head>
 <body>
     <div id="container">
-        <div id="log">
+        <div id="log" class="inner">
 
         </div>
-        <div id="httpCalls">
+        <div id="httpCalls" class="inner">
 
         </div>
-        <div id="shipState">
+        <div id="shipState" class="inner">
 
         </div>
     </div>
+    <template id="shipTemplate">
+        <h4 class="name"></h4>
+        <p class="routine"></p>
+        <p class="state"></p>
+    </template>
+    <template id="httpReqTemplate"></template>
 </body>
 </html>

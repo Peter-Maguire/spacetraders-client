@@ -50,6 +50,7 @@ func (h Haul) Run(state *State) RoutineResult {
     //state.Log(fmt.Sprintf("Most full: %d/%d / Least full: %d/%d", ships[0].Cargo.Capacity-ships[0].Cargo.Units, ships[0].Cargo.Capacity, ships[len(ships)-1].Cargo.Capacity-ships[len(ships)-1].Cargo.Units, ships[len(ships)-1].Cargo.Capacity))
 
     state.Log(fmt.Sprintf("Current cargo count: %d. #%d of %d haulers. We're in charge of %d ships", cargoCount, haulerNum, haulerCount, len(ships)))
+    full := false
     for _, ship := range ships {
         if ship.Registration.Role != "EXCAVATOR" {
             continue
@@ -61,7 +62,6 @@ func (h Haul) Run(state *State) RoutineResult {
 
         state.Log(fmt.Sprintf("Biggest %d / Smallest %d", ship.Cargo.Inventory[0].Units, ship.Cargo.Inventory[len(ship.Cargo.Inventory)-1].Units))
 
-        shouldStop := false
         for _, slot := range ship.Cargo.Inventory {
             if slot.Symbol == "ANTIMATTER" {
                 continue
@@ -69,7 +69,7 @@ func (h Haul) Run(state *State) RoutineResult {
             remainingCapacity := state.Ship.Cargo.Capacity - cargoCount
             if remainingCapacity <= 0 {
                 state.Log("Cargo is now full")
-                shouldStop = true
+                full = true
                 break
             }
             transferAmount := int(math.Min(float64(slot.Units), float64(remainingCapacity)))
@@ -79,7 +79,7 @@ func (h Haul) Run(state *State) RoutineResult {
             state.WaitingForHttp = false
             if err != nil {
                 state.Log(err.Error())
-                shouldStop = true
+                full = true
             } else {
                 exists := false
                 for i, sellable := range sellables {
@@ -99,22 +99,24 @@ func (h Haul) Run(state *State) RoutineResult {
             }
             break
         }
-        if shouldStop {
+        if full {
             break
         }
     }
     //state.StatesMutex.Unlock()
 
-    state.Log("Time to start selling")
-    for _, slot := range sellables {
-        state.WaitingForHttp = true
-        sellResult, err := state.Ship.SellCargo(slot.Symbol, slot.Units)
-        state.WaitingForHttp = false
-        if err == nil {
-            state.Agent = &sellResult.Agent
-            state.Log(fmt.Sprintf("Sold %dx %s for %d credits", slot.Units, slot.Symbol, sellResult.Transaction.TotalPrice))
-        } else {
-            state.Log(err.Error())
+    if full {
+        state.Log("Time to start selling")
+        for _, slot := range sellables {
+            state.WaitingForHttp = true
+            sellResult, err := state.Ship.SellCargo(slot.Symbol, slot.Units)
+            state.WaitingForHttp = false
+            if err == nil {
+                state.Agent = &sellResult.Agent
+                state.Log(fmt.Sprintf("Sold %dx %s for %d credits", slot.Units, slot.Symbol, sellResult.Transaction.TotalPrice))
+            } else {
+                state.Log(err.Error())
+            }
         }
     }
 

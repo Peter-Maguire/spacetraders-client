@@ -2,9 +2,18 @@ package routine
 
 import (
     "fmt"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
     "spacetraders/entity"
     "spacetraders/http"
     "time"
+)
+
+var (
+    mined = promauto.NewCounterVec(prometheus.CounterOpts{
+        Name: "st_amount_mined",
+        Help: "Amount Mined",
+    }, []string{"symbol"})
 )
 
 type MineOres struct {
@@ -83,6 +92,8 @@ func (m MineOres) Run(state *State) RoutineResult {
             WaitSeconds: 10,
         }
     }
+
+    mined.WithLabelValues(result.Extraction.Yield.Symbol).Add(float64(result.Extraction.Yield.Units))
 
     state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
 

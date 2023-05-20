@@ -47,6 +47,21 @@ func Init() *Orchestrator {
     }
 
     if contract == nil {
+        for _, c := range *contracts {
+            if !c.Fulfilled {
+                ui.MainLog("Accepted contract\n")
+                err = c.Accept()
+                if err == nil {
+                    contract = &c
+                } else {
+                    ui.MainLog(err.Error())
+                }
+                break
+            }
+        }
+    }
+
+    if contract == nil {
         ui.MainLog("No current Contract\n")
     }
 

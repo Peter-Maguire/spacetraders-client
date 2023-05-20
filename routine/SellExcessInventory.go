@@ -2,7 +2,20 @@ package routine
 
 import (
     "fmt"
+    "github.com/prometheus/client_golang/prometheus"
+    "github.com/prometheus/client_golang/prometheus/promauto"
     "spacetraders/entity"
+)
+
+var (
+    soldFor = promauto.NewGaugeVec(prometheus.GaugeOpts{
+        Name: "st_sold_for",
+        Help: "Sold For",
+    }, []string{"symbol"})
+    totalSold = promauto.NewCounterVec(prometheus.CounterOpts{
+        Name: "st_total_sold",
+        Help: "Total Sold",
+    }, []string{"symbol"})
 )
 
 type SellExcessInventory struct {
@@ -73,6 +86,8 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
             state.Log("Failed to sell:" + err.Error())
         } else {
             state.Agent = &sellResult.Agent
+            soldFor.WithLabelValues(sellResult.Transaction.TradeSymbol).Set(float64(sellResult.Transaction.PricePerUnit))
+            totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol).Add(float64(sellResult.Transaction.Units))
         }
 
     }

@@ -9,8 +9,8 @@ import (
 )
 
 type State struct {
-    Agent    *entity.Agent
-    Contract *entity.Contract
+    Agent    *entity.Agent    `json:"-"`
+    Contract *entity.Contract `json:"-"`
     Survey   *entity.Survey
     Ship     *entity.Ship
 
