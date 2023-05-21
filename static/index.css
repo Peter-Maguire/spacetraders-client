@@ -2,31 +2,54 @@ body {
     background: #1f1f1f;
     color: #efefef;
     font-family: sans-serif;
+    margin: 0;
 }
+
+#lower {
+    border-top: 1px solid white;
+    position: absolute;
+    width: 100%;
+    height: 10%;
+    bottom: 0;
+    left: 0;
+    background: black;
+    color: white;
+    font-family: monospace;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
+
+#log {
+    overflow-y: scroll;
+    position: relative;
+    flex-grow: 1;
+    border-left: 1px solid white;
+    height: 100%;
+}
+
+#httpCalls {
+    overflow-y: scroll;
+    position: relative;
+    flex-grow: 1;
+    height: 100%;
+}
+
 
 #container {
     position: absolute;
     width: 100%;
-    height: 100%;
+    height: 90%;
     top: 0;
     left: 0;
-    display: flex;
+
     flex-wrap: nowrap;
     flex-direction: row;
 }
 
-#container .inner {
-    width: 30%;
-    border-left: 1px solid white;
-    border-right: 1px solid white;
-    padding: 5px;
-}
-
 #shipState {
+    width: 100%;
     display: flex;
-    flex-wrap: wrap;
-    overflow-y: scroll;
-
 }
 
 .ship {

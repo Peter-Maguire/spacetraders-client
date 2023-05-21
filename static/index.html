@@ -5,22 +5,32 @@
     <title>Spacetraders</title>
     <script src="./index.js"></script>
     <link rel="stylesheet" href="index.css"/>
+    <link rel="preload" as="image" href="img/ships/COMMAND.png">
+    <link rel="preload" as="image" href="img/ships/HAULER.png">
+    <link rel="preload" as="image" href="img/ships/EXCAVATOR.png">
 </head>
 <body>
-    <div id="container">
-        <div id="log" class="inner">
+
+    <div id="lower">
+        <div id="log">
 
         </div>
         <div id="httpCalls" class="inner">
 
         </div>
+    </div>
+
+    <div id="container">
         <div id="shipState" class="inner">
 
         </div>
     </div>
     <template id="shipTemplate">
-        <h4 class="name"></h4>
-        <p class="routine"></p>
+        <div>
+            <img class="icon"/>
+            <h4 class="name"></h4>
+            <p class="routine"></p>
+        </div>
         <p class="state"></p>
     </template>
     <template id="httpReqTemplate"></template>

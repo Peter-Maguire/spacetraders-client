@@ -66,7 +66,6 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
             return RoutineResult{
                 SetRoutine: NavigateTo{waypoint: contractTarget.DestinationSymbol, next: DeliverContractItem{item: targetItem, returnTo: state.Ship.Nav.WaypointSymbol}},
             }
-
         }
     }
 

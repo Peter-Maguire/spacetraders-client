@@ -30,6 +30,7 @@ function updateState({ship, http}){
         container.classList.add("ship", sh.name);
         clone.querySelector(".name").innerText = sh.name;
         clone.querySelector(".routine").innerText = sh.routine;
+        // clone.querySelector(".icon").src = `img/ships/${sh.type}.png`;
         if(sh.waitingForHttp){
             clone.querySelector(".state").innerText = "Waiting for HTTP";
         }
