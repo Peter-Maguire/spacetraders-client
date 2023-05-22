@@ -30,13 +30,13 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.IsMiningShip() {
-		//if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
-		//	state.Log("We're full up here")
-		//	return RoutineResult{
-		//		SetRoutine: FullWait{},
-		//		//SetRoutine: SellExcessInventory{MineOres{}},
-		//	}
-		//}
+		if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
+			state.Log("We're full up here")
+			return RoutineResult{
+				SetRoutine: FullWait{},
+				//SetRoutine: SellExcessInventory{MineOres{}},
+			}
+		}
 
 		if state.Contract != nil {
 			return RoutineResult{

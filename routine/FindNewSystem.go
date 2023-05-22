@@ -55,9 +55,10 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 						SetRoutine: Explore{},
 					}
 				}
-			} else if state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 2 {
+			}
+			if state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 2 {
 				state.Log(fmt.Sprintf("Warping to %s", system.Symbol))
-				warpResult, err := state.Ship.Warp(system.Symbol)
+				warpResult, err := state.Ship.Warp(system.Waypoints[0].Symbol)
 				if err != nil {
 					state.Log("Error warping" + err.Error())
 					fmt.Println(err)

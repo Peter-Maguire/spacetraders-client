@@ -87,7 +87,7 @@ func Init() *Orchestrator {
 		Agent:        agent,
 		Contract:     contract,
 		Channel:      make(chan routine.OrchestratorEvent),
-		CreditTarget: 300000,
+		CreditTarget: 80000,
 	}
 
 	waypoints, _ := agent.Headquarters.GetSystemWaypoints()
@@ -117,9 +117,9 @@ func Init() *Orchestrator {
 
 	// TODO: this logic should be more nuanced
 	if shipCount < 10 {
-		orc.ShipToBuy = "SHIP_MINING_DRONE"
-	} else if shipCount < 30 {
 		orc.ShipToBuy = "SHIP_ORE_HOUND"
+	} else if shipCount < 30 {
+		orc.ShipToBuy = "SHIP_MINING_DRONE"
 	} else {
 		orc.ShipToBuy = "SHIP_LIGHT_HAULER"
 	}
