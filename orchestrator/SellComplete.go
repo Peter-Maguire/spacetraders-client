@@ -22,9 +22,12 @@ func (o *Orchestrator) onSellComplete(agent *entity.Agent) {
 		result, err := agent.BuyShip(o.Shipyard, o.ShipToBuy)
 		if err == nil && result != nil {
 			state := routine.State{
+				Agent:    agent,
 				Contract: o.Contract,
 				Ship:     result.Ship,
+				Haulers:  o.Haulers,
 				EventBus: o.Channel,
+				States:   &o.States,
 			}
 			ui.MainLog(fmt.Sprintln("New ship", result.Ship.Symbol))
 			o.States = append(o.States, &state)
