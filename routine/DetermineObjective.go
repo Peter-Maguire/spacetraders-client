@@ -17,6 +17,9 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == "COMMAND" && state.Contract == nil {
+		return RoutineResult{
+			SetRoutine: NegotiateContract{},
+		}
 		state.Log("Command ship can go exploring")
 		return RoutineResult{
 			SetRoutine: Explore{},
