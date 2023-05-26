@@ -21,7 +21,7 @@ func (g GoToJumpGate) Run(state *State) RoutineResult {
         }
     }
     state.Log("Unable to find jump-gate")
-    return RoutineResult{Stop: true}
+    return RoutineResult{Stop: true, StopReason: "Unable to find Jump Gate"}
 }
 
 func (g GoToJumpGate) Name() string {

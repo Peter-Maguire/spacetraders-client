@@ -25,7 +25,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
     if state.Ship.Registration.Role == "HAULER" {
         // TODO: Fix hauling
-        return RoutineResult{Stop: true}
+        return RoutineResult{Stop: true, StopReason: "Hauler not supported"}
         return RoutineResult{
             SetRoutine: GoToMiningArea{Haul{}},
         }
@@ -53,7 +53,8 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
     state.Log("This type of ship isn't supported yet")
     return RoutineResult{
-        Stop: true,
+        Stop:       true,
+        StopReason: "Unknown Ship Type",
     }
 }
 

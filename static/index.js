@@ -29,7 +29,7 @@ function updateState({ship, http}){
         const container = document.createElement("div")
         container.classList.add("ship", sh.name);
         clone.querySelector(".name").innerText = sh.name;
-
+        clone.querySelector(".routine").innerText = sh.stopped ? "STOPPED" : sh.routine;
         // clone.querySelector(".icon").src = `img/ships/${sh.type}.png`;
         if(sh.waitingForHttp){
             clone.querySelector(".state").innerText = "Waiting for HTTP";
@@ -39,10 +39,8 @@ function updateState({ship, http}){
             clone.querySelector(".state").innerText = `Waiting for ${Math.floor((asleepUntil-now)/1000)} seconds`;
         }
 
-        if(sh.stopped){
-            clone.querySelector(".routine").innerText = `STOPPED: ${sh.stoppedReason}`;
-        }else{
-            clone.querySelector(".routine").innerText = sh.routine;
+        if(sh.stoppedReason){
+            clone.querySelector(".state").innerText = sh.stoppedReason;
         }
 
         container.appendChild(clone);

@@ -50,7 +50,8 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
             }
             state.Log("We don't have the antimatter and we're not at the jump gate")
             return RoutineResult{
-                Stop: true,
+                Stop:       true,
+                StopReason: "Not at jump gate or no antimatter",
             }
         }
     }

@@ -4,8 +4,10 @@ import (
     "fmt"
     "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promauto"
+    "sort"
     "spacetraders/database"
     "spacetraders/entity"
+    "spacetraders/util"
 )
 
 var (
@@ -23,8 +25,27 @@ type SellExcessInventory struct {
     next Routine
 }
 
+type marketOpportunity struct {
+    Waypoint entity.Waypoint
+    // SellableHere is a list of the items sellable in this location
+    SellableHere []string
+    // TravelCost is the cost in credits to travel to this market
+    TravelCost int
+    // SalePrice is the estimated amount gained from selling at this location
+    SalePrice int
+    // PossibleProfit = SalePrice - TravelCost
+    PossibleProfit int
+}
+
 func (s SellExcessInventory) Run(state *State) RoutineResult {
     inventory := state.Ship.Cargo.Inventory
+
+    currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+
+    // TODO: replace with a database call
+    currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
+
+    fmt.Println(currentSystem)
 
     //go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
@@ -36,53 +57,125 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
         state.Log("We are delivering " + contractTarget.TradeSymbol)
     }
 
-    // Sellable = not antimatter, not required for the contract and sellable at this market
-    sellable := make([]entity.ShipInventorySlot, 0)
-    sellableNames := make([]string, 0)
+    sellableItems := make([]string, 0)
 
     for _, slot := range inventory {
         // Don't sell antimatter or contract target
         if slot.Symbol == "ANTIMATTER" || slot.Symbol == targetItem {
             continue
         }
-        sellable = append(sellable, slot)
-        sellableNames = append(sellableNames, slot.Name)
+        sellableItems = append(sellableItems, slot.Symbol)
     }
 
-    if len(sellable) == 0 {
-        if contractTarget != nil && state.Ship.Cargo.GetSlotWithItem(targetItem) != nil {
-            state.Log("All we have left is what we are selling, time to take it away")
-
-            return RoutineResult{
-                SetRoutine: NavigateTo{waypoint: contractTarget.DestinationSymbol, next: DeliverContractItem{item: targetItem, returnTo: state.Ship.Nav.WaypointSymbol}},
-            }
-        }
-        if state.Ship.Cargo.IsFull() {
-            state.Log("Full of something that you can't sell here!")
-            return RoutineResult{
-                Stop: true,
-            }
+    if len(sellableItems) == 0 {
+        state.Log("Sell complete")
+        return RoutineResult{
+            SetRoutine: s.next,
         }
     }
 
-    markets := database.GetMarketsSelling(sellableNames)
+    markets := database.GetMarketsSelling(sellableItems)
 
     if len(markets) == 0 {
         state.Log("Could not sell, no markets were found that are selling what we need")
         return RoutineResult{
-            Stop: true,
+            Stop:       true,
+            StopReason: "No markets available to sell to",
         }
     }
 
-    //fmt.Printf("Got %d items to sell\n", len(sellable))
+    marketOpportunities := make([]*marketOpportunity, 0)
 
-    // dock ship
+    for _, market := range markets {
+        // Disable other systems for now
+        if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+            continue
+        }
+        var mop *marketOpportunity
+        // Find an existing mop at this waypoint, if so add the sellable to the list
+        for _, lmop := range marketOpportunities {
+            if market.Waypoint == lmop.Waypoint {
+                lmop.SellableHere = append(lmop.SellableHere, market.Good)
+                lmop.SalePrice += market.SellCost * state.Ship.Cargo.GetSlotWithItem(market.Good).Units
+                mop = lmop
+                break
+            }
+        }
+
+        // mop does not yet exist, create it then proceed to the calculation
+        if mop == nil {
+            mop = &marketOpportunity{
+                Waypoint:     market.Waypoint,
+                SellableHere: []string{market.Good},
+            }
+
+            // The distance between the current system and that one
+            systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
+            waypointDistance := util.CalcDistance(currentWaypoint.X, currentWaypoint.Y, market.WaypointX, market.WaypointY)
+
+            mop.TravelCost = systemDistance + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
+            mop.SalePrice = market.SellCost * state.Ship.Cargo.GetSlotWithItem(market.Good).Units
+            marketOpportunities = append(marketOpportunities, mop)
+        }
+
+        mop.PossibleProfit = mop.SalePrice - mop.TravelCost
+    }
+
+    if len(marketOpportunities) == 0 {
+        state.Log("No markets in this system available")
+        return RoutineResult{
+            Stop:       true,
+            StopReason: "No markets available to sell to in this system",
+        }
+    }
+
+    sort.Slice(marketOpportunities, func(i, j int) bool {
+        return marketOpportunities[i].PossibleProfit > marketOpportunities[j].PossibleProfit
+    })
+
+    accountedForItems := make([]string, 0)
+
+    sensibleOpportunities := make([]*marketOpportunity, 0)
+
+    // Go through each opportunity and filter out the ones that don't make sense
+    for _, mop := range marketOpportunities {
+
+        // Count up the number of items that are
+        alreadyAccountedFor := 0
+        for _, sellable := range mop.SellableHere {
+            for _, afi := range accountedForItems {
+                if afi == sellable {
+                    alreadyAccountedFor++
+                    break
+                }
+            }
+        }
+
+        if alreadyAccountedFor < len(mop.SellableHere) {
+            sensibleOpportunities = append(sensibleOpportunities, mop)
+        }
+    }
+
+    sort.Slice(sensibleOpportunities, func(i, j int) bool {
+        return sensibleOpportunities[i].TravelCost < sensibleOpportunities[j].TravelCost
+    })
+
+    // This is the waypoint we're currently at
+    if sensibleOpportunities[0].Waypoint != state.Ship.Nav.WaypointSymbol {
+        state.Log(fmt.Sprintf("Going to available market at %s", sensibleOpportunities[0].Waypoint))
+        return RoutineResult{
+            SetRoutine: NavigateTo{
+                waypoint: sensibleOpportunities[0].Waypoint,
+                next:     s,
+            },
+        }
+    }
+
     state.WaitingForHttp = true
     _ = state.Ship.EnsureNavState(entity.NavDocked)
     state.WaitingForHttp = false
-
-    for _, sellableSlot := range sellable {
-        state.Log(fmt.Sprintf("Selling %dx %s", sellableSlot.Units, sellableSlot.Symbol))
+    for _, item := range sensibleOpportunities[0].SellableHere {
+        sellableSlot := state.Ship.Cargo.GetSlotWithItem(item)
         state.WaitingForHttp = true
         sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
         state.WaitingForHttp = false
@@ -93,7 +186,6 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
             soldFor.WithLabelValues(sellResult.Transaction.TradeSymbol).Set(float64(sellResult.Transaction.PricePerUnit))
             totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol).Add(float64(sellResult.Transaction.Units))
         }
-
     }
     state.FireEvent("sellComplete", state.Agent)
 

@@ -3,6 +3,7 @@ package orchestrator
 import (
     "fmt"
     "spacetraders/entity"
+    "spacetraders/metrics"
     "spacetraders/routine"
     "spacetraders/ui"
 )
@@ -10,8 +11,8 @@ import (
 func (o *Orchestrator) onSellComplete(agent *entity.Agent) {
     ui.MainLog(fmt.Sprintf("Credits now: %d\n", agent.Credits))
 
-    //fmt.Printf("Credits set to %d", agent.Credits)
-    //metrics.NumCredits.Set(float64(agent.Credits))
+    fmt.Printf("Credits set to %d (sellcomplete)", agent.Credits)
+    metrics.NumCredits.Set(float64(agent.Credits))
 
     // We have 35 or more ships, we're at the limit of how many ships are useful
     if len(o.States) >= 35 {

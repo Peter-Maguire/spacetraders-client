@@ -48,7 +48,7 @@ func Init() *Orchestrator {
         fmt.Println(err)
         os.Exit(1)
     }
-    fmt.Printf("Credits set to %d", agent.Credits)
+    fmt.Printf("Credits set to %d (init)", agent.Credits)
     metrics.NumCredits.Set(float64(agent.Credits))
 
     contracts, _ := agent.Contracts()
@@ -251,6 +251,7 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
         if routineResult.Stop {
             state.CurrentRoutine = nil
+            state.StoppedReason = routineResult.StopReason
             state.Log("Stopping Routine")
             break
         }

@@ -7,15 +7,6 @@ type GoToMiningArea struct {
 }
 
 func (g GoToMiningArea) Run(state *State) RoutineResult {
-    if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
-        return RoutineResult{
-            SetRoutine: GoToJumpGate{next: GoToSystem{
-                system: state.Agent.Headquarters.GetSystemName(),
-                next:   g,
-            }},
-        }
-    }
-
     waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
 
     // We are currently in an asteroid field
@@ -35,6 +26,15 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
             return RoutineResult{
                 SetRoutine: NavigateTo{waypoint.Symbol, g.next},
             }
+        }
+    }
+
+    if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
+        return RoutineResult{
+            SetRoutine: GoToJumpGate{next: GoToSystem{
+                system: state.Agent.Headquarters.GetSystemName(),
+                next:   g,
+            }},
         }
     }
 

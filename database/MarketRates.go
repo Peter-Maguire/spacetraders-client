@@ -8,8 +8,10 @@ import (
 )
 
 type MarketRates struct {
-    Waypoint  string `gorm:"primaryKey"`
-    Good      string `gorm:"primaryKey"`
+    Waypoint  entity.Waypoint `gorm:"primaryKey"`
+    Good      string          `gorm:"primaryKey"`
+    SystemX   int
+    SystemY   int
     WaypointX int
     WaypointY int
     SellCost  int
@@ -17,13 +19,14 @@ type MarketRates struct {
     Date      time.Time
 }
 
-func StoreMarketRates(waypointData *entity.WaypointData, goods []entity.MarketGood) {
-
+func StoreMarketRates(system *entity.System, waypointData *entity.WaypointData, goods []entity.MarketGood) {
     rates := make([]MarketRates, len(goods))
     for i, good := range goods {
         rates[i] = MarketRates{
-            Waypoint:  string(waypointData.Symbol),
+            Waypoint:  waypointData.Symbol,
             Good:      good.Symbol,
+            SystemX:   system.X,
+            SystemY:   system.Y,
             WaypointX: waypointData.X,
             WaypointY: waypointData.Y,
             SellCost:  good.SellPrice,
@@ -31,14 +34,28 @@ func StoreMarketRates(waypointData *entity.WaypointData, goods []entity.MarketGo
             Date:      time.Now(),
         }
     }
-    db.Save(rates)
+    tx := db.Save(rates)
+    fmt.Println(tx.Error)
 }
 
 func GetMarketsSelling(items []string) []MarketRates {
     var rates []MarketRates
     tx := db.Where("good IN ?", items).Find(&rates)
-    if tx.Error != gorm.ErrRecordNotFound {
+    if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
         fmt.Println("GetMarketsSelling error", tx.Error)
     }
     return rates
+}
+
+func GetMarkets() []MarketRates {
+    var rates []MarketRates
+    db.Find(&rates)
+    return rates
+}
+
+func GetMarketWaypoints() []entity.Waypoint {
+    var waypoints []entity.Waypoint
+    tx := db.Table("market_rates").Distinct("waypoint").Find(&waypoints)
+    fmt.Println(tx.Error)
+    return waypoints
 }
