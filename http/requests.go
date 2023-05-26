@@ -214,6 +214,10 @@ func getRequestPriority(path string) int {
     if strings.HasSuffix(path, "/sell") || strings.HasSuffix(path, "/cargo") {
         return 2
     }
+    // Scan has priority over most things
+    if strings.HasSuffix(path, "/scan") {
+        return 2
+    }
     return 1
 }
 
