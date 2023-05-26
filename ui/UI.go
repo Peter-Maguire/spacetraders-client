@@ -14,7 +14,7 @@ var upgrader = websocket.Upgrader{}
 func Init() {
 
     go broadcastLoop()
-
+    initApi()
     http.Handle("/metrics", promhttp.Handler())
     http.HandleFunc("/ws", ws)
     fs := http.FileServer(http.Dir("./static"))
@@ -67,6 +67,7 @@ func broadcastLoop() {
 
 type ShipData struct {
     Stopped        bool       `json:"stopped"`
+    StoppedReason  string     `json:"stoppedReason,omitempty"`
     WaitingForHttp bool       `json:"waitingForHttp"`
     AsleepUntil    *time.Time `json:"asleepUntil"`
     ShipName       string     `json:"name"`
