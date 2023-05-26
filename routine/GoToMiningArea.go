@@ -2,11 +2,11 @@ package routine
 
 import "spacetraders/entity"
 
-type GoToAsteroidField struct {
+type GoToMiningArea struct {
     next Routine
 }
 
-func (g GoToAsteroidField) Run(state *State) RoutineResult {
+func (g GoToMiningArea) Run(state *State) RoutineResult {
     if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
         return RoutineResult{
             SetRoutine: GoToJumpGate{next: GoToSystem{
@@ -44,6 +44,6 @@ func (g GoToAsteroidField) Run(state *State) RoutineResult {
     }
 }
 
-func (g GoToAsteroidField) Name() string {
+func (g GoToMiningArea) Name() string {
     return "Go To Asteroid Field"
 }

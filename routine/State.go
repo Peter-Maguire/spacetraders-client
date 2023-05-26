@@ -26,6 +26,7 @@ type State struct {
     StatesMutex *sync.Mutex
 
     WaitingForHttp bool
+    StoppedReason  string
 }
 
 type OrchestratorEvent struct {

@@ -35,12 +35,12 @@ func (h Haul) Run(state *State) RoutineResult {
     }
 
     for i, otherState := range *state.States {
-        if otherState.Ship.Registration.Role != "EXCAVATOR" || i%haulerCount == haulerNum {
+        if haulerCount > 1 && (otherState.Ship.Registration.Role != "EXCAVATOR" || i%haulerCount == haulerNum) {
             continue
         }
-        if otherState.Ship.Cargo.Capacity-otherState.Ship.Cargo.Units <= 0 {
-            ships = append(ships, otherState.Ship)
-        }
+        //if otherState.Ship.Cargo.Capacity-otherState.Ship.Cargo.Units <= 0 {
+        ships = append(ships, otherState.Ship)
+        //}
     }
 
     //sort.Slice(ships, func(i, j int) bool {
@@ -50,6 +50,7 @@ func (h Haul) Run(state *State) RoutineResult {
     //state.Log(fmt.Sprintf("Most full: %d/%d / Least full: %d/%d", ships[0].Cargo.Capacity-ships[0].Cargo.Units, ships[0].Cargo.Capacity, ships[len(ships)-1].Cargo.Capacity-ships[len(ships)-1].Cargo.Units, ships[len(ships)-1].Cargo.Capacity))
 
     state.Log(fmt.Sprintf("Current cargo count: %d. #%d of %d haulers. We're in charge of %d ships", cargoCount, haulerNum, haulerCount, len(ships)))
+
     full := false
     for _, ship := range ships {
         if ship.Registration.Role != "EXCAVATOR" {

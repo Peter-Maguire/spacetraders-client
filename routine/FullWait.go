@@ -5,7 +5,7 @@ type FullWait struct {
 
 func (f FullWait) Run(state *State) RoutineResult {
 
-    if len(state.Haulers) == 0 {
+    if true || len(state.Haulers) == 0 {
         return RoutineResult{
             SetRoutine: SellExcessInventory{next: MineOres{}},
         }

@@ -324,6 +324,10 @@ type ShipCargo struct {
     Inventory []ShipInventorySlot `json:"inventory"`
 }
 
+func (sc *ShipCargo) IsFull() bool {
+    return sc.Capacity == sc.Units
+}
+
 func (sc *ShipCargo) GetSlotWithItem(itemSymbol string) *ShipInventorySlot {
     for _, slot := range sc.Inventory {
         if slot.Symbol == itemSymbol {

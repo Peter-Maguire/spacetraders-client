@@ -4,6 +4,7 @@ import (
     "fmt"
     "github.com/prometheus/client_golang/prometheus"
     "github.com/prometheus/client_golang/prometheus/promauto"
+    "spacetraders/database"
     "spacetraders/entity"
 )
 
@@ -25,15 +26,6 @@ type SellExcessInventory struct {
 func (s SellExcessInventory) Run(state *State) RoutineResult {
     inventory := state.Ship.Cargo.Inventory
 
-    state.WaitingForHttp = true
-    market, err := state.Ship.Nav.WaypointSymbol.GetMarket()
-    state.WaitingForHttp = false
-
-    if err != nil {
-        state.Log("Market error" + err.Error())
-        return RoutineResult{WaitSeconds: 10}
-    }
-
     //go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
     var contractTarget *entity.ContractDeliverable
@@ -46,26 +38,39 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
     // Sellable = not antimatter, not required for the contract and sellable at this market
     sellable := make([]entity.ShipInventorySlot, 0)
+    sellableNames := make([]string, 0)
 
     for _, slot := range inventory {
         // Don't sell antimatter or contract target
         if slot.Symbol == "ANTIMATTER" || slot.Symbol == targetItem {
             continue
         }
-        tradeGood := market.GetTradeGood(slot.Symbol)
-        if tradeGood != nil {
-            state.Log(fmt.Sprintf("We can trade our %s here for %d credits", tradeGood.Symbol, tradeGood.SellPrice))
-            sellable = append(sellable, slot)
-        }
+        sellable = append(sellable, slot)
+        sellableNames = append(sellableNames, slot.Name)
     }
 
-    if len(sellable) == 0 && contractTarget != nil {
-        if state.Ship.Cargo.GetSlotWithItem(targetItem) != nil {
+    if len(sellable) == 0 {
+        if contractTarget != nil && state.Ship.Cargo.GetSlotWithItem(targetItem) != nil {
             state.Log("All we have left is what we are selling, time to take it away")
 
             return RoutineResult{
                 SetRoutine: NavigateTo{waypoint: contractTarget.DestinationSymbol, next: DeliverContractItem{item: targetItem, returnTo: state.Ship.Nav.WaypointSymbol}},
             }
+        }
+        if state.Ship.Cargo.IsFull() {
+            state.Log("Full of something that you can't sell here!")
+            return RoutineResult{
+                Stop: true,
+            }
+        }
+    }
+
+    markets := database.GetMarketsSelling(sellableNames)
+
+    if len(markets) == 0 {
+        state.Log("Could not sell, no markets were found that are selling what we need")
+        return RoutineResult{
+            Stop: true,
         }
     }
 

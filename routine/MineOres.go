@@ -77,7 +77,7 @@ func (m MineOres) Run(state *State) RoutineResult {
         case http.ErrCannotExtractHere:
             state.Log("We're not at an asteroid field")
             return RoutineResult{
-                SetRoutine: GoToAsteroidField{GetSurvey{}},
+                SetRoutine: GoToMiningArea{GetSurvey{}},
             }
         case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
             state.Log("Something went wrong with the survey " + err.Error())

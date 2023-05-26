@@ -27,30 +27,39 @@ func GetWaypoint(waypoint entity.Waypoint) *Waypoint {
     return &visitedWaypoint
 }
 
-func GetShipyards(symbol string) *[]Waypoint {
-    var wp []Waypoint
-    tx := db.Where("shipyard_data is not null").Find(&wp)
+type ScannedWaypoint struct {
+    Waypoint     entity.Waypoint     `json:"waypoint"`
+    System       string              `json:"system"`
+    WaypointData entity.WaypointData `json:"waypointData"`
+}
+
+func GetWaypoints() []ScannedWaypoint {
+    var wps []Waypoint
+    tx := db.Find(&wps)
     if tx.Error == gorm.ErrRecordNotFound {
         return nil
     }
-    return &wp
+
+    waypoints := make([]ScannedWaypoint, len(wps))
+
+    for i, wp := range wps {
+        waypoints[i] = ScannedWaypoint{
+            Waypoint:     entity.Waypoint(wp.Waypoint),
+            System:       wp.System,
+            WaypointData: entity.WaypointData{},
+        }
+        _ = json.Unmarshal(wp.Data, &waypoints[i].WaypointData)
+    }
+
+    return waypoints
 }
 
-func VisitWaypoint(data *entity.WaypointData, market *entity.Market, shipyard *entity.ShipyardStock) {
-    var shipyardData, marketData []byte
+func VisitWaypoint(data *entity.WaypointData) {
     waypointData, _ := json.Marshal(data)
-    if market != nil {
-        marketData, _ = json.Marshal(market)
-    }
-    if shipyard != nil {
-        shipyardData, _ = json.Marshal(shipyard)
-    }
     db.Create(Waypoint{
         Waypoint:     string(data.Symbol),
         System:       data.Symbol.GetSystemName(),
         Data:         waypointData,
-        ShipyardData: shipyardData,
-        MarketData:   marketData,
         FirstVisited: time.Now(),
     })
 }
