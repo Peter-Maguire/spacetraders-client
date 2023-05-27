@@ -18,53 +18,56 @@ type FindNewSystem struct {
 func (f FindNewSystem) Run(state *State) RoutineResult {
 
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
-	unvisitedSystems := database.GetUnvisitedSystems()
 
-	sort.Slice(unvisitedSystems, func(i, j int) bool {
-		sys1 := unvisitedSystems[i]
-		sys2 := unvisitedSystems[j]
-		return util.CalcDistance(currentSystem.X, currentSystem.Y, sys1.X, sys1.Y) < util.CalcDistance(currentSystem.X, currentSystem.Y, sys2.X, sys2.Y)
-	})
+	if f.startFromPage == 0 {
+		unvisitedSystems := database.GetUnvisitedSystems()
 
-	for _, candidate := range unvisitedSystems {
-		// Because we are sorted by distance, we can stop at 2000 since no other systems will be reachable
-		if util.CalcDistance(currentSystem.X, currentSystem.Y, candidate.X, candidate.Y) > 2000 {
-			break
-		}
+		sort.Slice(unvisitedSystems, func(i, j int) bool {
+			sys1 := unvisitedSystems[i]
+			sys2 := unvisitedSystems[j]
+			return util.CalcDistance(currentSystem.X, currentSystem.Y, sys1.X, sys1.Y) < util.CalcDistance(currentSystem.X, currentSystem.Y, sys2.X, sys2.Y)
+		})
 
-		var systemEntity entity.System
-		err := json.Unmarshal(candidate.Data, &systemEntity)
-		if err != nil {
-			state.Log(fmt.Sprintf("Failed to unmarshal existing system: %s", err))
-			continue
-		}
+		for _, candidate := range unvisitedSystems {
+			// Because we are sorted by distance, we can stop at 2000 since no other systems will be reachable
+			if util.CalcDistance(currentSystem.X, currentSystem.Y, candidate.X, candidate.Y) > 2000 {
+				break
+			}
 
-		if f.CanJumpTo(&systemEntity, currentSystem) {
-			state.Log(fmt.Sprintf("Found good known but unexplored system %s", systemEntity.Symbol))
-			state.WaitingForHttp = true
-			jumpResult, err := state.Ship.Jump(systemEntity.Symbol)
-			state.WaitingForHttp = false
+			var systemEntity entity.System
+			err := json.Unmarshal(candidate.Data, &systemEntity)
 			if err != nil {
-				state.Log("Error jumping")
-				fmt.Println(err)
-			} else {
-				cooldownTime := jumpResult.Cooldown.Expiration
-				return RoutineResult{
-					WaitUntil:  &cooldownTime,
-					SetRoutine: Explore{},
+				state.Log(fmt.Sprintf("Failed to unmarshal existing system: %s", err))
+				continue
+			}
+
+			if f.CanJumpTo(&systemEntity, currentSystem) {
+				state.Log(fmt.Sprintf("Found good known but unexplored system %s", systemEntity.Symbol))
+				state.WaitingForHttp = true
+				jumpResult, err := state.Ship.Jump(systemEntity.Symbol)
+				state.WaitingForHttp = false
+				if err != nil {
+					state.Log("Error jumping")
+					fmt.Println(err)
+				} else {
+					cooldownTime := jumpResult.Cooldown.Expiration
+					return RoutineResult{
+						WaitUntil:  &cooldownTime,
+						SetRoutine: Explore{},
+					}
 				}
 			}
 		}
-	}
 
-	startPage := 0
-	for _, candidate := range unvisitedSystems {
-		if candidate.Page > startPage {
-			startPage = candidate.Page
+		startPage := 0
+		for _, candidate := range unvisitedSystems {
+			if candidate.Page > startPage {
+				startPage = candidate.Page
+			}
 		}
-	}
 
-	f.startFromPage = startPage
+		f.startFromPage = startPage
+	}
 
 	state.Log(fmt.Sprintf("Starting on page %d", f.startFromPage))
 

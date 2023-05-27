@@ -29,8 +29,8 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	if state.Ship.Registration.Role == "HAULER" {
 		// TODO: Fix hauling
 		return RoutineResult{
-			//Stop: true,
-			SetRoutine:  Explore{},
+			Stop: true,
+			//SetRoutine:  Explore{},
 			WaitSeconds: int(time.Now().UnixMilli()%100) * 10,
 		}
 	}
