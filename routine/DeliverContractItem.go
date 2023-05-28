@@ -8,11 +8,12 @@ import (
 )
 
 type DeliverContractItem struct {
-	item     string
-	returnTo entity.Waypoint
+	item string
+	next Routine
 }
 
 func (r DeliverContractItem) Run(state *State) RoutineResult {
+
 	_ = state.Ship.EnsureNavState(entity.NavDocked)
 
 	slot := state.Ship.Cargo.GetSlotWithItem(r.item)
@@ -24,7 +25,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 
 	if err != nil {
 		state.Log(fmt.Sprintf("Error delivering contract: %s", err))
-		return RoutineResult{SetRoutine: NavigateTo{r.returnTo, GetSurvey{}}}
+		return RoutineResult{SetRoutine: r.next}
 	} else {
 		metrics.ContractProgress.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsFulfilled))
 	}
@@ -42,7 +43,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 	}
 
 	return RoutineResult{
-		SetRoutine: NavigateTo{r.returnTo, GetSurvey{}},
+		SetRoutine: r.next,
 	}
 }
 
