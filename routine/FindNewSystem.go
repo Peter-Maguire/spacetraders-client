@@ -77,6 +77,9 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 
 	systems := *systemsPtr
 
+	if len(systems) == 0 {
+		return RoutineResult{Stop: true, StopReason: "Ran out of systems"}
+	}
 	database.AddUnvisitedSystems(systems, f.startFromPage)
 
 	sort.Slice(systems, func(i, j int) bool {
