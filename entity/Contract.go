@@ -67,6 +67,10 @@ type ContractDeliverable struct {
 	UnitsFulfilled    int      `json:"unitsFulfilled"`
 }
 
+func (cd *ContractDeliverable) IsFulfilled() bool {
+	return cd.UnitsFulfilled >= cd.UnitsRequired
+}
+
 type ContractDeliveryRequest struct {
 	ShipSymbol  string `json:"shipSymbol"`
 	TradeSymbol string `json:"tradeSymbol"`

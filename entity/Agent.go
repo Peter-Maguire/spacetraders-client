@@ -28,6 +28,10 @@ func (a *Agent) Systems(page int) (*[]System, error) {
 	return http.Request[[]System]("GET", fmt.Sprintf("systems?total=20&page=%d", page), nil)
 }
 
+func (a *Agent) GetSystem(system string) (*System, *http.HttpError) {
+	return http.Request[System]("GET", fmt.Sprintf("systems/%s", system), nil)
+}
+
 func (a *Agent) BuyShip(shipyard Waypoint, shipType string) (*ShipPurchaseResult, *http.HttpError) {
 	result, err := http.Request[ShipPurchaseResult]("POST", "my/ships", ShipPurchaseRequest{
 		ShipType:       shipType,

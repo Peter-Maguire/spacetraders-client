@@ -69,6 +69,16 @@ func GetUnvisitedSystems() []System {
 	return systems
 }
 
+func GetVisitedSystems() []System {
+	var systems []System
+	tx := db.Where("visited = true").Order("page DESC").Find(&systems)
+	if tx.Error == gorm.ErrRecordNotFound {
+		return nil
+	}
+
+	return systems
+}
+
 func GetSystemData(system string) *entity.System {
 	dbSystem := GetSystem(system)
 	if dbSystem == nil {
