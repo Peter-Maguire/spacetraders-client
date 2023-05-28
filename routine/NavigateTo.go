@@ -21,11 +21,17 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Nav.Status == "IN_TRANSIT" && state.Ship.Nav.Route.Destination.Symbol == n.waypoint {
-		state.Log("We're already on our way there")
+	if state.Ship.Nav.Status == "IN_TRANSIT" {
+		state.Log("We're on our way somewhere")
 		return RoutineResult{
-			WaitUntil:  &state.Ship.Nav.Route.Arrival,
-			SetRoutine: n.next,
+			WaitUntil: &state.Ship.Nav.Route.Arrival,
+		}
+	}
+
+	if state.Ship.Nav.SystemSymbol != n.waypoint.GetSystemName() {
+		state.Log("Jumping to system first")
+		return RoutineResult{
+			SetRoutine: GoToSystem{next: n, system: n.waypoint.GetSystemName()},
 		}
 	}
 
