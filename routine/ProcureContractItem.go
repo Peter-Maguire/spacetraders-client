@@ -21,6 +21,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		if contract.Accepted && !contract.Fulfilled {
 			for _, deliverable := range contract.Terms.Deliver {
 				if deliverable.TradeSymbol == p.deliverable.TradeSymbol {
+					state.Contract = &contract
 					p.deliverable = &deliverable
 					break
 				}
@@ -49,6 +50,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: SellExcessInventory{next: p}}
 	}
 
+	unitsRemaining := p.deliverable.UnitsRequired - p.deliverable.UnitsFulfilled
 	markets := database.GetMarketsSelling([]string{p.deliverable.TradeSymbol})
 
 	if len(markets) == 0 {
@@ -77,13 +79,29 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 		lw := currentSystem.GetLimitedWaypoint(state.Ship.Nav.WaypointSymbol)
 
+		marketCosts := make(map[entity.Waypoint]int)
+
+		for _, market := range markets {
+			systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
+			waypointDistance := util.CalcDistance(lw.X, lw.Y, market.WaypointX, market.WaypointY)
+			// TODO: this doesn't take into account multiple round trips required for larger procurement contracts
+			travelCost := util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
+			saleCost := market.BuyCost * unitsRemaining
+			marketCosts[market.Waypoint] = travelCost + saleCost
+		}
+
 		sort.Slice(markets, func(i, j int) bool {
-			iSystemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, markets[i].SystemX, markets[i].SystemY)
-			iWaypointDistance := util.CalcDistance(lw.X, lw.Y, markets[i].WaypointX, markets[i].WaypointY)
-			jSystemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, markets[j].SystemX, markets[j].SystemY)
-			jWaypointDistance := util.CalcDistance(lw.X, lw.Y, markets[j].WaypointX, markets[j].WaypointY)
-			return iSystemDistance+iWaypointDistance < jSystemDistance+jWaypointDistance
+			return marketCosts[markets[i].Waypoint] < marketCosts[markets[j].Waypoint]
 		})
+
+		state.Log(fmt.Sprintf("Cost of retrieving %dx %s at cheapest market is %d", unitsRemaining, p.deliverable.TradeSymbol, marketCosts[markets[0].Waypoint]))
+
+		if marketCosts[markets[0].Waypoint] > state.Contract.Terms.Payment.GetTotalPayment() {
+			return RoutineResult{
+				Stop:       true,
+				StopReason: fmt.Sprintf("%dx %s = %d vs %d total contract payment", unitsRemaining, p.deliverable.TradeSymbol, marketCosts[markets[0].Waypoint], state.Contract.Terms.Payment.GetTotalPayment()),
+			}
+		}
 
 		return RoutineResult{
 			SetRoutine: NavigateTo{waypoint: markets[0].Waypoint, next: p},
@@ -92,7 +110,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
 
-	//database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
+	database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
 
 	tradeGood := market.GetTradeGood(p.deliverable.TradeSymbol)
 
@@ -104,7 +122,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	}
 
 	// Either the amount we can fit in our inventory, the amount we can afford or the amount we need - whichever is smaller
-	purchaseAmount := int(math.Min(float64(state.Agent.Credits/tradeGood.PurchasePrice), math.Min(float64(p.deliverable.UnitsRequired-p.deliverable.UnitsFulfilled), float64(state.Ship.Cargo.GetRemainingCapacity()))))
+	purchaseAmount := int(math.Min(float64(state.Agent.Credits/tradeGood.PurchasePrice), math.Min(float64(unitsRemaining), float64(state.Ship.Cargo.GetRemainingCapacity()))))
 
 	if purchaseAmount == 0 {
 		state.Log("We're not able to purchase anything right now for some reason")
@@ -128,7 +146,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		}
 	}
 
-	if purchaseAmount >= p.deliverable.UnitsRequired-p.deliverable.UnitsFulfilled || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {
+	if purchaseAmount >= unitsRemaining || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {
 		return RoutineResult{
 			SetRoutine: NavigateTo{
 				waypoint: p.deliverable.DestinationSymbol,
