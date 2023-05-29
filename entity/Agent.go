@@ -21,7 +21,7 @@ func (a *Agent) Ships() (*[]Ship, error) {
 }
 
 func (a *Agent) Contracts() (*[]Contract, error) {
-	return http.Request[[]Contract]("GET", "my/contracts", nil)
+	return http.PaginatedRequest[Contract]("my/contracts", 1, 0)
 }
 
 func (a *Agent) Systems(page int) (*[]System, error) {

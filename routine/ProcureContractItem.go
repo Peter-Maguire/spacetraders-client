@@ -6,6 +6,7 @@ import (
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/http"
 	"spacetraders/util"
 )
 
@@ -47,7 +48,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 					waypoint: p.deliverable.DestinationSymbol,
 					next: DeliverContractItem{
 						item: p.deliverable.TradeSymbol,
-						next: DetermineObjective{},
+						next: NegotiateContract{},
 					},
 				},
 			}
@@ -129,7 +130,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	// Either the amount we can fit in our inventory, the trade volume, the amount we can afford or the amount we need - whichever is smaller
 	purchaseAmount := int(math.Min(math.Min(float64(state.Agent.Credits/tradeGood.PurchasePrice), float64(tradeGood.TradeVolume)), math.Min(float64(unitsRemaining), float64(state.Ship.Cargo.GetRemainingCapacity()))))
 
-	if purchaseAmount == 0 {
+	if purchaseAmount <= 0 {
 		state.Log("We're not able to purchase anything right now for some reason")
 		return RoutineResult{
 			WaitSeconds: 120,
@@ -144,6 +145,17 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	_, err := state.Ship.Purchase(p.deliverable.TradeSymbol, purchaseAmount)
 
 	if err != nil {
+
+		switch err.Code {
+		case http.ErrInsufficientFunds:
+			state.Log("Insufficient Funds")
+			agent, _ := entity.GetAgent()
+			state.Agent.Credits = agent.Credits
+			return RoutineResult{
+				WaitSeconds: 10,
+			}
+		}
+
 		state.Log("Enable to purchase: " + err.Error())
 		return RoutineResult{
 			Stop:       true,
@@ -157,7 +169,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 				waypoint: p.deliverable.DestinationSymbol,
 				next: DeliverContractItem{
 					item: p.deliverable.TradeSymbol,
-					next: DetermineObjective{},
+					next: NegotiateContract{},
 				},
 			},
 		}

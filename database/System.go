@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"spacetraders/entity"
@@ -24,6 +25,7 @@ func GetSystem(system string) *System {
 		System: system,
 	}
 	tx := db.Take(&visitedSystem)
+	fmt.Println(tx.Error)
 	if tx.Error == gorm.ErrRecordNotFound {
 		return nil
 	}

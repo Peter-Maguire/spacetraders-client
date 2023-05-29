@@ -14,4 +14,5 @@ const (
 	ErrShipSurveyVerification ErrorCode = 4220
 	ErrShipSurveyExpired      ErrorCode = 4221
 	ErrShipSurveyExhausted    ErrorCode = 4224
+	ErrInsufficientFunds      ErrorCode = 4600
 )
