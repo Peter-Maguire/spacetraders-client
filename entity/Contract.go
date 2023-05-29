@@ -60,6 +60,10 @@ type ContractPayment struct {
 	OnFulfilled int `json:"onFulfilled"`
 }
 
+func (cp ContractPayment) GetTotalPayment() int {
+	return cp.OnAccepted + cp.OnFulfilled
+}
+
 type ContractDeliverable struct {
 	TradeSymbol       string   `json:"tradeSymbol"`
 	DestinationSymbol Waypoint `json:"destinationSymbol"`

@@ -191,26 +191,16 @@ func (o *Orchestrator) runEvents() {
 			//o.StatesMutex.Unlock()
 		case "contractComplete":
 			ui.MainLog("Contract completed")
-			contracts, err := o.Agent.Contracts()
-			if err != nil {
-				ui.MainLog("Contract get error " + err.Error())
-				os.Exit(1)
+			for _, state := range o.States {
+				state.Contract = nil
+				state.ForceRoutine = routine.DetermineObjective{}
 			}
-			for _, c := range *contracts {
-				if c.Accepted == false {
-					err = c.Accept()
-					if err != nil {
-						ui.MainLog("Contract accept error " + err.Error())
-						os.Exit(1)
-					} else {
-						ui.MainLog("Accepted new Contract " + c.Id)
-						//o.StatesMutex.Lock()
-						for _, state := range o.States {
-							state.Contract = &c
-						}
-						//o.StatesMutex.Unlock()
-					}
-				}
+		case "newContract":
+			ui.MainLog("New contract")
+			contract := event.Data.(*entity.Contract)
+			for _, state := range o.States {
+				state.Contract = contract
+				state.ForceRoutine = routine.DetermineObjective{}
 			}
 		}
 	}
