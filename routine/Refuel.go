@@ -1,6 +1,7 @@
 package routine
 
 import (
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
 )
@@ -15,6 +16,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 	if !r.hasTriedMarket {
 		state.Log("Seeing if we have a market here")
 		market, err := state.Ship.Nav.WaypointSymbol.GetMarket()
+		go database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
 		if err != nil || market.GetTradeGood("FUEL") == nil {
 			state.Log("No market here selling fuel")
 			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
