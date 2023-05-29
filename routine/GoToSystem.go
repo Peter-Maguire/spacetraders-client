@@ -14,18 +14,25 @@ type GoToSystem struct {
 }
 
 func (g GoToSystem) Run(state *State) RoutineResult {
-	currentSystem, _ := state.Ship.Nav.WaypointSymbol.GetSystem()
+
+	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+	if currentSystem != nil {
+		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
+		state.Log("TODO currentSystem isn't stored in the database!")
+	}
 
 	targetSystem := database.GetSystemData(g.system)
 
 	if targetSystem != nil {
-		state.Log("TODO this system isn't stored in the database!")
+		state.Log("TODO targetSystem isn't stored in the database!")
 		targetSystem, _ = state.Agent.GetSystem(g.system)
+		database.AddUnvisitedSystems([]entity.System{*targetSystem}, 0)
 	}
 
 	distance := currentSystem.GetDistanceFrom(targetSystem)
 
-	if state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units == 0 || distance > 500 {
+	antimatterCargo := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
+	if (antimatterCargo != nil && antimatterCargo.Units == 0) || distance > 500 {
 		wpd, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
 		if wpd.Type != "JUMP_GATE" {
 			state.Log("Going to jump gate")
