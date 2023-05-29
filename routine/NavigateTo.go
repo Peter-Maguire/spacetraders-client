@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"spacetraders/entity"
 	"spacetraders/http"
+	"time"
 )
 
 type NavigateTo struct {
@@ -21,7 +22,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Nav.Status == "IN_TRANSIT" {
+	if state.Ship.Nav.Status == "IN_TRANSIT" && state.Ship.Nav.Route.Arrival.After(time.Now()) {
 		state.Log("We're on our way somewhere")
 		return RoutineResult{
 			WaitUntil: &state.Ship.Nav.Route.Arrival,
