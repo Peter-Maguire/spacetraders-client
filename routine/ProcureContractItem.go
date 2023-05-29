@@ -33,7 +33,13 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: DetermineObjective{}}
 	}
 
-	if state.Ship.Cargo.IsFull() {
+	unitsRemaining := p.deliverable.UnitsRequired - p.deliverable.UnitsFulfilled
+	currentCargo := state.Ship.Cargo.GetSlotWithItem(p.deliverable.TradeSymbol)
+	if currentCargo != nil {
+		unitsRemaining -= currentCargo.Units
+	}
+
+	if state.Ship.Cargo.IsFull() || unitsRemaining <= 0 {
 		if state.Ship.Cargo.GetSlotWithItem(p.deliverable.TradeSymbol).Units > 0 {
 			state.Log("We're already full and have something to deliver")
 			return RoutineResult{
@@ -50,7 +56,6 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: SellExcessInventory{next: p}}
 	}
 
-	unitsRemaining := p.deliverable.UnitsRequired - p.deliverable.UnitsFulfilled
 	markets := database.GetMarketsSelling([]string{p.deliverable.TradeSymbol})
 
 	if len(markets) == 0 {
@@ -121,8 +126,8 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		}
 	}
 
-	// Either the amount we can fit in our inventory, the amount we can afford or the amount we need - whichever is smaller
-	purchaseAmount := int(math.Min(float64(state.Agent.Credits/tradeGood.PurchasePrice), math.Min(float64(unitsRemaining), float64(state.Ship.Cargo.GetRemainingCapacity()))))
+	// Either the amount we can fit in our inventory, the trade volume, the amount we can afford or the amount we need - whichever is smaller
+	purchaseAmount := int(math.Min(math.Min(float64(state.Agent.Credits/tradeGood.PurchasePrice), float64(tradeGood.TradeVolume)), math.Min(float64(unitsRemaining), float64(state.Ship.Cargo.GetRemainingCapacity()))))
 
 	if purchaseAmount == 0 {
 		state.Log("We're not able to purchase anything right now for some reason")
