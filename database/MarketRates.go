@@ -39,18 +39,16 @@ func StoreMarketRates(system *entity.System, waypointData *entity.WaypointData, 
 }
 
 func UpdateMarketRates(waypoint entity.Waypoint, goods []entity.MarketGood) {
-	rates := make([]MarketRates, len(goods))
-	for i, good := range goods {
-		rates[i] = MarketRates{
+	for _, good := range goods {
+		marketRate := MarketRates{
 			Waypoint: waypoint,
 			Good:     good.Symbol,
 			SellCost: good.SellPrice,
 			BuyCost:  good.PurchasePrice,
 			Date:     time.Now(),
 		}
+		_ = db.Model(&marketRate).Updates(&marketRate)
 	}
-	tx := db.Updates(rates).Save(rates)
-	fmt.Println(tx.Error)
 }
 
 func GetMarketsSelling(items []string) []MarketRates {
