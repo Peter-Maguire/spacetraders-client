@@ -28,10 +28,6 @@ type Orchestrator struct {
 }
 
 var (
-	contractRequirement = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "st_contract_requirement",
-		Help: "Items required in contract",
-	})
 	agentShips = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_agent_ships",
 		Help: "Current Ship Count",
@@ -81,7 +77,7 @@ func Init() *Orchestrator {
 		ui.MainLog("No current Contract\n")
 	} else {
 		metrics.ContractProgress.Set(float64(contract.Terms.Deliver[0].UnitsFulfilled))
-		contractRequirement.Set(float64(contract.Terms.Deliver[0].UnitsRequired))
+		metrics.ContractRequirement.Set(float64(contract.Terms.Deliver[0].UnitsRequired))
 	}
 
 	orc := Orchestrator{

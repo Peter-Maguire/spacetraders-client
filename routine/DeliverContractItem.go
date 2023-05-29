@@ -27,6 +27,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: r.next}
 	} else {
 		metrics.ContractProgress.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsFulfilled))
+		metrics.ContractRequirement.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsRequired))
 	}
 
 	deliverable := deliverResult.Contract.Terms.GetDeliverable(r.item)
