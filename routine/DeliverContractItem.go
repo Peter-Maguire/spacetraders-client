@@ -2,7 +2,6 @@ package routine
 
 import (
 	"fmt"
-	"os"
 	"spacetraders/entity"
 	"spacetraders/metrics"
 )
@@ -39,7 +38,6 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 			state.FireEvent("contractComplete", nil)
 		}
 		state.Log(fmt.Sprintf("Contract fulfill err: %s", err))
-		os.Exit(1)
 	}
 
 	return RoutineResult{
