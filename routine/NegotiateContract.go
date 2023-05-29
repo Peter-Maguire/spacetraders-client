@@ -1,6 +1,8 @@
 package routine
 
-import "spacetraders/entity"
+import (
+	"spacetraders/entity"
+)
 
 type NegotiateContract struct {
 }

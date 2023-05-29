@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
@@ -164,12 +165,20 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	}
 
 	if purchaseAmount >= unitsRemaining || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {
+		waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
+
+		waypoint := rand.Int63n(int64(len(*waypoints)))
+
+		state.Log("going to a random waypoint after delivery")
 		return RoutineResult{
 			SetRoutine: NavigateTo{
 				waypoint: p.deliverable.DestinationSymbol,
 				next: DeliverContractItem{
 					item: p.deliverable.TradeSymbol,
-					next: NegotiateContract{},
+					next: NavigateTo{
+						waypoint: (*waypoints)[int(waypoint)].Symbol,
+						next:     NegotiateContract{},
+					},
 				},
 			},
 		}
