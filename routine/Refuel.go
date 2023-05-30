@@ -29,7 +29,8 @@ func (r Refuel) Run(state *State) RoutineResult {
 					if state.Ship.Nav.FlightMode == "DRIFT" {
 						state.Log("We're boned")
 						return RoutineResult{
-							Stop: true,
+							Stop:       true,
+							StopReason: "Unable to refuel",
 						}
 					}
 

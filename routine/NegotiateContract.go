@@ -2,6 +2,7 @@ package routine
 
 import (
 	"spacetraders/entity"
+	"spacetraders/http"
 )
 
 type NegotiateContract struct {
@@ -19,6 +20,11 @@ func (n NegotiateContract) Run(state *State) RoutineResult {
 		state.Contract = newContract
 		state.FireEvent("newContract", newContract)
 	} else {
+
+		switch err.Code {
+		case http.ErrNoFactionPresence:
+			return RoutineResult{SetRoutine: GoToRandomFactionWaypoint{next: n}}
+		}
 		state.Log(err.Error())
 	}
 

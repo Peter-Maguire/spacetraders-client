@@ -5,6 +5,7 @@ import (
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/http"
 	"spacetraders/util"
 )
 
@@ -32,7 +33,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	distance := currentSystem.GetDistanceFrom(targetSystem)
 
 	antimatterCargo := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
-	if (antimatterCargo != nil && antimatterCargo.Units == 0) || distance > 500 {
+	if antimatterCargo == nil || antimatterCargo.Units == 0 || distance > 500 {
 		wpd, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
 		if wpd.Type != "JUMP_GATE" {
 			state.Log("Going to jump gate")
@@ -84,6 +85,13 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 			WaitUntil:  &waitUntil,
 			SetRoutine: g.next,
 		}
+	}
+
+	switch err.Code {
+	case http.ErrInsufficientAntimatter:
+		state.Log("Cargo must be out of date, retrying")
+		_, _ = state.Ship.GetCargo()
+		return RoutineResult{}
 	}
 
 	state.Log("Unable to jump")

@@ -132,7 +132,7 @@ func (s *Ship) Survey() (*SurveyResult, *http.HttpError) {
 	return http.Request[SurveyResult]("POST", fmt.Sprintf("my/ships/%s/survey", s.Symbol), nil)
 }
 
-func (s *Ship) Jump(system string) (*ShipJumpResult, error) {
+func (s *Ship) Jump(system string) (*ShipJumpResult, *http.HttpError) {
 	jumpResult, err := http.Request[ShipJumpResult]("POST", fmt.Sprintf("my/ships/%s/jump", s.Symbol), map[string]string{
 		"systemSymbol": system,
 	})

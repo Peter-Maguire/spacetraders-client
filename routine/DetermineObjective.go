@@ -53,7 +53,8 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
 		// TODO: Fix hauling
 		return RoutineResult{
-			Stop: true,
+			Stop:       true,
+			StopReason: "Hauling not supported",
 			//SetRoutine:  Explore{},
 			//WaitSeconds: int(time.Now().UnixMilli()%100) * 10,
 		}

@@ -3,7 +3,6 @@ package routine
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
@@ -91,8 +90,8 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		for _, market := range markets {
 			systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
 			waypointDistance := util.CalcDistance(lw.X, lw.Y, market.WaypointX, market.WaypointY)
-			// TODO: this doesn't take into account multiple round trips required for larger procurement contracts
-			travelCost := util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
+			roundTrips := int(math.Min(1, float64(unitsRemaining/state.Ship.Cargo.Capacity)))
+			travelCost := (util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)) * roundTrips
 			saleCost := market.BuyCost * unitsRemaining
 			marketCosts[market.Waypoint] = travelCost + saleCost
 		}
@@ -164,20 +163,22 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		}
 	}
 
+	sellFuel := market.GetTradeGood("FUEL")
+
+	if sellFuel != nil && state.Ship.Fuel.Capacity-state.Ship.Fuel.Current > 100 {
+		state.Log("Refuelling whilst I can")
+		_ = state.Ship.Refuel()
+	}
+
 	if purchaseAmount >= unitsRemaining || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {
-		waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
-
-		waypoint := rand.Int63n(int64(len(*waypoints)))
-
 		state.Log("going to a random waypoint after delivery")
 		return RoutineResult{
 			SetRoutine: NavigateTo{
 				waypoint: p.deliverable.DestinationSymbol,
 				next: DeliverContractItem{
 					item: p.deliverable.TradeSymbol,
-					next: NavigateTo{
-						waypoint: (*waypoints)[int(waypoint)].Symbol,
-						next:     NegotiateContract{},
+					next: GoToRandomFactionWaypoint{
+						next: NegotiateContract{},
 					},
 				},
 			},

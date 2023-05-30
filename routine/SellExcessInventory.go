@@ -91,10 +91,10 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	marketOpportunities := make([]*marketOpportunity, 0)
 
 	for _, market := range markets {
-		// Disable other systems for now
-		if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
-			continue
-		}
+		//// Disable other systems for now
+		//if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+		//	continue
+		//}
 		var mop *marketOpportunity
 		// Find an existing mop at this waypoint, if so add the sellable to the list
 		for _, lmop := range marketOpportunities {
@@ -117,7 +117,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
 			waypointDistance := util.CalcDistance(currentWaypoint.X, currentWaypoint.Y, market.WaypointX, market.WaypointY)
 
-			mop.TravelCost = systemDistance + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
+			mop.TravelCost = util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
 			mop.SalePrice = market.SellCost * state.Ship.Cargo.GetSlotWithItem(market.Good).Units
 			marketOpportunities = append(marketOpportunities, mop)
 		}
@@ -129,7 +129,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		state.Log("No markets in this system available")
 		return RoutineResult{
 			Stop:       true,
-			StopReason: "No markets available to sell to in this system",
+			StopReason: "No markets available to sell to",
 		}
 	}
 
