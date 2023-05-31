@@ -36,3 +36,15 @@ type ItemPurchaseResult struct {
 	Cargo       *ShipCargo         `json:"cargo"`
 	Transaction *MarketTransaction `json:"transaction"`
 }
+
+type ShipRefineResult struct {
+	Cargo    ShipCargo         `json:"cargo"`
+	Cooldown Cooldown          `json:"cooldown"`
+	Produced []RefineMaterials `json:"produced"`
+	Consumed []RefineMaterials `json:"consumed"`
+}
+
+type RefineMaterials struct {
+	TradeSymbol string `json:"symbol"`
+	Units       int    `json:"units"`
+}

@@ -38,7 +38,8 @@ type marketOpportunity struct {
 }
 
 func (s SellExcessInventory) Run(state *State) RoutineResult {
-	inventory := state.Ship.Cargo.Inventory
+	cargo, _ := state.Ship.GetCargo()
+	inventory := cargo.Inventory
 
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 
@@ -48,8 +49,6 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	// TODO: replace with a database call
 	currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
-
-	fmt.Println(currentSystem)
 
 	//go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
@@ -61,14 +60,35 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		state.Log("We are delivering " + contractTarget.TradeSymbol)
 	}
 
+	var refinery *entity.Ship
+	for _, otherState := range *state.States {
+		if otherState.Ship.Registration.Role == "REFINERY" && otherState.Ship.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol && !otherState.Ship.Cargo.IsFull() {
+			state.Log("There is a refinery here we can use")
+			refinery = otherState.Ship
+			cargo, _ := refinery.GetCargo()
+			refinery.Cargo = *cargo
+			break
+		}
+	}
+
 	sellableItems := make([]string, 0)
+	sellableRefineableItems := make([]string, 0)
 
 	for _, slot := range inventory {
 		// Don't sell antimatter or contract target
 		if slot.Symbol == "ANTIMATTER" || slot.Symbol == targetItem {
 			continue
 		}
-		sellableItems = append(sellableItems, slot.Symbol)
+		if util.IsRefineable(slot.Symbol) {
+			sellableRefineableItems = append(sellableRefineableItems, slot.Symbol)
+		} else {
+			sellableItems = append(sellableItems, slot.Symbol)
+		}
+	}
+
+	// We have nothing else to sell, or we don't have a refinery nearby and we're full so we'll sell up what we have
+	if len(sellableItems) == 0 || refinery == nil && cargo.IsFull() {
+		sellableItems = append(sellableItems, sellableRefineableItems...)
 	}
 
 	if len(sellableItems) == 0 {

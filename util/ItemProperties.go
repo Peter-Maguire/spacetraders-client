@@ -17,3 +17,7 @@ func IsMineable(item string) bool {
 	}
 	return false
 }
+
+func IsRefineable(item string) bool {
+	return strings.HasSuffix(item, "_ORE")
+}

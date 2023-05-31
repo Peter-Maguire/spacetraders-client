@@ -90,13 +90,16 @@ func (s *Ship) EnsureNavState(state NavState) error {
 	if s.Nav.Status == state {
 		return nil
 	}
+	var err error
 	switch state {
 	case NavOrbit:
-		return s.Orbit()
+		err = s.Orbit()
 	case NavDocked:
-		return s.Dock()
+		err = s.Dock()
+	default:
+		err = errors.New("unknown nav state")
 	}
-	return errors.New("invalid nav state")
+	return err
 }
 
 func (s *Ship) SellCargo(cargoSymbol string, units int) (*SellResult, *http.HttpError) {
@@ -194,7 +197,9 @@ func (s *Ship) TransferCargo(ship string, symbol string, amount int) *http.HttpE
 func (s *Ship) GetCargo() (*ShipCargo, *http.HttpError) {
 	cargo, err := http.Request[ShipCargo]("GET", fmt.Sprintf("my/ships/%s/cargo", s.Symbol), nil)
 
-	s.Cargo = *cargo
+	if err == nil {
+		s.Cargo = *cargo
+	}
 
 	return cargo, err
 }
@@ -220,6 +225,18 @@ func (s *Ship) NegotiateContract() (*Contract, *http.HttpError) {
 	}
 
 	return (*result)["contract"], err
+}
+
+func (s *Ship) Refine(produce string) (*ShipRefineResult, *http.HttpError) {
+	result, err := http.Request[ShipRefineResult]("POST", fmt.Sprintf("my/ships/%s/refine", s.Symbol), map[string]string{
+		"produce": produce,
+	})
+
+	if err == nil {
+		s.Cargo = result.Cargo
+	}
+
+	return result, err
 }
 
 type ShipNav struct {
@@ -260,6 +277,14 @@ type ShipFuel struct {
 		Amount    int       `json:"amount"`
 		Timestamp time.Time `json:"timestamp"`
 	} `json:"consumed"`
+}
+
+func (sf *ShipFuel) IsFull() bool {
+	return sf.Current >= sf.Capacity
+}
+
+func (sf *ShipFuel) GetRemainingCapacity() int {
+	return sf.Capacity - sf.Current
 }
 
 type ShipFrame struct {

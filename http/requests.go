@@ -219,7 +219,7 @@ func getRequestPriority(path string) int {
 		return 11
 	}
 	// Mining should happen before other things
-	if strings.HasSuffix(path, "/extract") || strings.HasSuffix(path, "/jettison") {
+	if strings.HasSuffix(path, "/extract") || strings.HasSuffix(path, "/jettison") || strings.HasSuffix(path, "/refine") || strings.HasSuffix(path, "/transfer") {
 		return 10
 	}
 	// Selling has to have priority over transfers for haulers

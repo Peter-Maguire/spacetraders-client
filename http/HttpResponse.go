@@ -25,7 +25,7 @@ func (e *HttpError) Error() string {
 	if e.InternalError != nil {
 		return "Internal Error: " + e.InternalError.Error()
 	}
-	return fmt.Sprintf("[%d] %s ", e.Code, e.Message)
+	return fmt.Sprintf("[%d] %s %v", e.Code, e.Message, e.Data)
 }
 
 func InternalError(err error) *HttpError {

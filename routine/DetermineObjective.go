@@ -60,6 +60,12 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
+	if state.Ship.Registration.Role == "REFINERY" {
+		return RoutineResult{
+			SetRoutine: Refine{},
+		}
+	}
+
 	if state.Ship.IsMiningShip() {
 		if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
 			state.Log("We're full up here")

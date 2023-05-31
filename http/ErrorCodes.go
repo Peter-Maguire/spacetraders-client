@@ -10,7 +10,10 @@ const (
 	ErrShipAtDestination      ErrorCode = 4204
 	ErrCannotExtractHere      ErrorCode = 4205
 	ErrInsufficientAntimatter ErrorCode = 4212
-	ErrShipInTransit          ErrorCode = 4214
+
+	ErrTransferCargoFull   ErrorCode = 4217
+	ErrCargoUnitCountError ErrorCode = 4219
+	ErrShipInTransit       ErrorCode = 4214
 
 	ErrShipSurveyVerification ErrorCode = 4220
 
