@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"io"
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +39,18 @@ var Waiting = 0
 var IsRunningRequests = false
 
 var token = fmt.Sprintf("Bearer %s", os.Getenv("TOKEN"))
+
+var (
+	httpResponses = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "st_http_responses",
+		Help: "Number of HTTP responses by code",
+	}, []string{"path", "method", "code"})
+
+	httpRequestTime = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name: "st_http_response_time",
+		Help: "HTTP response time",
+	})
+)
 
 func makeRequest[T any](method string, path string, body any) (*HttpResponse[T], *HttpError) {
 	// We can't set this to bytes.Buffer type because net/http assumes data of that type will not be nil
@@ -152,12 +167,14 @@ func doRequests() (bool, time.Duration) {
 	RequestBuffer = RequestBuffer[1:]
 	RBufferLock.Unlock()
 	res, err := http.DefaultClient.Do(or.Req)
-
+	requestStop := time.Now()
 	var data []byte
 
 	if err == nil {
 		data, err = io.ReadAll(res.Body)
 	}
+
+	httpResponses.WithLabelValues(or.OriginalPath, or.Req.Method, strconv.Itoa(res.StatusCode)).Inc()
 
 	for _, ch := range or.ReturnChannels {
 		ch <- IncomingResponse{
@@ -167,8 +184,8 @@ func doRequests() (bool, time.Duration) {
 		}
 	}
 
-	requestStop := time.Now()
 	requestTime := requestStop.Sub(requestStart)
+	httpRequestTime.Observe(float64(requestTime))
 	return true, requestTime
 }
 
@@ -176,7 +193,7 @@ func requestLoop() {
 	IsRunningRequests = true
 	go func() {
 		for {
-			sort.Slice(RequestBuffer, func(i, j int) bool {
+			sort.SliceStable(RequestBuffer, func(i, j int) bool {
 				return RequestBuffer[i].Priority > RequestBuffer[j].Priority
 			})
 			requests, timing := doRequests()
