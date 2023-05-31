@@ -199,6 +199,14 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol).Add(float64(sellResult.Transaction.Units))
 		}
 	}
+
+	marketFuel := updatedMarketData.GetTradeGood("FUEL")
+
+	if marketFuel != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {
+		state.Log("Refuelling whilst I have the opportunity")
+		_ = state.Ship.Refuel()
+	}
+
 	state.FireEvent("sellComplete", state.Agent)
 
 	return RoutineResult{
