@@ -32,6 +32,11 @@ var (
 		Name: "st_agent_ships",
 		Help: "Current Ship Count",
 	}, []string{"role", "system", "waypoint"})
+
+	shipStates = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "st_ship_state",
+		Help: "Ship States",
+	}, []string{"name", "state"})
 )
 
 func Init() *Orchestrator {
@@ -205,6 +210,7 @@ func (o *Orchestrator) runEvents() {
 func (o *Orchestrator) routineLoop(state *routine.State) {
 	state.CurrentRoutine = routine.DetermineObjective{}
 	for {
+		shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(1)
 		routineResult := state.CurrentRoutine.Run(state)
 		state.WaitingForHttp = false
 		if routineResult.WaitSeconds > 0 {
@@ -225,17 +231,20 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
 		if state.ForceRoutine != nil {
 			state.Log("Forced routine change")
+			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
 			state.CurrentRoutine = state.ForceRoutine
 			state.ForceRoutine = nil
 			continue
 		}
 
 		if routineResult.SetRoutine != nil {
+			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
 			state.Log(fmt.Sprintf("%s -> %s", state.CurrentRoutine.Name(), routineResult.SetRoutine.Name()))
 			state.CurrentRoutine = routineResult.SetRoutine
 		}
 
 		if routineResult.Stop {
+			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
 			state.CurrentRoutine = nil
 			state.StoppedReason = routineResult.StopReason
 			state.Log("Stopping Routine")
