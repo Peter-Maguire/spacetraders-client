@@ -12,6 +12,13 @@ type Refuel struct {
 }
 
 func (r Refuel) Run(state *State) RoutineResult {
+
+	if state.Ship.Fuel.IsFull() {
+		state.Log("We don't have the fuel to get to wherever we're going, so we drift there")
+		_ = state.Ship.SetFlightMode("DRIFT")
+		return RoutineResult{SetRoutine: r.next}
+	}
+
 	//state.Log(fmt.Sprintf("Has tried market: %v", r.hasTriedMarket))
 	// TODO: rewrite this code for more efficient refuelling
 	if !r.hasTriedMarket {
