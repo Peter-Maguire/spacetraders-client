@@ -36,7 +36,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 			}
 		}
 
-		if haulerNumber == 0 {
+		if haulerNumber == 0 && false {
 			if state.Contract != nil && state.Contract.Fulfilled == false {
 				for _, deliverable := range state.Contract.Terms.Deliver {
 					if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
