@@ -96,8 +96,9 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		state.Log("Cargo must be out of date, retrying")
 		_, _ = state.Ship.GetCargo()
 		return RoutineResult{}
-	case http.ErrAlreadyInSystem:
-		return RoutineResult{SetRoutine: g.next}
+		// TODO: figure out how this ship has gotten stuck here
+		//case http.ErrAlreadyInSystem:
+		//return RoutineResult{SetRoutine: g.next}
 	}
 
 	state.Log("Unable to jump")
