@@ -208,6 +208,9 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	for _, item := range sensibleOpportunities[0].SellableHere {
 		sellableSlot := state.Ship.Cargo.GetSlotWithItem(item)
+		if sellableSlot == nil {
+			continue
+		}
 		state.WaitingForHttp = true
 		sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
 		state.WaitingForHttp = false
