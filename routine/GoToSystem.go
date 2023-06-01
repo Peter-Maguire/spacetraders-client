@@ -16,6 +16,10 @@ type GoToSystem struct {
 
 func (g GoToSystem) Run(state *State) RoutineResult {
 
+	if state.Ship.Nav.SystemSymbol == g.system {
+		return RoutineResult{SetRoutine: g.next}
+	}
+
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 	if currentSystem != nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
@@ -92,6 +96,8 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		state.Log("Cargo must be out of date, retrying")
 		_, _ = state.Ship.GetCargo()
 		return RoutineResult{}
+	case http.ErrAlreadyInSystem:
+		return RoutineResult{SetRoutine: g.next}
 	}
 
 	state.Log("Unable to jump")

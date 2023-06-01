@@ -9,6 +9,7 @@ const (
 	ErrCargoFull              ErrorCode = 4228
 	ErrShipAtDestination      ErrorCode = 4204
 	ErrCannotExtractHere      ErrorCode = 4205
+	ErrAlreadyInSystem        ErrorCode = 4208
 	ErrInsufficientAntimatter ErrorCode = 4212
 
 	ErrTransferCargoFull   ErrorCode = 4217
