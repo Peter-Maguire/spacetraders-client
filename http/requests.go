@@ -172,9 +172,8 @@ func doRequests() (bool, time.Duration) {
 
 	if err == nil {
 		data, err = io.ReadAll(res.Body)
+		httpResponses.WithLabelValues(or.OriginalPath, or.Req.Method, strconv.Itoa(res.StatusCode)).Inc()
 	}
-
-	httpResponses.WithLabelValues(or.OriginalPath, or.Req.Method, strconv.Itoa(res.StatusCode)).Inc()
 
 	for _, ch := range or.ReturnChannels {
 		ch <- IncomingResponse{

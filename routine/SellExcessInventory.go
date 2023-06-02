@@ -138,7 +138,12 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			waypointDistance := util.CalcDistance(currentWaypoint.X, currentWaypoint.Y, market.WaypointX, market.WaypointY)
 
 			mop.TravelCost = util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
-			mop.SalePrice = market.SellCost * state.Ship.Cargo.GetSlotWithItem(market.Good).Units
+			slot := state.Ship.Cargo.GetSlotWithItem(market.Good)
+			if slot == nil {
+				// We lost this somehow due to a race condition
+				continue
+			}
+			mop.SalePrice = market.SellCost * slot.Units
 			marketOpportunities = append(marketOpportunities, mop)
 		}
 
