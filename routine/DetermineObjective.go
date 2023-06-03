@@ -66,6 +66,12 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
+	if state.Ship.Registration.Role == "SURVEYOR" {
+		//return RoutineResult{
+		//	SetRoutine: GoToMiningArea{GetSurvey{}},
+		//}
+	}
+
 	if state.Ship.IsMiningShip() {
 		if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
 			state.Log("We're full up here")
@@ -75,14 +81,8 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 			}
 		}
 
-		if state.Contract != nil {
-			return RoutineResult{
-				SetRoutine: GoToMiningArea{GetSurvey{}},
-			}
-		} else {
-			return RoutineResult{
-				SetRoutine: GoToMiningArea{MineOres{}},
-			}
+		return RoutineResult{
+			SetRoutine: GoToMiningArea{MineOres{}},
 		}
 	}
 

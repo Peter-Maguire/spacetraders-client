@@ -12,6 +12,18 @@ type Agent struct {
 	Credits      int      `json:"credits"`
 }
 
+type AgentRegister struct {
+	Faction string `json:"faction"`
+	Symbol  string `json:"symbol"`
+}
+
+//func RegisterAgent(symbol string, faction string) {
+//	return http.Request[Agent]("POST", "", AgentRegister{
+//		Faction: faction,
+//		Symbol:  symbol,
+//	})
+//}
+
 func GetAgent() (*Agent, *http.HttpError) {
 	return http.Request[Agent]("GET", "my/agent", nil)
 }
@@ -24,7 +36,7 @@ func (a *Agent) Contracts() (*[]Contract, error) {
 	return http.PaginatedRequest[Contract]("my/contracts", 1, 0)
 }
 
-func (a *Agent) Systems(page int) (*[]System, error) {
+func (a *Agent) Systems(page int) (*[]System, *http.HttpError) {
 	return http.Request[[]System]("GET", fmt.Sprintf("systems?total=20&page=%d", page), nil)
 }
 

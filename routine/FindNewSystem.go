@@ -19,8 +19,18 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 
+	if currentSystem == nil {
+		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
+		database.AddUnvisitedSystems([]entity.System{*currentSystem}, 0)
+	}
+
 	if f.startFromPage == 0 {
 		unvisitedSystems := database.GetUnvisitedSystems()
+
+		if len(unvisitedSystems) == 0 {
+			f.startFromPage = 1
+			return RoutineResult{SetRoutine: f}
+		}
 
 		sort.Slice(unvisitedSystems, func(i, j int) bool {
 			sys1 := unvisitedSystems[i]
@@ -31,6 +41,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 		for _, candidate := range unvisitedSystems {
 			// Because we are sorted by distance, we can stop at 2000 since no other systems will be reachable
 			if util.CalcDistance(currentSystem.X, currentSystem.Y, candidate.X, candidate.Y) > 2000 {
+				state.Log(fmt.Sprintf("System %s is over 2000 units away", candidate.System))
 				break
 			}
 
@@ -72,8 +83,16 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprintf("Starting on page %d", f.startFromPage))
 
 	state.WaitingForHttp = true
-	systemsPtr, _ := state.Agent.Systems(f.startFromPage)
+	systemsPtr, err := state.Agent.Systems(f.startFromPage)
 	state.WaitingForHttp = false
+
+	if err != nil {
+		state.Log(err.Error())
+		return RoutineResult{
+			Stop:       true,
+			StopReason: err.Error(),
+		}
+	}
 
 	systems := *systemsPtr
 
@@ -112,6 +131,17 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				Stop:       true,
 				StopReason: "Not at jump gate or no antimatter",
 			}
+		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current {
+			_ = state.Ship.SetFlightMode("DRIFT")
+			res, err := state.Ship.Warp(system.Waypoints[0].Symbol)
+			if err != nil {
+				continue
+			}
+			arrival := res.Nav.Route.Arrival
+			return RoutineResult{
+				WaitUntil:  &arrival,
+				SetRoutine: Explore{},
+			}
 		}
 	}
 	state.Log("No new systems to check on this page")
@@ -124,15 +154,18 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 func (f FindNewSystem) CanJumpTo(toSystem *entity.System, fromSystem *entity.System) bool {
 	// Can't jump to the system we are currently in
 	if toSystem.Symbol == fromSystem.Symbol {
+		fmt.Println("Can't jump to current system")
 		return false
 	}
 	// There is no jump gate at the destination
 	if !f.HasJumpGate(toSystem.Waypoints) {
+		fmt.Println("System has no jump gate")
 		return false
 	}
 
 	// Can't jump further than 2000 units
 	if toSystem.GetDistanceFrom(fromSystem) >= 2000 {
+		fmt.Println("System is too far away")
 		return false
 	}
 
