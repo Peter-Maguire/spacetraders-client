@@ -4,13 +4,10 @@ go 1.19
 
 require (
 	github.com/gorilla/websocket v1.5.0
-	github.com/jellydator/ttlcache/v3 v3.0.1
 	github.com/prometheus/client_golang v1.15.1
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.25.1
 )
-
-require golang.org/x/sync v0.1.0 // indirect
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -28,5 +25,5 @@ require (
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 )
