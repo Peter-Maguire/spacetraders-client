@@ -8,6 +8,8 @@ import (
 )
 
 type Explore struct {
+	marketTargets []string
+	next          Routine
 }
 
 func (e Explore) Run(state *State) RoutineResult {
@@ -39,9 +41,15 @@ func (e Explore) Run(state *State) RoutineResult {
 	if waypointData.HasTrait("SHIPYARD") {
 		state.Log("There's a shipyard here")
 		state.WaitingForHttp = true
-		shipyardData, _ = waypointData.Symbol.GetShipyard()
+		var err error
+		shipyardData, err = waypointData.Symbol.GetShipyard()
 		state.WaitingForHttp = false
-		database.StoreShipCosts(shipyardData)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			database.StoreShipCosts(shipyardData)
+		}
+
 	}
 
 	if waypointData.HasTrait("MARKETPLACE") {
@@ -67,13 +75,30 @@ func (e Explore) Run(state *State) RoutineResult {
 				metrics.NumCredits.Set(float64(res.Agent.Credits))
 			}
 		}
-	}
 
-	database.VisitWaypoint(waypointData)
+		if e.marketTargets != nil {
+			for _, good := range marketData.TradeGoods {
+				if good.SellPrice > 0 {
+					for _, target := range e.marketTargets {
+						if good.Symbol == target {
+							state.Log(fmt.Sprintf("Found market target %s", good.Symbol))
+							return RoutineResult{
+								SetRoutine: e.next,
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
 
 	return RoutineResult{}
 }
 
 func (e Explore) Name() string {
+	if e.marketTargets != nil {
+		return "Explore (Find Market)"
+	}
 	return "Explore"
 }

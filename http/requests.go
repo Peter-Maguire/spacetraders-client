@@ -113,6 +113,8 @@ func makeRequest[T any](method string, path string, body any) (*HttpResponse[T],
 		return nil, InternalError(resp.Error)
 	}
 	output := &HttpResponse[T]{}
+	fmt.Printf("%s: %s\n", req.Method, req.URL.Path)
+	fmt.Println(string(resp.Data))
 	err = json.Unmarshal(resp.Data, output)
 	if output.Error != nil {
 		return output, output.Error

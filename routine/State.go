@@ -35,7 +35,7 @@ type OrchestratorEvent struct {
 }
 
 func (s *State) Log(message string) {
-	go ui.MainLog(fmt.Sprintf("[%s] %s\n", s.Ship.Registration.Name, message))
+	ui.MainLog(fmt.Sprintf("[%s] %s", s.Ship.Registration.Name, message))
 }
 
 func (s *State) FireEvent(event string, data any) {

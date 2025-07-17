@@ -9,7 +9,7 @@ import (
 )
 
 func (o *Orchestrator) onSellComplete(agent *entity.Agent) {
-	ui.MainLog(fmt.Sprintf("Credits now: %d\n", agent.Credits))
+	ui.MainLog(fmt.Sprintf("Credits now: %d", agent.Credits))
 
 	metrics.NumCredits.Set(float64(agent.Credits))
 

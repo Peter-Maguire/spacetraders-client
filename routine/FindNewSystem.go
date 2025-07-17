@@ -6,6 +6,7 @@ import (
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/http"
 	"spacetraders/util"
 )
 
@@ -55,17 +56,22 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 			if f.CanJumpTo(&systemEntity, currentSystem) {
 				state.Log(fmt.Sprintf("Found good known but unexplored system %s", systemEntity.Symbol))
 				state.WaitingForHttp = true
-				jumpResult, err := state.Ship.Jump(systemEntity.Symbol)
-				state.WaitingForHttp = false
-				if err != nil {
-					state.Log("Error jumping")
-					fmt.Println(err)
-				} else {
-					cooldownTime := jumpResult.Cooldown.Expiration
-					return RoutineResult{
-						WaitUntil:  &cooldownTime,
-						SetRoutine: Explore{},
+				jumpGate := systemEntity.GetJumpGate()
+				if jumpGate != nil {
+					jumpResult, err := state.Ship.Jump(systemEntity.Waypoints[0].Symbol)
+					state.WaitingForHttp = false
+					if err != nil {
+						state.Log("Error jumping")
+						fmt.Println(err)
+					} else {
+						cooldownTime := jumpResult.Cooldown.Expiration
+						return RoutineResult{
+							WaitUntil:  &cooldownTime,
+							SetRoutine: Explore{},
+						}
 					}
+				} else {
+					state.Log("System doesn't have a jump gate")
 				}
 			}
 		}
@@ -113,9 +119,18 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 			if f.isAtJumpGate || state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 0 {
 				state.Log(fmt.Sprintf("Jumping to %s", system.Symbol))
 				state.WaitingForHttp = true
-				jumpResult, err := state.Ship.Jump(system.Symbol)
+				jumpGate := system.GetJumpGate()
+				if jumpGate == nil {
+					state.Log("No jump gate in this system")
+					continue
+				}
+				jumpResult, err := state.Ship.Jump(jumpGate.Symbol)
 				state.WaitingForHttp = false
 				if err != nil {
+					if err.Code == http.ErrJumpGateUnderConstruction {
+						state.Log("Gate is under construction")
+						continue
+					}
 					state.Log("Error jumping")
 					fmt.Println(err)
 				} else {
@@ -133,8 +148,15 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 			}
 		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current {
 			_ = state.Ship.SetFlightMode("DRIFT")
-			res, err := state.Ship.Warp(system.Waypoints[0].Symbol)
+			jumpGate := system.GetJumpGate()
+			if jumpGate == nil {
+				state.Log("No jump gate in this system")
+				continue
+			}
+			// TODO: Only warp if the ship has a warp drive module
+			res, err := state.Ship.Warp(jumpGate.Symbol)
 			if err != nil {
+				state.Log(err.Error())
 				continue
 			}
 			arrival := res.Nav.Route.Arrival

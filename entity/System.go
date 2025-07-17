@@ -17,6 +17,10 @@ type System struct {
 	Factions     []interface{}         `json:"factions"`
 }
 
+func GetSystem(system string) (*System, *http.HttpError) {
+	return http.Request[System]("GET", fmt.Sprintf("systems/%s", system), nil)
+}
+
 func (s *System) GetWaypoints() (*[]WaypointData, *http.HttpError) {
 	return http.Request[[]WaypointData]("GET", fmt.Sprintf("systems/%s/waypoints", s.Symbol), nil)
 }
@@ -24,6 +28,15 @@ func (s *System) GetWaypoints() (*[]WaypointData, *http.HttpError) {
 func (s *System) GetLimitedWaypoint(name Waypoint) *LimitedWaypointData {
 	for _, wp := range s.Waypoints {
 		if wp.Symbol == name {
+			return &wp
+		}
+	}
+	return nil
+}
+
+func (s *System) GetJumpGate() *LimitedWaypointData {
+	for _, wp := range s.Waypoints {
+		if wp.Type == "JUMP_GATE" {
 			return &wp
 		}
 	}

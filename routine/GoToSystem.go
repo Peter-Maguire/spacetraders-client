@@ -81,7 +81,15 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	}
 
 	_ = state.Ship.EnsureNavState(entity.NavOrbit)
-	jumpResult, err := state.Ship.Jump(g.system)
+	systemData, _ := entity.GetSystem(g.system)
+	jumpGate := systemData.GetJumpGate()
+	if jumpGate == nil {
+		return RoutineResult{
+			Stop:       true,
+			StopReason: "No Jump Gate found in system",
+		}
+	}
+	jumpResult, err := state.Ship.Jump(jumpGate.Symbol)
 
 	if err == nil {
 		waitUntil := jumpResult.Cooldown.Expiration

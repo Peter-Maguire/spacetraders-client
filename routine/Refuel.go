@@ -14,6 +14,7 @@ type Refuel struct {
 func (r Refuel) Run(state *State) RoutineResult {
 
 	if state.Ship.Fuel.IsFull() {
+		// TODO: this implies we do this if we do have fuel already
 		state.Log("We don't have the fuel to get to wherever we're going, so we drift there")
 		_ = state.Ship.SetFlightMode("DRIFT")
 		return RoutineResult{SetRoutine: r.next}
@@ -59,6 +60,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 			if refuelErr == nil {
 				if state.Ship.Nav.FlightMode == "DRIFT" {
+					state.Log("Exiting drift mode")
 					_ = state.Ship.SetFlightMode("CRUISE")
 				}
 

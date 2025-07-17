@@ -77,11 +77,11 @@ func (s *Ship) Orbit() error {
 }
 
 func (s *Ship) SetFlightMode(mode string) *http.HttpError {
-	shipNavUpdate, err := http.Request[ShipNav]("PATCH", fmt.Sprintf("my/ships/%s/nav", s.Symbol), map[string]string{
+	shipNavUpdate, err := http.Request[Ship]("PATCH", fmt.Sprintf("my/ships/%s/nav", s.Symbol), map[string]string{
 		"flightMode": mode,
 	})
 	if shipNavUpdate != nil {
-		s.Nav = *shipNavUpdate
+		s.Nav = shipNavUpdate.Nav
 	}
 	return err
 }
@@ -135,9 +135,9 @@ func (s *Ship) Survey() (*SurveyResult, *http.HttpError) {
 	return http.Request[SurveyResult]("POST", fmt.Sprintf("my/ships/%s/survey", s.Symbol), nil)
 }
 
-func (s *Ship) Jump(system string) (*ShipJumpResult, *http.HttpError) {
-	jumpResult, err := http.Request[ShipJumpResult]("POST", fmt.Sprintf("my/ships/%s/jump", s.Symbol), map[string]string{
-		"systemSymbol": system,
+func (s *Ship) Jump(waypoint Waypoint) (*ShipJumpResult, *http.HttpError) {
+	jumpResult, err := http.Request[ShipJumpResult]("POST", fmt.Sprintf("my/ships/%s/jump", s.Symbol), map[string]Waypoint{
+		"waypointSymbol": waypoint,
 	})
 	if err == nil {
 		s.Nav = jumpResult.Nav
@@ -294,7 +294,9 @@ type ShipFrame struct {
 	ModuleSlots    int             `json:"moduleSlots"`
 	MountingPoints int             `json:"mountingPoints"`
 	FuelCapacity   int             `json:"fuelCapacity"`
-	Condition      int             `json:"condition"`
+	Condition      float64         `json:"condition"`
+	Integrity      float64         `json:"integrity"`
+	Quality        int             `json:"quality"`
 	Requirements   ShipRequirement `json:"requirements"`
 }
 
@@ -302,7 +304,7 @@ type ShipReactor struct {
 	Symbol       string          `json:"symbol"`
 	Name         string          `json:"name"`
 	Description  string          `json:"description"`
-	Condition    int             `json:"condition"`
+	Condition    float64         `json:"condition"`
 	PowerOutput  int             `json:"powerOutput"`
 	Requirements ShipRequirement `json:"requirements"`
 }

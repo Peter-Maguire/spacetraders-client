@@ -18,8 +18,10 @@ const (
 
 	ErrShipSurveyVerification ErrorCode = 4220
 
-	ErrShipSurveyExpired   ErrorCode = 4221
-	ErrShipSurveyExhausted ErrorCode = 4224
-	ErrInsufficientFunds   ErrorCode = 4600
-	ErrNoFactionPresence   ErrorCode = 4700
+	ErrShipSurveyExpired         ErrorCode = 4221
+	ErrShipSurveyExhausted       ErrorCode = 4224
+	ErrJumpGateUnderConstruction ErrorCode = 4256
+
+	ErrInsufficientFunds ErrorCode = 4600
+	ErrNoFactionPresence ErrorCode = 4700
 )

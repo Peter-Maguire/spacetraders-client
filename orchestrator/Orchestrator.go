@@ -50,6 +50,18 @@ func Init() *Orchestrator {
 		os.Exit(1)
 	}
 
+	hqSystem := agent.Headquarters.GetSystemName()
+	if database.GetSystem(hqSystem) == nil {
+		ui.MainLog("We haven't stored our main system yet")
+		systemData, err := entity.GetSystem(hqSystem)
+		if err != nil {
+			fmt.Println("failed to store system", err)
+			os.Exit(1)
+		}
+		fmt.Println(systemData)
+		database.StoreSystem(systemData)
+	}
+
 	metrics.NumCredits.Set(float64(agent.Credits))
 
 	contracts, _ := agent.Contracts()
@@ -66,7 +78,7 @@ func Init() *Orchestrator {
 	if contract == nil {
 		for _, c := range *contracts {
 			if !c.Fulfilled {
-				ui.MainLog("Accepted contract\n")
+				ui.MainLog("Accepted contract")
 				err = c.Accept()
 				if err == nil {
 					contract = &c
@@ -79,7 +91,7 @@ func Init() *Orchestrator {
 	}
 
 	if contract == nil {
-		ui.MainLog("No current Contract\n")
+		ui.MainLog("No current Contract")
 	} else {
 		metrics.ContractProgress.Set(float64(contract.Terms.Deliver[0].UnitsFulfilled))
 		metrics.ContractRequirement.Set(float64(contract.Terms.Deliver[0].UnitsRequired))
@@ -93,29 +105,30 @@ func Init() *Orchestrator {
 	}
 
 	waypoints, _ := agent.Headquarters.GetSystemWaypoints()
-
+	database.LogWaypoints(waypoints)
 	for _, waypoint := range *waypoints {
 		if waypoint.HasTrait("SHIPYARD") {
-			ui.MainLog(fmt.Sprintln("Found Shipyard at ", waypoint.Symbol, "\n"))
+			ui.MainLog(fmt.Sprintf("Found Shipyard at %s", waypoint.Symbol))
 			orc.Shipyard = waypoint.Symbol
 			break
 		}
 	}
 
-	ships, _ := orc.Agent.Ships()
-
+	ships, err2 := orc.Agent.Ships()
+	if err2 != nil {
+		fmt.Println(err2)
+	}
+	shipCount := len(*ships)
+	ui.MainLog(fmt.Sprintf("We have %d ships:", shipCount))
 	for _, ship := range *ships {
 		agentShips.WithLabelValues(ship.Registration.Role, ship.Nav.SystemSymbol, string(ship.Nav.WaypointSymbol)).Add(1)
+		ui.MainLog(fmt.Sprintf("%s: %s type", ship.Registration.Name, ship.Registration.Role))
 		if ship.Registration.Role == "HAULER" {
-			ui.MainLog(fmt.Sprintf("%s is HAULER\n", ship.Registration))
+			ui.MainLog(fmt.Sprintf("%s is HAULER", ship.Registration))
 			shipCopy := ship
 			orc.Haulers = append(orc.Haulers, &shipCopy)
 		}
 	}
-
-	shipCount := len(*ships)
-
-	ui.MainLog(fmt.Sprintf("We have %d ships", shipCount))
 
 	// TODO: this logic should be more nuanced
 	if shipCount < 10 {
@@ -126,12 +139,18 @@ func Init() *Orchestrator {
 		orc.ShipToBuy = "SHIP_LIGHT_HAULER"
 	}
 
+	// TODO: This should be merged into the explore logic
+	// TODO: Does this even work when we're not actually there?
 	shipyardStock, err := orc.Shipyard.GetShipyard()
 	if err == nil {
-		go database.StoreShipCosts(shipyardStock)
+		ui.MainLog(fmt.Sprintf("Shipyard at %s has %d types, %d available", shipyardStock.Symbol, len(shipyardStock.ShipTypes), len(shipyardStock.Ships)))
+		if len(shipyardStock.Ships) > 0 {
+			// TODO: This should maybe store the available ship types here even if we don't know the price
+			go database.StoreShipCosts(shipyardStock)
+		}
 		for _, stock := range shipyardStock.Ships {
 			if stock.Name == orc.ShipToBuy {
-				ui.MainLog(fmt.Sprintf("Ship %s is available to buy at %s for %d credits\n", orc.ShipToBuy, orc.Shipyard, stock.PurchasePrice))
+				ui.MainLog(fmt.Sprintf("Ship %s is available to buy at %s for %d credits", orc.ShipToBuy, orc.Shipyard, stock.PurchasePrice))
 				orc.CreditTarget = stock.PurchasePrice
 			}
 		}
@@ -141,11 +160,11 @@ func Init() *Orchestrator {
 
 	orc.States = make([]*routine.State, len(*ships))
 
-	ui.MainLog(fmt.Sprint("Starting Routines\n"))
+	ui.MainLog(fmt.Sprint("Starting Routines"))
 	//orc.StatesMutex.Lock()
 	for i, ship := range *ships {
 		if shipFilter != "" && !strings.Contains(shipFilter, ship.Symbol) {
-			ui.MainLog(fmt.Sprintf("Skipping %s because it's not in the ship filter\n", ship.Symbol))
+			ui.MainLog(fmt.Sprintf("Skipping %s because it's not in the ship filter", ship.Symbol))
 			continue
 		}
 		shipPtr := ship
@@ -173,7 +192,7 @@ func (o *Orchestrator) runEvents() {
 		case "sellComplete":
 			o.onSellComplete(event.Data.(*entity.Agent))
 		case "goodSurveyFound":
-			ui.MainLog("Someone found a good survey\n")
+			ui.MainLog("Someone found a good survey")
 			//o.StatesMutex.Lock()
 			for _, state := range o.States {
 				if state.Ship.IsMiningShip() && state.Survey == nil {
@@ -182,7 +201,7 @@ func (o *Orchestrator) runEvents() {
 			}
 			//o.StatesMutex.Unlock()
 		case "surveyExhausted":
-			ui.MainLog("Survey bad\n")
+			ui.MainLog("Survey bad")
 			//o.StatesMutex.Lock()
 			for _, state := range o.States {
 				if state.Survey == event.Data.(*entity.Survey) {

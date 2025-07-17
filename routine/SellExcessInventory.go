@@ -102,9 +102,12 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	if len(markets) == 0 {
 		state.Log("Could not sell, no markets were found that are selling what we need")
+		// TODO: This should specifically be exploring until it finds a market, then going back to s.next
 		return RoutineResult{
-			Stop:       true,
-			StopReason: "No markets available to sell to",
+			SetRoutine: Explore{
+				marketTargets: sellableItems,
+				next:          s,
+			},
 		}
 	}
 

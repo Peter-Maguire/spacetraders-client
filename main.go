@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"os"
 	"spacetraders/database"
+	"spacetraders/entity"
 	"spacetraders/http"
 	"spacetraders/orchestrator"
 	"spacetraders/ui"
@@ -41,23 +42,38 @@ var (
 
 func main() {
 
-	if os.Getenv("TOKEN") == "" {
-		fmt.Println("Resetting...")
+	serverStatus, _ := entity.GetServerStatus()
+	fmt.Printf("SpaceTraders version %s\n", serverStatus.Version)
+	fmt.Printf("%s\n", serverStatus.Status)
+	fmt.Printf("Next Reset: %s\n", serverStatus.ResetDate)
 
+	if os.Getenv("TOKEN") == "" {
+		fmt.Println("Token not provided")
+		return
 	}
+
+	fmt.Println("Starting Database...")
+	database.Init()
 
 	enableUi = os.Getenv("DISABLE_UI") != "1"
 	if enableUi {
+		fmt.Println("Starting UI...")
 		go ui.Init()
 	}
-	http.Init()
-	database.Init()
 
+	fmt.Println("Starting Request Queue...")
+	http.Init()
+
+	fmt.Println("Starting Orchestrator...")
 	orc = orchestrator.Init()
 
 	if enableUi {
 		updateShipStates()
 	}
+	//ticker := time.NewTicker(1 * time.Second)
+	//for {
+	//	<-ticker.C
+	//}
 }
 
 func updateShipStates() {

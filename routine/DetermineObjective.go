@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/database"
 	"spacetraders/util"
 	"time"
 )
@@ -10,9 +11,6 @@ type DetermineObjective struct {
 }
 
 func (d DetermineObjective) Run(state *State) RoutineResult {
-	if state.Ship.Nav.FlightMode != "CRUISE" {
-		_ = state.Ship.SetFlightMode("CRUISE")
-	}
 	if state.Ship.Nav.Status == "IN_TRANSIT" && state.Ship.Nav.Route.Arrival.After(time.Now()) {
 		state.Log("We are currently going somewhere")
 		arrivalTime := state.Ship.Nav.Route.Arrival
@@ -21,7 +19,26 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Registration.Role == "COMMAND" {
+	// TODO: This should be merged with the Explore code in some way
+	visited := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
+	if visited == nil {
+		waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
+		if waypointData.HasTrait("UNCHARTED") {
+			data, err := state.Ship.Chart()
+			if err == nil {
+				state.Log("Charted waypoint")
+				waypointData = data.Waypoint
+			}
+		}
+		database.VisitWaypoint(waypointData)
+	}
+
+	if state.Ship.Nav.FlightMode != "CRUISE" {
+		state.Log("Changing flight mode to CRUISE")
+		_ = state.Ship.SetFlightMode("CRUISE")
+	}
+
+	if /*state.Ship.Registration.Role == "COMMAND" || */ state.Ship.Registration.Role == "SATELLITE" {
 		return RoutineResult{
 			SetRoutine: Explore{},
 		}
@@ -36,7 +53,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 			}
 		}
 
-		if haulerNumber == 0 && false {
+		if haulerNumber == 0 {
 			if state.Contract != nil && state.Contract.Fulfilled == false {
 				for _, deliverable := range state.Contract.Terms.Deliver {
 					if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
@@ -86,7 +103,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	state.Log("This type of ship isn't supported yet")
+	state.Log(fmt.Sprintf("This type of ship (%s) isn't supported yet", state.Ship.Registration.Role))
 	return RoutineResult{
 		Stop:       true,
 		StopReason: "Unknown Ship Type",

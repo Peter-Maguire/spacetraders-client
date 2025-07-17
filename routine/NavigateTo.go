@@ -30,6 +30,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Nav.SystemSymbol != n.waypoint.GetSystemName() {
+		fmt.Println(state.Ship.Nav.SystemSymbol, n.waypoint.GetSystemName())
 		state.Log("Jumping to system first")
 		return RoutineResult{
 			SetRoutine: GoToSystem{next: n, system: n.waypoint.GetSystemName()},
@@ -67,7 +68,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			WaitSeconds: 10,
 		}
 	}
-
+	state.Log(fmt.Sprintf("Navigating until %s", &state.Ship.Nav.Route.Arrival))
 	return RoutineResult{
 		WaitUntil:  &state.Ship.Nav.Route.Arrival,
 		SetRoutine: n.next,
@@ -75,5 +76,5 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 }
 
 func (n NavigateTo) Name() string {
-	return fmt.Sprintf("Navigate to %s", n.waypoint)
+	return fmt.Sprintf("Navigate to %s (then %s)", n.waypoint, n.next.Name())
 }

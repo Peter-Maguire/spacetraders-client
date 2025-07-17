@@ -20,6 +20,22 @@ type System struct {
 	FirstVisited  time.Time
 }
 
+func StoreSystem(system *entity.System) {
+	rawSystem, _ := json.Marshal(system)
+	rawWaypoints, _ := json.Marshal(system.Waypoints)
+
+	storedSystem := System{
+		System:        system.Symbol,
+		Data:          rawSystem,
+		WaypointsData: rawWaypoints,
+		X:             system.X,
+		Y:             system.Y,
+		Visited:       true,
+		FirstVisited:  time.Now(),
+	}
+	db.Clauses(clause.OnConflict{DoNothing: true}).Save(storedSystem)
+}
+
 func GetSystem(system string) *System {
 	visitedSystem := System{
 		System: system,
