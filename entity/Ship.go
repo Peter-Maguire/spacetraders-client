@@ -40,6 +40,15 @@ func (s *Ship) IsMiningShip() bool {
 	return false
 }
 
+func (s *Ship) CanWarp() bool {
+	for _, module := range s.Modules {
+		if strings.Contains(module.Symbol, "WARP") {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {
 	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/navigate", s.Symbol), NavigateRequest{
 		WaypointSymbol: waypoint,
@@ -147,6 +156,9 @@ func (s *Ship) Jump(waypoint Waypoint) (*ShipJumpResult, *http.HttpError) {
 }
 
 func (s *Ship) Warp(waypoint Waypoint) (*ShipWarpResult, *http.HttpError) {
+	if !s.CanWarp() {
+		return nil, &http.HttpError{Code: http.ErrNoWarpDrive, Message: "No Warp drive"}
+	}
 	warpResult, err := http.Request[ShipWarpResult]("POST", fmt.Sprintf("my/ships/%s/warp", s.Symbol), map[string]Waypoint{
 		"waypointSymbol": waypoint,
 	})

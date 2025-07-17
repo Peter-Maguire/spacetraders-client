@@ -57,6 +57,7 @@ func (e Explore) Run(state *State) RoutineResult {
 		state.WaitingForHttp = true
 		marketData, _ = waypointData.Symbol.GetMarket()
 		state.WaitingForHttp = false
+		// TODO: Market rates should include IMPORT, EXPORT and EXCHANGE, not just whatever is going on here
 		database.StoreMarketRates(system, waypointData, marketData.TradeGoods)
 		fuelTrader := marketData.GetTradeGood("FUEL")
 		if fuelTrader != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {

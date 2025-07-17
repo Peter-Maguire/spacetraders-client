@@ -146,14 +146,13 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				Stop:       true,
 				StopReason: "Not at jump gate or no antimatter",
 			}
-		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current {
+		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current && state.Ship.CanWarp() {
 			_ = state.Ship.SetFlightMode("DRIFT")
 			jumpGate := system.GetJumpGate()
 			if jumpGate == nil {
 				state.Log("No jump gate in this system")
 				continue
 			}
-			// TODO: Only warp if the ship has a warp drive module
 			res, err := state.Ship.Warp(jumpGate.Symbol)
 			if err != nil {
 				state.Log(err.Error())

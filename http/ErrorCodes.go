@@ -20,6 +20,7 @@ const (
 
 	ErrShipSurveyExpired         ErrorCode = 4221
 	ErrShipSurveyExhausted       ErrorCode = 4224
+	ErrNoWarpDrive               ErrorCode = 4241
 	ErrJumpGateUnderConstruction ErrorCode = 4256
 
 	ErrInsufficientFunds ErrorCode = 4600
