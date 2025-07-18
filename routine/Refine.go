@@ -35,9 +35,7 @@ func (r Refine) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: NavigateTo{waypoint: mostShips, next: r}}
 	}
 
-	state.WaitingForHttp = true
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
-	state.WaitingForHttp = false
 
 	refineableSlots := make([]entity.ShipInventorySlot, 0)
 	for _, item := range state.Ship.Cargo.Inventory {
@@ -84,9 +82,7 @@ func (r Refine) Run(state *State) RoutineResult {
 		cooldown = refineResult.Cooldown.Expiration
 	}
 
-	state.WaitingForHttp = true
 	cargo, _ := state.Ship.GetCargo(state.Context)
-	state.WaitingForHttp = false
 	availableSpace := cargo.GetRemainingCapacity()
 	usedSpace := 0
 

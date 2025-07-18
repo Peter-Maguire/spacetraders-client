@@ -62,6 +62,9 @@ func makeRequest[T any](ctx context.Context, method string, path string, body an
 		}
 		buf = bytes.NewBuffer(data)
 	}
+	if ctx.Value("state") != nil {
+		ctx.Value("state").(State).SetWaitingForHttp(true)
+	}
 	req, err := http.NewRequest(method, fmt.Sprintf("https://api.spacetraders.io/v2/%s", path), buf)
 	if err != nil {
 		return nil, InternalError(err)
@@ -172,7 +175,9 @@ func doRequests() (bool, time.Duration) {
 	res, err := http.DefaultClient.Do(or.Req)
 	requestStop := time.Now()
 	var data []byte
-
+	if or.Context.Value("state") != nil {
+		or.Context.Value("state").(State).SetWaitingForHttp(false)
+	}
 	if err == nil {
 		data, err = io.ReadAll(res.Body)
 		httpResponses.WithLabelValues(or.OriginalPath, or.Req.Method, strconv.Itoa(res.StatusCode)).Inc()

@@ -29,11 +29,9 @@ func (e Explore) Run(state *State) RoutineResult {
 	}
 
 	state.Log(fmt.Sprintf("Checking out %s", state.Ship.Nav.WaypointSymbol))
-	state.WaitingForHttp = true
 	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
-	state.WaitingForHttp = false
-
+	
 	var shipyardData *entity.ShipyardStock
 	var marketData *entity.Market
 
@@ -52,10 +50,8 @@ func (e Explore) Run(state *State) RoutineResult {
 
 	if waypointData.HasTrait("SHIPYARD") {
 		state.Log("There's a shipyard here")
-		state.WaitingForHttp = true
 		var err error
 		shipyardData, err = waypointData.Symbol.GetShipyard(state.Context)
-		state.WaitingForHttp = false
 		if err != nil {
 			fmt.Println(err)
 		} else {
@@ -66,9 +62,7 @@ func (e Explore) Run(state *State) RoutineResult {
 
 	if waypointData.HasTrait("MARKETPLACE") {
 		state.Log("There's a marketplace here")
-		state.WaitingForHttp = true
 		marketData, _ = waypointData.Symbol.GetMarket(state.Context)
-		state.WaitingForHttp = false
 		// TODO: Market rates should include IMPORT, EXPORT and EXCHANGE, not just whatever is going on here
 		database.StoreMarketRates(system, waypointData, marketData.TradeGoods)
 		database.StoreMarketExchange(system, waypointData, "export", marketData.Exports)

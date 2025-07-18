@@ -55,11 +55,9 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 
 			if f.CanJumpTo(&systemEntity, currentSystem) {
 				state.Log(fmt.Sprintf("Found good known but unexplored system %s", systemEntity.Symbol))
-				state.WaitingForHttp = true
 				jumpGate := systemEntity.GetJumpGate()
 				if jumpGate != nil {
 					jumpResult, err := state.Ship.Jump(state.Context, systemEntity.Waypoints[0].Symbol)
-					state.WaitingForHttp = false
 					if err != nil {
 						state.Log("Error jumping")
 						fmt.Println(err)
@@ -88,9 +86,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 
 	state.Log(fmt.Sprintf("Starting on page %d", f.startFromPage))
 
-	state.WaitingForHttp = true
 	systemsPtr, err := state.Agent.Systems(state.Context, f.startFromPage)
-	state.WaitingForHttp = false
 
 	if err != nil {
 		state.Log(err.Error())
@@ -118,14 +114,12 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 		if f.CanJumpTo(&system, currentSystem) {
 			if f.isAtJumpGate || state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 0 {
 				state.Log(fmt.Sprintf("Jumping to %s", system.Symbol))
-				state.WaitingForHttp = true
 				jumpGate := system.GetJumpGate()
 				if jumpGate == nil {
 					state.Log("No jump gate in this system")
 					continue
 				}
 				jumpResult, err := state.Ship.Jump(state.Context, jumpGate.Symbol)
-				state.WaitingForHttp = false
 				if err != nil {
 					if err.Code == http.ErrJumpGateUnderConstruction {
 						state.Log("Gate is under construction")

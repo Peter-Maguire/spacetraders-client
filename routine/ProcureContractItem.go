@@ -138,9 +138,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	}
 
 	state.Log(fmt.Sprintf("Attempting to purchase %dx %s", purchaseAmount, p.deliverable.TradeSymbol))
-	state.WaitingForHttp = true
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
-	state.WaitingForHttp = false
 
 	_, err := state.Ship.Purchase(state.Context, p.deliverable.TradeSymbol, purchaseAmount)
 

@@ -15,9 +15,7 @@ func (h Haul) Run(state *State) RoutineResult {
 
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
-	state.WaitingForHttp = true
 	cargo, _ := state.Ship.GetCargo(state.Context)
-	state.WaitingForHttp = false
 
 	cargoCount := cargo.Units
 
@@ -75,9 +73,7 @@ func (h Haul) Run(state *State) RoutineResult {
 			}
 			transferAmount := int(math.Min(float64(slot.Units), float64(remainingCapacity)))
 			state.Log(fmt.Sprintf("Transferring %d/%d %s from %s to %s (%d/%d cargo)", transferAmount, slot.Units, slot.Symbol, ship.Symbol, state.Ship.Symbol, cargoCount, state.Ship.Cargo.Capacity))
-			state.WaitingForHttp = true
 			err := ship.TransferCargo(state.Context, state.Ship.Symbol, slot.Symbol, transferAmount)
-			state.WaitingForHttp = false
 			if err != nil {
 				state.Log(err.Error())
 				full = true
@@ -109,9 +105,7 @@ func (h Haul) Run(state *State) RoutineResult {
 	if full {
 		state.Log("Time to start selling")
 		for _, slot := range sellables {
-			state.WaitingForHttp = true
 			sellResult, err := state.Ship.SellCargo(state.Context, slot.Symbol, slot.Units)
-			state.WaitingForHttp = false
 			if err == nil {
 				state.Agent = &sellResult.Agent
 				state.Log(fmt.Sprintf("Sold %dx %s for %d credits", slot.Units, slot.Symbol, sellResult.Transaction.TotalPrice))

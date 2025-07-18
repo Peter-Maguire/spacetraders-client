@@ -31,6 +31,10 @@ type State struct {
 	Context        context.Context
 }
 
+func (s *State) SetWaitingForHttp(b bool) {
+	s.WaitingForHttp = b
+}
+
 type OrchestratorEvent struct {
 	Name string
 	Data any

@@ -27,14 +27,11 @@ func (m MineOres) Run(state *State) RoutineResult {
 		}
 	}
 
-	state.WaitingForHttp = true
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
-	state.WaitingForHttp = false
 
 	var result *entity.ExtractionResult
 	var err *http.HttpError
 
-	state.WaitingForHttp = true
 	if state.Survey != nil {
 		if state.Survey.Expiration.Before(time.Now()) {
 			state.Log("Survey has expired")
@@ -46,8 +43,6 @@ func (m MineOres) Run(state *State) RoutineResult {
 	} else {
 		result, err = state.Ship.Extract(state.Context)
 	}
-
-	state.WaitingForHttp = false
 
 	if err != nil {
 		switch err.Code {
