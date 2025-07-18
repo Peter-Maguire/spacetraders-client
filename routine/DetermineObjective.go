@@ -34,7 +34,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		_ = state.Ship.SetFlightMode("CRUISE")
 	}
 
-	if state.Ship.Registration.Role == "COMMAND" || state.Ship.Registration.Role == "SATELLITE" {
+	if /*state.Ship.Registration.Role == "COMMAND" ||*/ state.Ship.Registration.Role == "SATELLITE" {
 		return RoutineResult{
 			SetRoutine: Explore{},
 		}

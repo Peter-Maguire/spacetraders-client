@@ -23,6 +23,12 @@ func (w *Waypoint) Visit() error {
 	return tx.Error
 }
 
+func (w *Waypoint) GetData() entity.WaypointData {
+	wpData := entity.WaypointData{}
+	_ = json.Unmarshal(w.Data, &w)
+	return wpData
+}
+
 func GetWaypoint(waypoint entity.Waypoint) *Waypoint {
 	visitedWaypoint := Waypoint{
 		Waypoint: string(waypoint),

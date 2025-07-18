@@ -8,8 +8,9 @@ import (
 )
 
 type NavigateTo struct {
-	waypoint entity.Waypoint
-	next     Routine
+	waypoint     entity.Waypoint
+	next         Routine
+	nextIfNoFuel Routine
 }
 
 func (n NavigateTo) Run(state *State) RoutineResult {
@@ -49,6 +50,11 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		case http.ErrInsufficientFuelForNav:
 			state.Log(err.Message)
 			state.Log("Refuelling and trying again")
+			if n.nextIfNoFuel != nil {
+				return RoutineResult{
+					SetRoutine: Refuel{next: n.nextIfNoFuel},
+				}
+			}
 			return RoutineResult{
 				SetRoutine: Refuel{next: n},
 			}
