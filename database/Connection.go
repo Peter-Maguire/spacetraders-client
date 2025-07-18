@@ -33,8 +33,9 @@ func Init() {
 		os.Exit(1)
 	}
 
-	err = db.AutoMigrate(&MarketRates{}, &ShipCost{})
+	err = db.AutoMigrate(&MarketRates{}, &ShipCost{}, &MarketExchange{} /*&Waypoint{}, &System{}, &Survey{}*/)
 	if err != nil {
+
 		fmt.Println("automigrate error", err)
 		os.Exit(1)
 	}

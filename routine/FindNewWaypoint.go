@@ -11,26 +11,15 @@ type FindNewWaypoint struct {
 
 func (f FindNewWaypoint) Run(state *State) RoutineResult {
 	// find new place
-	var waypoints *[]entity.WaypointData
-	//var cooldownUntil = time.Now()
-	//result, err := state.Ship.ScanWaypoints()
-	//if err != nil {
-	//    state.Log(err.Error())
-	//    waypoints, _ = state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
-	//} else {
-	//    waypoints = result.Waypoints
-	//    cooldownUntil = result.Cooldown.Expiration
-	//}
-	waypoints, _ = state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
+	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
 	database.LogWaypoints(waypoints)
 	for _, waypoint := range *waypoints {
 		if f.hasGoodTraits(waypoint.Traits) {
 			visited := database.GetWaypoint(waypoint.Symbol)
-			if visited == nil {
+			if visited == nil || visited.FirstVisited.Unix() < 0 {
 				state.Log(fmt.Sprintf("Found interesting waypoint at %s", waypoint.Symbol))
 				return RoutineResult{
 					SetRoutine: NavigateTo{waypoint: waypoint.Symbol, next: Explore{}},
-					//WaitUntil:  &cooldownUntil,
 				}
 			}
 		}
