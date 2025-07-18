@@ -1,20 +1,35 @@
-const ws = new WebSocket(`ws://${location.host}/ws`)
-
 const logMessages = [];
 
-ws.onmessage = function (message) {
-    const update = JSON.parse(message.data);
-    switch(update.type){
-        case "state":
-            updateState(update.data);
-            break;
-        case "log":
-            updateLog(update.data)
-            break;
 
+
+function connect() {
+    const ws = new WebSocket(`ws://${location.host}/ws`)
+
+    ws.onmessage = function (message) {
+        const update = JSON.parse(message.data);
+        switch (update.type) {
+            case "state":
+                updateState(update.data);
+                break;
+            case "log":
+                updateLog(update.data)
+                break;
+
+        }
+    }
+
+    ws.onerror = function (error) {
+        updateLog("WS Error: "+error);
+        ws.close();
+    }
+
+    ws.onclose = function () {
+        updateLog("Connection lost... Reconnecting...")
+        setTimeout(connect, 1000)
     }
 }
 
+connect();
 
 
 
@@ -179,7 +194,7 @@ function drawMap(){
     }
 }
 
-let viewingMap = false;
+let viewingMap = true;
 function toggleViewMap() {
     viewingMap = !viewingMap;
     document.getElementById("shipState").style.display = viewingMap ? "none" : null;
