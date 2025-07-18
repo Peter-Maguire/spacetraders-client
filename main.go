@@ -10,12 +10,13 @@ import (
 	"spacetraders/http"
 	"spacetraders/orchestrator"
 	"spacetraders/ui"
+	"strings"
 	"time"
 )
 
 var enableUi = false
 
-var orc *orchestrator.Orchestrator
+var orcs []*orchestrator.Orchestrator
 
 var (
 	httpBacklog = promauto.NewGauge(prometheus.GaugeOpts{
@@ -64,8 +65,12 @@ func main() {
 	fmt.Println("Starting Request Queue...")
 	http.Init()
 
-	fmt.Println("Starting Orchestrator...")
-	orc = orchestrator.Init()
+	fmt.Println("Starting Orchestrators...")
+	tokens := strings.Split(os.Getenv("TOKEN"), ",")
+	orcs = make([]*orchestrator.Orchestrator, len(tokens))
+	for i, token := range tokens {
+		orcs[i] = orchestrator.Init(token)
+	}
 
 	if enableUi {
 		updateShipStates()
@@ -80,62 +85,64 @@ func updateShipStates() {
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		<-ticker.C
-		shipData := make([]ui.ShipData, len(orc.States))
-		numWaiting := 0
-		numSleeping := 0
-		numStopped := 0
-		routinesActive.Reset()
-		for i, state := range orc.States {
-			if state != nil && state.Ship != nil {
+		shipData := make([]ui.ShipData, 0)
+		for _, orc := range orcs {
+			numWaiting := 0
+			numSleeping := 0
+			numStopped := 0
+			routinesActive.Reset()
+			for i, state := range orc.States {
+				if state != nil && state.Ship != nil {
 
-				shipData[i] = ui.ShipData{
-					Stopped:        state.CurrentRoutine == nil,
-					StoppedReason:  state.StoppedReason,
-					WaitingForHttp: state.WaitingForHttp,
-					AsleepUntil:    state.AsleepUntil,
-					ShipName:       state.Ship.Symbol,
-					ShipType:       state.Ship.Registration.Role,
-				}
-				if state.CurrentRoutine == nil {
-					numStopped++
-				} else {
-					routinesActive.WithLabelValues(state.CurrentRoutine.Name()).Add(1)
-					shipData[i].Routine = state.CurrentRoutine.Name()
-				}
-				if state.WaitingForHttp {
-					numWaiting++
-				}
-				if state.AsleepUntil != nil {
-					numSleeping++
+					shipData = append(shipData, ui.ShipData{
+						Stopped:        state.CurrentRoutine == nil,
+						StoppedReason:  state.StoppedReason,
+						WaitingForHttp: state.WaitingForHttp,
+						AsleepUntil:    state.AsleepUntil,
+						ShipName:       state.Ship.Symbol,
+						ShipType:       state.Ship.Registration.Role,
+					})
+					if state.CurrentRoutine == nil {
+						numStopped++
+					} else {
+						routinesActive.WithLabelValues(state.CurrentRoutine.Name()).Add(1)
+						shipData[i].Routine = state.CurrentRoutine.Name()
+					}
+					if state.WaitingForHttp {
+						numWaiting++
+					}
+					if state.AsleepUntil != nil {
+						numSleeping++
+					}
 				}
 			}
-		}
 
-		httpData := ui.HttpData{
-			Active: http.IsRunningRequests,
-		}
-
-		numBacklog := 0
-		http.RBufferLock.Lock()
-		httpList := make([]ui.HttpRequestList, len(http.RequestBuffer))
-		for i, request := range http.RequestBuffer {
-			numBacklog++
-			httpList[i] = ui.HttpRequestList{
-				Receivers: len(request.ReturnChannels),
-				Priority:  request.Priority,
-				Method:    request.Req.Method,
-				Path:      request.OriginalPath,
+			httpData := ui.HttpData{
+				Active: http.IsRunningRequests,
 			}
+
+			numBacklog := 0
+			http.RBufferLock.Lock()
+			httpList := make([]ui.HttpRequestList, len(http.RequestBuffer))
+			for i, request := range http.RequestBuffer {
+				numBacklog++
+				httpList[i] = ui.HttpRequestList{
+					Receivers: len(request.ReturnChannels),
+					Priority:  request.Priority,
+					Method:    request.Req.Method,
+					Path:      request.OriginalPath,
+				}
+			}
+			http.RBufferLock.Unlock()
+
+			httpData.Requests = httpList
+
+			routineWaiting.Set(float64(numWaiting))
+			routineSleeping.Set(float64(numSleeping))
+			routineStopped.Set(float64(numStopped))
+			httpBacklog.Set(float64(numBacklog))
+
+			ui.WriteShipState(shipData, httpData)
 		}
-		http.RBufferLock.Unlock()
-
-		httpData.Requests = httpList
-
-		routineWaiting.Set(float64(numWaiting))
-		routineSleeping.Set(float64(numSleeping))
-		routineStopped.Set(float64(numStopped))
-		httpBacklog.Set(float64(numBacklog))
-
-		ui.WriteShipState(shipData, httpData)
 	}
 }

@@ -41,9 +41,9 @@ var (
 	}, []string{"name", "state"})
 )
 
-func Init() *Orchestrator {
+func Init(token string) *Orchestrator {
 
-	ctx := context.WithValue(context.Background(), "token", os.Getenv("TOKEN"))
+	ctx := context.WithValue(context.Background(), "token", token)
 
 	shipFilter := os.Getenv("SHIP_FILTER")
 
@@ -182,7 +182,7 @@ func Init() *Orchestrator {
 			Haulers:     orc.Haulers,
 			EventBus:    orc.Channel,
 		}
-		state.Context = context.WithValue(ctx, "state", state)
+		state.Context = context.WithValue(ctx, "state", &state)
 		orc.States[i] = &state
 
 		go orc.routineLoop(&state)
