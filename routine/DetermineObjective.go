@@ -19,18 +19,14 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	// TODO: This should be merged with the Explore code in some way
-	visited := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
-	if visited == nil {
-		waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
-		if waypointData.HasTrait("UNCHARTED") {
-			data, err := state.Ship.Chart()
-			if err == nil {
-				state.Log("Charted waypoint")
-				waypointData = data.Waypoint
-			}
+	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
+	if dbWaypoint == nil || dbWaypoint.FirstVisited.Unix() < 0 {
+		return RoutineResult{
+			SetRoutine: Explore{
+				oneShot: true,
+				next:    d,
+			},
 		}
-		database.VisitWaypoint(waypointData)
 	}
 
 	if state.Ship.Nav.FlightMode != "CRUISE" {
@@ -38,7 +34,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		_ = state.Ship.SetFlightMode("CRUISE")
 	}
 
-	if /*state.Ship.Registration.Role == "COMMAND" || */ state.Ship.Registration.Role == "SATELLITE" {
+	if state.Ship.Registration.Role == "COMMAND" || state.Ship.Registration.Role == "SATELLITE" {
 		return RoutineResult{
 			SetRoutine: Explore{},
 		}

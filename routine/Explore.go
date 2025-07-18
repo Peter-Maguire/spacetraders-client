@@ -9,13 +9,20 @@ import (
 
 type Explore struct {
 	marketTargets []string
+	oneShot       bool
 	next          Routine
 }
 
 func (e Explore) Run(state *State) RoutineResult {
 	_ = state.Ship.EnsureNavState(entity.NavOrbit)
-	visited := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
-	if visited != nil {
+	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
+	if dbWaypoint != nil && dbWaypoint.FirstVisited.Unix() > 0 {
+		state.Log("We've already explored this waypoint")
+		if e.oneShot {
+			return RoutineResult{
+				SetRoutine: e.next,
+			}
+		}
 		return RoutineResult{
 			SetRoutine: FindNewWaypoint{},
 		}
@@ -29,6 +36,11 @@ func (e Explore) Run(state *State) RoutineResult {
 
 	var shipyardData *entity.ShipyardStock
 	var marketData *entity.Market
+
+	defer func() {
+		state.Log("Logging visit")
+		database.VisitWaypoint(waypointData, marketData, shipyardData)
+	}()
 
 	if waypointData.HasTrait("UNCHARTED") {
 		data, err := state.Ship.Chart()
@@ -59,6 +71,9 @@ func (e Explore) Run(state *State) RoutineResult {
 		state.WaitingForHttp = false
 		// TODO: Market rates should include IMPORT, EXPORT and EXCHANGE, not just whatever is going on here
 		database.StoreMarketRates(system, waypointData, marketData.TradeGoods)
+		database.StoreMarketExchange(system, waypointData, "export", marketData.Exports)
+		database.StoreMarketExchange(system, waypointData, "import", marketData.Imports)
+		database.StoreMarketExchange(system, waypointData, "exchange", marketData.Exchange)
 		fuelTrader := marketData.GetTradeGood("FUEL")
 		if fuelTrader != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {
 			state.Log("Refuelling here")
@@ -90,10 +105,16 @@ func (e Explore) Run(state *State) RoutineResult {
 					}
 				}
 			}
+
 		}
 
 	}
 
+	if e.oneShot {
+		return RoutineResult{
+			SetRoutine: e.next,
+		}
+	}
 	return RoutineResult{}
 }
 
