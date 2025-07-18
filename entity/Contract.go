@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"fmt"
 	"spacetraders/http"
 	"time"
@@ -16,13 +17,13 @@ type Contract struct {
 	Expiration    time.Time     `json:"expiration"`
 }
 
-func (c *Contract) Accept() *http.HttpError {
-	_, err := http.Request[any]("POST", fmt.Sprintf("my/contracts/%s/accept", c.Id), nil)
+func (c *Contract) Accept(ctx context.Context) *http.HttpError {
+	_, err := http.Request[any](ctx, "POST", fmt.Sprintf("my/contracts/%s/accept", c.Id), nil)
 	return err
 }
 
-func (c *Contract) Deliver(shipSymbol string, tradeSymbol string, units int) (*ContractDeliverResult, *http.HttpError) {
-	deliverResult, err := http.Request[ContractDeliverResult]("POST", fmt.Sprintf("my/contracts/%s/deliver", c.Id), ContractDeliveryRequest{
+func (c *Contract) Deliver(ctx context.Context, shipSymbol string, tradeSymbol string, units int) (*ContractDeliverResult, *http.HttpError) {
+	deliverResult, err := http.Request[ContractDeliverResult](ctx, "POST", fmt.Sprintf("my/contracts/%s/deliver", c.Id), ContractDeliveryRequest{
 		ShipSymbol:  shipSymbol,
 		TradeSymbol: tradeSymbol,
 		Units:       units,
@@ -35,8 +36,8 @@ func (c *Contract) Deliver(shipSymbol string, tradeSymbol string, units int) (*C
 	return deliverResult, err
 }
 
-func (c *Contract) Fulfill() error {
-	_, err := http.Request[any]("POST", fmt.Sprintf("my/contracts/%s/fulfill", c.Id), nil)
+func (c *Contract) Fulfill(ctx context.Context) error {
+	_, err := http.Request[any](ctx, "POST", fmt.Sprintf("my/contracts/%s/fulfill", c.Id), nil)
 	return err
 }
 

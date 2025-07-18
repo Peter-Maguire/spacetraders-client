@@ -38,17 +38,17 @@ type marketOpportunity struct {
 }
 
 func (s SellExcessInventory) Run(state *State) RoutineResult {
-	cargo, _ := state.Ship.GetCargo()
+	cargo, _ := state.Ship.GetCargo(state.Context)
 	inventory := cargo.Inventory
 
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 
 	if currentSystem == nil {
-		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
+		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 	}
 
 	// TODO: replace with a database call
-	currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
+	currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 
 	//go database.StoreMarketRates(string(state.Ship.Nav.WaypointSymbol), market.TradeGoods)
 
@@ -65,7 +65,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if otherState.Ship.Registration.Role == "REFINERY" && otherState.Ship.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol && !otherState.Ship.Cargo.IsFull() {
 			state.Log("There is a refinery here we can use")
 			refinery = otherState.Ship
-			cargo, _ := refinery.GetCargo()
+			cargo, _ := refinery.GetCargo(state.Context)
 			refinery.Cargo = *cargo
 			break
 		}
@@ -208,8 +208,8 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	// Dock and sell items sellable here
 	state.WaitingForHttp = true
-	_ = state.Ship.EnsureNavState(entity.NavDocked)
-	updatedMarketData, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+	updatedMarketData, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
 	state.WaitingForHttp = false
 
 	go database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, updatedMarketData.TradeGoods)
@@ -220,7 +220,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			continue
 		}
 		state.WaitingForHttp = true
-		sellResult, err := state.Ship.SellCargo(sellableSlot.Symbol, sellableSlot.Units)
+		sellResult, err := state.Ship.SellCargo(state.Context, sellableSlot.Symbol, sellableSlot.Units)
 		state.WaitingForHttp = false
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
@@ -235,7 +235,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	if marketFuel != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {
 		state.Log("Refuelling whilst I have the opportunity")
-		_ = state.Ship.Refuel()
+		_ = state.Ship.Refuel(state.Context)
 	}
 
 	state.FireEvent("sellComplete", state.Agent)

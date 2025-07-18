@@ -38,9 +38,9 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
-	_ = state.Ship.EnsureNavState(entity.NavOrbit)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
-	_, err := state.Ship.Navigate(n.waypoint)
+	_, err := state.Ship.Navigate(state.Context, n.waypoint)
 	if err != nil {
 		switch err.Code {
 		case http.ErrCooldown:

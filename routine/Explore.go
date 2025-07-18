@@ -14,7 +14,7 @@ type Explore struct {
 }
 
 func (e Explore) Run(state *State) RoutineResult {
-	_ = state.Ship.EnsureNavState(entity.NavOrbit)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
 	if dbWaypoint != nil && dbWaypoint.FirstVisited.Unix() > 0 {
 		state.Log("We've already explored this waypoint")
@@ -30,8 +30,8 @@ func (e Explore) Run(state *State) RoutineResult {
 
 	state.Log(fmt.Sprintf("Checking out %s", state.Ship.Nav.WaypointSymbol))
 	state.WaitingForHttp = true
-	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem()
-	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
+	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
+	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 	state.WaitingForHttp = false
 
 	var shipyardData *entity.ShipyardStock
@@ -43,7 +43,7 @@ func (e Explore) Run(state *State) RoutineResult {
 	}()
 
 	if waypointData.HasTrait("UNCHARTED") {
-		data, err := state.Ship.Chart()
+		data, err := state.Ship.Chart(state.Context)
 		if err == nil {
 			state.Log("Charted waypoint")
 			waypointData = data.Waypoint
@@ -54,7 +54,7 @@ func (e Explore) Run(state *State) RoutineResult {
 		state.Log("There's a shipyard here")
 		state.WaitingForHttp = true
 		var err error
-		shipyardData, err = waypointData.Symbol.GetShipyard()
+		shipyardData, err = waypointData.Symbol.GetShipyard(state.Context)
 		state.WaitingForHttp = false
 		if err != nil {
 			fmt.Println(err)
@@ -67,7 +67,7 @@ func (e Explore) Run(state *State) RoutineResult {
 	if waypointData.HasTrait("MARKETPLACE") {
 		state.Log("There's a marketplace here")
 		state.WaitingForHttp = true
-		marketData, _ = waypointData.Symbol.GetMarket()
+		marketData, _ = waypointData.Symbol.GetMarket(state.Context)
 		state.WaitingForHttp = false
 		// TODO: Market rates should include IMPORT, EXPORT and EXCHANGE, not just whatever is going on here
 		database.StoreMarketRates(system, waypointData, marketData.TradeGoods)
@@ -77,15 +77,15 @@ func (e Explore) Run(state *State) RoutineResult {
 		fuelTrader := marketData.GetTradeGood("FUEL")
 		if fuelTrader != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {
 			state.Log("Refuelling here")
-			_ = state.Ship.EnsureNavState(entity.NavDocked)
-			_ = state.Ship.Refuel()
+			_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+			_ = state.Ship.Refuel(state.Context)
 		}
 
 		antiMatterTrader := marketData.GetTradeGood("ANTIMATTER")
 		if antiMatterTrader != nil && state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units < 2 {
 			state.Log("Buying some antimatter")
-			_ = state.Ship.EnsureNavState(entity.NavDocked)
-			res, _ := state.Ship.Purchase("ANTIMATTER", 5)
+			_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+			res, _ := state.Ship.Purchase(state.Context, "ANTIMATTER", 5)
 			if res != nil {
 				state.Log("Success")
 				metrics.NumCredits.Set(float64(res.Agent.Credits))

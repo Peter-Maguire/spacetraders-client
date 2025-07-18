@@ -31,9 +31,10 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
 	if state.Ship.Nav.FlightMode != "CRUISE" {
 		state.Log("Changing flight mode to CRUISE")
-		_ = state.Ship.SetFlightMode("CRUISE")
+		_ = state.Ship.SetFlightMode(state.Context, "CRUISE")
 	}
 
+	// TODO: satellite should explore until it's explored the entire system then go to Refresh Markets (rotate through all the markets refreshing each)
 	if /*state.Ship.Registration.Role == "COMMAND" ||*/ state.Ship.Registration.Role == "SATELLITE" {
 		return RoutineResult{
 			SetRoutine: Explore{},

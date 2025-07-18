@@ -13,14 +13,14 @@ type DeliverContractItem struct {
 
 func (r DeliverContractItem) Run(state *State) RoutineResult {
 
-	_ = state.Ship.EnsureNavState(entity.NavDocked)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
 	slot := state.Ship.Cargo.GetSlotWithItem(r.item)
 	state.Log(fmt.Sprintf("Deliver %dx %s", slot.Units, r.item))
-	deliverResult, err := state.Contract.Deliver(state.Ship.Symbol, r.item, slot.Units)
+	deliverResult, err := state.Contract.Deliver(state.Context, state.Ship.Symbol, r.item, slot.Units)
 
 	// Update the cargo
-	_, _ = state.Ship.GetCargo()
+	_, _ = state.Ship.GetCargo(state.Context)
 
 	if err != nil {
 		state.Log(fmt.Sprintf("Error delivering contract: %s", err))
@@ -34,7 +34,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 
 	if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
 		state.Log("Contract completed")
-		err := state.Contract.Fulfill()
+		err := state.Contract.Fulfill(state.Context)
 		if err == nil {
 			state.FireEvent("contractComplete", nil)
 		}

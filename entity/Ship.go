@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"spacetraders/http"
@@ -49,8 +50,8 @@ func (s *Ship) CanWarp() bool {
 	return false
 }
 
-func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {
-	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/navigate", s.Symbol), NavigateRequest{
+func (s *Ship) Navigate(ctx context.Context, waypoint Waypoint) (*ShipNav, *http.HttpError) {
+	shipUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/navigate", s.Symbol), NavigateRequest{
 		WaypointSymbol: waypoint,
 	})
 	if err == nil {
@@ -61,32 +62,32 @@ func (s *Ship) Navigate(waypoint Waypoint) (*ShipNav, *http.HttpError) {
 	return nil, err
 }
 
-func (s *Ship) Dock() error {
-	shipNavUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/dock", s.Symbol), nil)
+func (s *Ship) Dock(ctx context.Context) error {
+	shipNavUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/dock", s.Symbol), nil)
 	if shipNavUpdate != nil {
 		s.Nav = shipNavUpdate.Nav
 	}
 	return err
 }
 
-func (s *Ship) Refuel() *http.HttpError {
-	shipRefuelUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), nil)
+func (s *Ship) Refuel(ctx context.Context) *http.HttpError {
+	shipRefuelUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), nil)
 	if shipRefuelUpdate != nil {
 		s.Fuel = shipRefuelUpdate.Fuel
 	}
 	return err
 }
 
-func (s *Ship) Orbit() error {
-	shipNavUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/orbit", s.Symbol), nil)
+func (s *Ship) Orbit(ctx context.Context) error {
+	shipNavUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/orbit", s.Symbol), nil)
 	if shipNavUpdate != nil {
 		s.Nav = shipNavUpdate.Nav
 	}
 	return err
 }
 
-func (s *Ship) SetFlightMode(mode string) *http.HttpError {
-	shipNavUpdate, err := http.Request[Ship]("PATCH", fmt.Sprintf("my/ships/%s/nav", s.Symbol), map[string]string{
+func (s *Ship) SetFlightMode(ctx context.Context, mode string) *http.HttpError {
+	shipNavUpdate, err := http.Request[Ship](ctx, "PATCH", fmt.Sprintf("my/ships/%s/nav", s.Symbol), map[string]string{
 		"flightMode": mode,
 	})
 	if shipNavUpdate != nil {
@@ -95,24 +96,24 @@ func (s *Ship) SetFlightMode(mode string) *http.HttpError {
 	return err
 }
 
-func (s *Ship) EnsureNavState(state NavState) error {
+func (s *Ship) EnsureNavState(ctx context.Context, state NavState) error {
 	if s.Nav.Status == state {
 		return nil
 	}
 	var err error
 	switch state {
 	case NavOrbit:
-		err = s.Orbit()
+		err = s.Orbit(ctx)
 	case NavDocked:
-		err = s.Dock()
+		err = s.Dock(ctx)
 	default:
 		err = errors.New("unknown nav state")
 	}
 	return err
 }
 
-func (s *Ship) SellCargo(cargoSymbol string, units int) (*SellResult, *http.HttpError) {
-	sellResult, err := http.Request[SellResult]("POST", fmt.Sprintf("my/ships/%s/sell", s.Symbol), SellRequest{
+func (s *Ship) SellCargo(ctx context.Context, cargoSymbol string, units int) (*SellResult, *http.HttpError) {
+	sellResult, err := http.Request[SellResult](ctx, "POST", fmt.Sprintf("my/ships/%s/sell", s.Symbol), SellRequest{
 		Symbol: cargoSymbol,
 		Units:  units,
 	})
@@ -122,16 +123,16 @@ func (s *Ship) SellCargo(cargoSymbol string, units int) (*SellResult, *http.Http
 	return sellResult, err
 }
 
-func (s *Ship) Extract() (*ExtractionResult, *http.HttpError) {
-	extractionResult, err := http.Request[ExtractionResult]("POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), nil)
+func (s *Ship) Extract(ctx context.Context) (*ExtractionResult, *http.HttpError) {
+	extractionResult, err := http.Request[ExtractionResult](ctx, "POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), nil)
 	if extractionResult != nil {
 		s.Cargo = extractionResult.Cargo
 	}
 	return extractionResult, err
 }
 
-func (s *Ship) ExtractSurvey(survey *Survey) (*ExtractionResult, *http.HttpError) {
-	extractionResult, err := http.Request[ExtractionResult]("POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), map[string]*Survey{
+func (s *Ship) ExtractSurvey(ctx context.Context, survey *Survey) (*ExtractionResult, *http.HttpError) {
+	extractionResult, err := http.Request[ExtractionResult](ctx, "POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), map[string]*Survey{
 		"survey": survey,
 	})
 	if extractionResult != nil {
@@ -140,12 +141,12 @@ func (s *Ship) ExtractSurvey(survey *Survey) (*ExtractionResult, *http.HttpError
 	return extractionResult, err
 }
 
-func (s *Ship) Survey() (*SurveyResult, *http.HttpError) {
-	return http.Request[SurveyResult]("POST", fmt.Sprintf("my/ships/%s/survey", s.Symbol), nil)
+func (s *Ship) Survey(ctx context.Context) (*SurveyResult, *http.HttpError) {
+	return http.Request[SurveyResult](ctx, "POST", fmt.Sprintf("my/ships/%s/survey", s.Symbol), nil)
 }
 
-func (s *Ship) Jump(waypoint Waypoint) (*ShipJumpResult, *http.HttpError) {
-	jumpResult, err := http.Request[ShipJumpResult]("POST", fmt.Sprintf("my/ships/%s/jump", s.Symbol), map[string]Waypoint{
+func (s *Ship) Jump(ctx context.Context, waypoint Waypoint) (*ShipJumpResult, *http.HttpError) {
+	jumpResult, err := http.Request[ShipJumpResult](ctx, "POST", fmt.Sprintf("my/ships/%s/jump", s.Symbol), map[string]Waypoint{
 		"waypointSymbol": waypoint,
 	})
 	if err == nil {
@@ -155,11 +156,11 @@ func (s *Ship) Jump(waypoint Waypoint) (*ShipJumpResult, *http.HttpError) {
 	return jumpResult, err
 }
 
-func (s *Ship) Warp(waypoint Waypoint) (*ShipWarpResult, *http.HttpError) {
+func (s *Ship) Warp(ctx context.Context, waypoint Waypoint) (*ShipWarpResult, *http.HttpError) {
 	if !s.CanWarp() {
 		return nil, &http.HttpError{Code: http.ErrNoWarpDrive, Message: "No Warp drive"}
 	}
-	warpResult, err := http.Request[ShipWarpResult]("POST", fmt.Sprintf("my/ships/%s/warp", s.Symbol), map[string]Waypoint{
+	warpResult, err := http.Request[ShipWarpResult](ctx, "POST", fmt.Sprintf("my/ships/%s/warp", s.Symbol), map[string]Waypoint{
 		"waypointSymbol": waypoint,
 	})
 	if err == nil {
@@ -169,20 +170,20 @@ func (s *Ship) Warp(waypoint Waypoint) (*ShipWarpResult, *http.HttpError) {
 	return warpResult, err
 }
 
-func (s *Ship) Chart() (*ShipChartResult, *http.HttpError) {
-	return http.Request[ShipChartResult]("POST", fmt.Sprintf("my/ships/%s/chart", s.Symbol), nil)
+func (s *Ship) Chart(ctx context.Context) (*ShipChartResult, *http.HttpError) {
+	return http.Request[ShipChartResult](ctx, "POST", fmt.Sprintf("my/ships/%s/chart", s.Symbol), nil)
 }
 
-func (s *Ship) ScanWaypoints() (*ShipScanWaypointsResult, *http.HttpError) {
-	return http.Request[ShipScanWaypointsResult]("POST", fmt.Sprintf("my/ships/%s/scan/waypoints", s.Symbol), nil)
+func (s *Ship) ScanWaypoints(ctx context.Context) (*ShipScanWaypointsResult, *http.HttpError) {
+	return http.Request[ShipScanWaypointsResult](ctx, "POST", fmt.Sprintf("my/ships/%s/scan/waypoints", s.Symbol), nil)
 }
 
-func (s *Ship) ScanSystems() (*ShipScanSystemsResult, *http.HttpError) {
-	return http.Request[ShipScanSystemsResult]("POST", fmt.Sprintf("my/ships/%s/scan/systems", s.Symbol), nil)
+func (s *Ship) ScanSystems(ctx context.Context) (*ShipScanSystemsResult, *http.HttpError) {
+	return http.Request[ShipScanSystemsResult](ctx, "POST", fmt.Sprintf("my/ships/%s/scan/systems", s.Symbol), nil)
 }
 
-func (s *Ship) JettisonCargo(symbol string, amount int) *http.HttpError {
-	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/jettison", s.Symbol), map[string]any{
+func (s *Ship) JettisonCargo(ctx context.Context, symbol string, amount int) *http.HttpError {
+	shipUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/jettison", s.Symbol), map[string]any{
 		"symbol": symbol,
 		"units":  amount,
 	})
@@ -193,8 +194,8 @@ func (s *Ship) JettisonCargo(symbol string, amount int) *http.HttpError {
 	return err
 }
 
-func (s *Ship) TransferCargo(ship string, symbol string, amount int) *http.HttpError {
-	shipUpdate, err := http.Request[Ship]("POST", fmt.Sprintf("my/ships/%s/transfer", s.Symbol), map[string]any{
+func (s *Ship) TransferCargo(ctx context.Context, ship string, symbol string, amount int) *http.HttpError {
+	shipUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/transfer", s.Symbol), map[string]any{
 		"tradeSymbol": symbol,
 		"shipSymbol":  ship,
 		"units":       amount,
@@ -206,8 +207,8 @@ func (s *Ship) TransferCargo(ship string, symbol string, amount int) *http.HttpE
 	return err
 }
 
-func (s *Ship) GetCargo() (*ShipCargo, *http.HttpError) {
-	cargo, err := http.Request[ShipCargo]("GET", fmt.Sprintf("my/ships/%s/cargo", s.Symbol), nil)
+func (s *Ship) GetCargo(ctx context.Context) (*ShipCargo, *http.HttpError) {
+	cargo, err := http.Request[ShipCargo](ctx, "GET", fmt.Sprintf("my/ships/%s/cargo", s.Symbol), nil)
 
 	if err == nil {
 		s.Cargo = *cargo
@@ -216,8 +217,8 @@ func (s *Ship) GetCargo() (*ShipCargo, *http.HttpError) {
 	return cargo, err
 }
 
-func (s *Ship) Purchase(symbol string, amount int) (*ItemPurchaseResult, *http.HttpError) {
-	result, err := http.Request[ItemPurchaseResult]("POST", fmt.Sprintf("my/ships/%s/purchase", s.Symbol), map[string]any{
+func (s *Ship) Purchase(ctx context.Context, symbol string, amount int) (*ItemPurchaseResult, *http.HttpError) {
+	result, err := http.Request[ItemPurchaseResult](ctx, "POST", fmt.Sprintf("my/ships/%s/purchase", s.Symbol), map[string]any{
 		"symbol": symbol,
 		"units":  amount,
 	})
@@ -229,8 +230,8 @@ func (s *Ship) Purchase(symbol string, amount int) (*ItemPurchaseResult, *http.H
 	return result, err
 }
 
-func (s *Ship) NegotiateContract() (*Contract, *http.HttpError) {
-	result, err := http.Request[map[string]*Contract]("POST", fmt.Sprintf("my/ships/%s/negotiate/contract", s.Symbol), nil)
+func (s *Ship) NegotiateContract(ctx context.Context) (*Contract, *http.HttpError) {
+	result, err := http.Request[map[string]*Contract](ctx, "POST", fmt.Sprintf("my/ships/%s/negotiate/contract", s.Symbol), nil)
 
 	if err != nil {
 		return nil, err
@@ -239,8 +240,8 @@ func (s *Ship) NegotiateContract() (*Contract, *http.HttpError) {
 	return (*result)["contract"], err
 }
 
-func (s *Ship) Refine(produce string) (*ShipRefineResult, *http.HttpError) {
-	result, err := http.Request[ShipRefineResult]("POST", fmt.Sprintf("my/ships/%s/refine", s.Symbol), map[string]string{
+func (s *Ship) Refine(ctx context.Context, produce string) (*ShipRefineResult, *http.HttpError) {
+	result, err := http.Request[ShipRefineResult](ctx, "POST", fmt.Sprintf("my/ships/%s/refine", s.Symbol), map[string]string{
 		"produce": produce,
 	})
 

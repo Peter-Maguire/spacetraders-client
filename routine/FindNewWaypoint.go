@@ -12,14 +12,14 @@ type FindNewWaypoint struct {
 
 func (f FindNewWaypoint) Run(state *State) RoutineResult {
 	// find new place
-	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
+	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 	database.LogWaypoints(waypoints)
 	goodWaypoints := make([]entity.WaypointData, 0)
 	for _, waypoint := range *waypoints {
 		if f.hasGoodTraits(waypoint.Traits) {
 			visited := database.GetWaypoint(waypoint.Symbol)
 			if visited == nil || visited.FirstVisited.Unix() < 0 {
-				state.Log(fmt.Sprintf("Found interesting waypoint at %s", waypoint.Symbol))
+				//state.Log(fmt.Sprintf("Found interesting waypoint at %s", waypoint.Symbol))
 				goodWaypoints = append(goodWaypoints, waypoint)
 			}
 		}
@@ -45,7 +45,7 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 		}
 	}
 
-	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem()
+	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 	database.VisitSystem(system, waypoints)
 	// TODO: Fix system jumping
 	state.Log("No more good waypoints left in this system")

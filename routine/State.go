@@ -1,6 +1,7 @@
 package routine
 
 import (
+	"context"
 	"fmt"
 	"spacetraders/entity"
 	"spacetraders/ui"
@@ -27,6 +28,7 @@ type State struct {
 
 	WaitingForHttp bool
 	StoppedReason  string
+	Context        context.Context
 }
 
 type OrchestratorEvent struct {

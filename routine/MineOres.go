@@ -28,7 +28,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 	}
 
 	state.WaitingForHttp = true
-	_ = state.Ship.EnsureNavState(entity.NavOrbit)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 	state.WaitingForHttp = false
 
 	var result *entity.ExtractionResult
@@ -42,9 +42,9 @@ func (m MineOres) Run(state *State) RoutineResult {
 				SetRoutine: GetSurvey{},
 			}
 		}
-		result, err = state.Ship.ExtractSurvey(state.Survey)
+		result, err = state.Ship.ExtractSurvey(state.Context, state.Survey)
 	} else {
-		result, err = state.Ship.Extract()
+		result, err = state.Ship.Extract(state.Context)
 	}
 
 	state.WaitingForHttp = false

@@ -36,7 +36,7 @@ func (r Refine) Run(state *State) RoutineResult {
 	}
 
 	state.WaitingForHttp = true
-	_ = state.Ship.EnsureNavState(entity.NavOrbit)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 	state.WaitingForHttp = false
 
 	refineableSlots := make([]entity.ShipInventorySlot, 0)
@@ -60,7 +60,7 @@ func (r Refine) Run(state *State) RoutineResult {
 		refineTarget := refineableSlots[0]
 		state.Log(fmt.Sprintf("Refining %dx %s", refineTarget.Units, refineTarget.Symbol))
 
-		refineResult, err := state.Ship.Refine(refineTarget.Symbol[:strings.Index(refineTarget.Symbol, "_")])
+		refineResult, err := state.Ship.Refine(state.Context, refineTarget.Symbol[:strings.Index(refineTarget.Symbol, "_")])
 
 		if err != nil {
 			switch err.Code {
@@ -85,7 +85,7 @@ func (r Refine) Run(state *State) RoutineResult {
 	}
 
 	state.WaitingForHttp = true
-	cargo, _ := state.Ship.GetCargo()
+	cargo, _ := state.Ship.GetCargo(state.Context)
 	state.WaitingForHttp = false
 	availableSpace := cargo.GetRemainingCapacity()
 	usedSpace := 0
@@ -103,7 +103,7 @@ func (r Refine) Run(state *State) RoutineResult {
 						break
 					}
 					state.Log(fmt.Sprintf("Transferred %dx %s to refinery from %s", transferAmount, slot.Symbol, otherState.Ship.Symbol))
-					err := otherState.Ship.TransferCargo(state.Ship.Symbol, slot.Symbol, transferAmount)
+					err := otherState.Ship.TransferCargo(state.Context, state.Ship.Symbol, slot.Symbol, transferAmount)
 					if err != nil {
 						state.Log(err.Error())
 						break

@@ -10,7 +10,7 @@ type GoToRandomFactionWaypoint struct {
 }
 
 func (g GoToRandomFactionWaypoint) Run(state *State) RoutineResult {
-	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints()
+	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 
 	factionWaypoints := make([]*entity.WaypointData, 0)
 

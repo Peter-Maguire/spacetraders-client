@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"spacetraders/http"
@@ -14,12 +15,12 @@ type LimitedWaypointData struct {
 	Y      int      `json:"y"`
 }
 
-func (lw *LimitedWaypointData) GetFullWaypoint() (*WaypointData, error) {
-	return http.Request[WaypointData]("GET", fmt.Sprintf("systems/%s/waypoints/%s", lw.Symbol.GetSystemName(), lw.Symbol), nil)
+func (lw *LimitedWaypointData) GetFullWaypoint(ctx context.Context) (*WaypointData, error) {
+	return http.Request[WaypointData](ctx, "GET", fmt.Sprintf("systems/%s/waypoints/%s", lw.Symbol.GetSystemName(), lw.Symbol), nil)
 }
 
-func (lw *LimitedWaypointData) GetSystem() (*System, error) {
-	return http.Request[System]("GET", fmt.Sprintf("systems/%s", lw.Symbol.GetSystemName()), nil)
+func (lw *LimitedWaypointData) GetSystem(ctx context.Context) (*System, error) {
+	return http.Request[System](ctx, "GET", fmt.Sprintf("systems/%s", lw.Symbol.GetSystemName()), nil)
 }
 
 // GetDistanceFrom formula stolen from https://canary.discord.com/channels/792864705139048469/852291054957887498/1109740523339657216

@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	"context"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -25,6 +26,7 @@ type Orchestrator struct {
 	CreditTarget int
 	ShipToBuy    string
 	Shipyard     entity.Waypoint
+	Context      context.Context
 }
 
 var (
@@ -41,9 +43,11 @@ var (
 
 func Init() *Orchestrator {
 
+	ctx := context.WithValue(context.Background(), "token", os.Getenv("TOKEN"))
+
 	shipFilter := os.Getenv("SHIP_FILTER")
 
-	agent, err := entity.GetAgent()
+	agent, err := entity.GetAgent(ctx)
 
 	if err != nil {
 		fmt.Println(err)
@@ -53,7 +57,7 @@ func Init() *Orchestrator {
 	hqSystem := agent.Headquarters.GetSystemName()
 	if database.GetSystem(hqSystem) == nil {
 		ui.MainLog("We haven't stored our main system yet")
-		systemData, err := entity.GetSystem(hqSystem)
+		systemData, err := entity.GetSystem(ctx, hqSystem)
 		if err != nil {
 			fmt.Println("failed to store system", err)
 			os.Exit(1)
@@ -64,7 +68,7 @@ func Init() *Orchestrator {
 
 	metrics.NumCredits.Set(float64(agent.Credits))
 
-	contracts, _ := agent.Contracts()
+	contracts, _ := agent.Contracts(ctx)
 
 	var contract *entity.Contract
 
@@ -79,7 +83,7 @@ func Init() *Orchestrator {
 		for _, c := range *contracts {
 			if !c.Fulfilled {
 				ui.MainLog("Accepted contract")
-				err = c.Accept()
+				err = c.Accept(ctx)
 				if err == nil {
 					contract = &c
 				} else {
@@ -102,9 +106,10 @@ func Init() *Orchestrator {
 		Contract:     contract,
 		Channel:      make(chan routine.OrchestratorEvent),
 		CreditTarget: 80000,
+		Context:      ctx,
 	}
 
-	waypoints, _ := agent.Headquarters.GetSystemWaypoints()
+	waypoints, _ := agent.Headquarters.GetSystemWaypoints(ctx)
 	database.LogWaypoints(waypoints)
 	for _, waypoint := range *waypoints {
 		if waypoint.HasTrait("SHIPYARD") {
@@ -114,7 +119,7 @@ func Init() *Orchestrator {
 		}
 	}
 
-	ships, err2 := orc.Agent.Ships()
+	ships, err2 := orc.Agent.Ships(ctx)
 	if err2 != nil {
 		fmt.Println(err2)
 	}
@@ -141,7 +146,7 @@ func Init() *Orchestrator {
 
 	// TODO: This should be merged into the explore logic
 	// TODO: Does this even work when we're not actually there?
-	shipyardStock, err := orc.Shipyard.GetShipyard()
+	shipyardStock, err := orc.Shipyard.GetShipyard(ctx)
 	if err == nil {
 		ui.MainLog(fmt.Sprintf("Shipyard at %s has %d types, %d available", shipyardStock.Symbol, len(shipyardStock.ShipTypes), len(shipyardStock.Ships)))
 		if len(shipyardStock.Ships) > 0 {
@@ -177,6 +182,7 @@ func Init() *Orchestrator {
 			Haulers:     orc.Haulers,
 			EventBus:    orc.Channel,
 		}
+		state.Context = context.WithValue(ctx, "state", state)
 		orc.States[i] = &state
 
 		go orc.routineLoop(&state)
@@ -231,7 +237,6 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 	for {
 		shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(1)
 		routineResult := state.CurrentRoutine.Run(state)
-		state.WaitingForHttp = false
 		if routineResult.WaitSeconds > 0 {
 			//state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
 			sleepTime := time.Duration(routineResult.WaitSeconds) * time.Second

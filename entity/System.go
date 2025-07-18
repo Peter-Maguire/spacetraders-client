@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"spacetraders/http"
@@ -17,15 +18,15 @@ type System struct {
 	Factions     []interface{}         `json:"factions"`
 }
 
-func GetSystem(system string) (*System, *http.HttpError) {
-	return http.Request[System]("GET", fmt.Sprintf("systems/%s", system), nil)
+func GetSystem(ctx context.Context, system string) (*System, *http.HttpError) {
+	return http.Request[System](ctx, "GET", fmt.Sprintf("systems/%s", system), nil)
 }
 
-func (s *System) GetWaypoints() (*[]WaypointData, *http.HttpError) {
-	return http.Request[[]WaypointData]("GET", fmt.Sprintf("systems/%s/waypoints", s.Symbol), nil)
+func (s *System) GetWaypoints(ctx context.Context) (*[]WaypointData, *http.HttpError) {
+	return http.Request[[]WaypointData](ctx, "GET", fmt.Sprintf("systems/%s/waypoints", s.Symbol), nil)
 }
 
-func (s *System) GetLimitedWaypoint(name Waypoint) *LimitedWaypointData {
+func (s *System) GetLimitedWaypoint(ctx context.Context, name Waypoint) *LimitedWaypointData {
 	for _, wp := range s.Waypoints {
 		if wp.Symbol == name {
 			return &wp

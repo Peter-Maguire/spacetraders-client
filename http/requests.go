@@ -2,13 +2,13 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"io"
 	"net/http"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,6 +28,7 @@ type OutgoingRequest struct {
 	ReturnChannels []chan IncomingResponse
 	Mutex          sync.Mutex
 	Priority       int
+	Context        context.Context
 }
 
 var RequestBuffer = make([]*OutgoingRequest, 0)
@@ -37,8 +38,6 @@ var RBufferLock sync.Mutex
 var Waiting = 0
 
 var IsRunningRequests = false
-
-var token = fmt.Sprintf("Bearer %s", os.Getenv("TOKEN"))
 
 var (
 	httpResponses = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -52,7 +51,7 @@ var (
 	})
 )
 
-func makeRequest[T any](method string, path string, body any) (*HttpResponse[T], *HttpError) {
+func makeRequest[T any](ctx context.Context, method string, path string, body any) (*HttpResponse[T], *HttpError) {
 	// We can't set this to bytes.Buffer type because net/http assumes data of that type will not be nil
 	var buf io.Reader = nil
 	if body != nil {
@@ -70,7 +69,8 @@ func makeRequest[T any](method string, path string, body any) (*HttpResponse[T],
 	if body != nil {
 		req.Header.Set("content-type", "application/json")
 	}
-	req.Header.Add("authorization", token)
+
+	req.Header.Add("authorization", fmt.Sprintf("Bearer %s", ctx.Value("token")))
 	returnChan := make(chan IncomingResponse)
 
 	usingExistingRequest := false
@@ -98,6 +98,7 @@ func makeRequest[T any](method string, path string, body any) (*HttpResponse[T],
 			ReturnChannels: []chan IncomingResponse{returnChan},
 			Priority:       getRequestPriority(path),
 			OriginalPath:   path,
+			Context:        ctx,
 		})
 		RBufferLock.Unlock()
 		if !IsRunningRequests {
@@ -125,11 +126,11 @@ func makeRequest[T any](method string, path string, body any) (*HttpResponse[T],
 	return output, nil
 }
 
-func PaginatedRequest[T any](path string, startPage int, maxPages int) (*[]T, *HttpError) {
+func PaginatedRequest[T any](ctx context.Context, path string, startPage int, maxPages int) (*[]T, *HttpError) {
 	var currentPage = startPage
 	output := make([]T, 0)
 	for {
-		resp, err := makeRequest[[]T]("GET", fmt.Sprintf("%s?limit=20&page=%d", path, currentPage), nil)
+		resp, err := makeRequest[[]T](ctx, "GET", fmt.Sprintf("%s?limit=20&page=%d", path, currentPage), nil)
 		if err != nil {
 			return &output, err
 		}
@@ -148,8 +149,8 @@ func PaginatedRequest[T any](path string, startPage int, maxPages int) (*[]T, *H
 
 }
 
-func Request[T any](method string, path string, body any) (*T, *HttpError) {
-	resp, err := makeRequest[T](method, path, body)
+func Request[T any](ctx context.Context, method string, path string, body any) (*T, *HttpError) {
+	resp, err := makeRequest[T](ctx, method, path, body)
 	if err != nil {
 		return nil, err
 	}

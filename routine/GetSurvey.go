@@ -21,9 +21,9 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 		}
 	}
 
-	_ = state.Ship.EnsureNavState(entity.NavOrbit)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 	state.Log("Finding a survey")
-	surveyResult, err := state.Ship.Survey()
+	surveyResult, err := state.Ship.Survey(state.Context)
 
 	if err != nil {
 		switch err.Code {

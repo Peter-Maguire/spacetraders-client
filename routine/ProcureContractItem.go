@@ -16,7 +16,7 @@ type ProcureContractItem struct {
 
 func (p ProcureContractItem) Run(state *State) RoutineResult {
 
-	contracts, _ := state.Agent.Contracts()
+	contracts, _ := state.Agent.Contracts(state.Context)
 
 	for _, contract := range *contracts {
 		if contract.Accepted && !contract.Fulfilled {
@@ -80,10 +80,10 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 
 		if currentSystem == nil {
-			currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
+			currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 		}
 
-		lw := currentSystem.GetLimitedWaypoint(state.Ship.Nav.WaypointSymbol)
+		lw := currentSystem.GetLimitedWaypoint(state.Context, state.Ship.Nav.WaypointSymbol)
 
 		marketCosts := make(map[entity.Waypoint]int)
 
@@ -114,7 +114,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		}
 	}
 
-	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket()
+	market, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
 
 	database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
 
@@ -139,17 +139,17 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 	state.Log(fmt.Sprintf("Attempting to purchase %dx %s", purchaseAmount, p.deliverable.TradeSymbol))
 	state.WaitingForHttp = true
-	_ = state.Ship.EnsureNavState(entity.NavDocked)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 	state.WaitingForHttp = false
 
-	_, err := state.Ship.Purchase(p.deliverable.TradeSymbol, purchaseAmount)
+	_, err := state.Ship.Purchase(state.Context, p.deliverable.TradeSymbol, purchaseAmount)
 
 	if err != nil {
 
 		switch err.Code {
 		case http.ErrInsufficientFunds:
 			state.Log("Insufficient Funds")
-			agent, _ := entity.GetAgent()
+			agent, _ := entity.GetAgent(state.Context)
 			state.Agent.Credits = agent.Credits
 			return RoutineResult{
 				WaitSeconds: 10,
@@ -167,7 +167,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 	if sellFuel != nil && state.Ship.Fuel.Capacity-state.Ship.Fuel.Current > 100 {
 		state.Log("Refuelling whilst I can")
-		_ = state.Ship.Refuel()
+		_ = state.Ship.Refuel(state.Context)
 	}
 
 	if purchaseAmount >= unitsRemaining || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {

@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"context"
 	"fmt"
 	"spacetraders/http"
 )
@@ -24,28 +25,28 @@ type AgentRegister struct {
 //	})
 //}
 
-func GetAgent() (*Agent, *http.HttpError) {
-	return http.Request[Agent]("GET", "my/agent", nil)
+func GetAgent(ctx context.Context) (*Agent, *http.HttpError) {
+	return http.Request[Agent](ctx, "GET", "my/agent", nil)
 }
 
-func (a *Agent) Ships() (*[]Ship, error) {
-	return http.PaginatedRequest[Ship]("my/ships", 1, 0)
+func (a *Agent) Ships(ctx context.Context) (*[]Ship, error) {
+	return http.PaginatedRequest[Ship](ctx, "my/ships", 1, 0)
 }
 
-func (a *Agent) Contracts() (*[]Contract, error) {
-	return http.PaginatedRequest[Contract]("my/contracts", 1, 0)
+func (a *Agent) Contracts(ctx context.Context) (*[]Contract, error) {
+	return http.PaginatedRequest[Contract](ctx, "my/contracts", 1, 0)
 }
 
-func (a *Agent) Systems(page int) (*[]System, *http.HttpError) {
-	return http.Request[[]System]("GET", fmt.Sprintf("systems?total=20&page=%d", page), nil)
+func (a *Agent) Systems(ctx context.Context, page int) (*[]System, *http.HttpError) {
+	return http.Request[[]System](ctx, "GET", fmt.Sprintf("systems?total=20&page=%d", page), nil)
 }
 
-func (a *Agent) GetSystem(system string) (*System, *http.HttpError) {
-	return http.Request[System]("GET", fmt.Sprintf("systems/%s", system), nil)
+func (a *Agent) GetSystem(ctx context.Context, system string) (*System, *http.HttpError) {
+	return http.Request[System](ctx, "GET", fmt.Sprintf("systems/%s", system), nil)
 }
 
-func (a *Agent) BuyShip(shipyard Waypoint, shipType string) (*ShipPurchaseResult, *http.HttpError) {
-	result, err := http.Request[ShipPurchaseResult]("POST", "my/ships", ShipPurchaseRequest{
+func (a *Agent) BuyShip(ctx context.Context, shipyard Waypoint, shipType string) (*ShipPurchaseResult, *http.HttpError) {
+	result, err := http.Request[ShipPurchaseResult](ctx, "POST", "my/ships", ShipPurchaseRequest{
 		ShipType:       shipType,
 		WaypointSymbol: shipyard,
 	})

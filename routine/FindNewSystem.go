@@ -21,7 +21,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 
 	if currentSystem == nil {
-		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
+		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 		database.AddUnvisitedSystems([]entity.System{*currentSystem}, 0)
 	}
 
@@ -58,7 +58,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				state.WaitingForHttp = true
 				jumpGate := systemEntity.GetJumpGate()
 				if jumpGate != nil {
-					jumpResult, err := state.Ship.Jump(systemEntity.Waypoints[0].Symbol)
+					jumpResult, err := state.Ship.Jump(state.Context, systemEntity.Waypoints[0].Symbol)
 					state.WaitingForHttp = false
 					if err != nil {
 						state.Log("Error jumping")
@@ -89,7 +89,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprintf("Starting on page %d", f.startFromPage))
 
 	state.WaitingForHttp = true
-	systemsPtr, err := state.Agent.Systems(f.startFromPage)
+	systemsPtr, err := state.Agent.Systems(state.Context, f.startFromPage)
 	state.WaitingForHttp = false
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 					state.Log("No jump gate in this system")
 					continue
 				}
-				jumpResult, err := state.Ship.Jump(jumpGate.Symbol)
+				jumpResult, err := state.Ship.Jump(state.Context, jumpGate.Symbol)
 				state.WaitingForHttp = false
 				if err != nil {
 					if err.Code == http.ErrJumpGateUnderConstruction {
@@ -147,13 +147,13 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				StopReason: "Not at jump gate or no antimatter",
 			}
 		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current && state.Ship.CanWarp() {
-			_ = state.Ship.SetFlightMode("DRIFT")
+			_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
 			jumpGate := system.GetJumpGate()
 			if jumpGate == nil {
 				state.Log("No jump gate in this system")
 				continue
 			}
-			res, err := state.Ship.Warp(jumpGate.Symbol)
+			res, err := state.Ship.Warp(state.Context, jumpGate.Symbol)
 			if err != nil {
 				state.Log(err.Error())
 				continue

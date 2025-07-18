@@ -22,7 +22,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 	if currentSystem != nil {
-		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem()
+		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 		state.Log("TODO currentSystem isn't stored in the database!")
 	}
 
@@ -30,7 +30,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 
 	if targetSystem != nil {
 		state.Log("TODO targetSystem isn't stored in the database!")
-		targetSystem, _ = state.Agent.GetSystem(g.system)
+		targetSystem, _ = state.Agent.GetSystem(state.Context, g.system)
 		database.AddUnvisitedSystems([]entity.System{*targetSystem}, 0)
 	}
 
@@ -38,7 +38,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 
 	antimatterCargo := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
 	if antimatterCargo == nil || antimatterCargo.Units == 0 || distance > 500 {
-		wpd, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData()
+		wpd, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 		if wpd.Type != "JUMP_GATE" {
 			state.Log("Going to jump gate")
 			return RoutineResult{
@@ -48,7 +48,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	}
 
 	if distance > 2000 {
-		// Find an intermediary system thats within 2000 units
+		// Find an intermediary system that's within 2000 units
 		intermediaries := database.GetVisitedSystems()
 		jumpableIntermediaries := make([]database.System, 0)
 		for _, intermediary := range intermediaries {
@@ -80,8 +80,8 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 
 	}
 
-	_ = state.Ship.EnsureNavState(entity.NavOrbit)
-	systemData, _ := entity.GetSystem(g.system)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
+	systemData, _ := entity.GetSystem(state.Context, g.system)
 	jumpGate := systemData.GetJumpGate()
 	if jumpGate == nil {
 		return RoutineResult{
@@ -89,7 +89,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 			StopReason: "No Jump Gate found in system",
 		}
 	}
-	jumpResult, err := state.Ship.Jump(jumpGate.Symbol)
+	jumpResult, err := state.Ship.Jump(state.Context, jumpGate.Symbol)
 
 	if err == nil {
 		waitUntil := jumpResult.Cooldown.Expiration
@@ -102,7 +102,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	switch err.Code {
 	case http.ErrInsufficientAntimatter:
 		state.Log("Cargo must be out of date, retrying")
-		_, _ = state.Ship.GetCargo()
+		_, _ = state.Ship.GetCargo(state.Context)
 		return RoutineResult{}
 		// TODO: figure out how this ship has gotten stuck here
 		//case http.ErrAlreadyInSystem:
