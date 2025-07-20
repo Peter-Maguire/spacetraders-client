@@ -19,6 +19,7 @@ func (o *Orchestrator) onSellComplete(agent *entity.Agent) {
 	}
 
 	if agent.Credits >= o.CreditTarget && o.Shipyard != "" && o.ShipToBuy != "" {
+		// TODO: figure this shit out
 		result, err := agent.BuyShip(o.Context, o.Shipyard, o.ShipToBuy)
 		if err == nil && result != nil {
 			state := routine.State{

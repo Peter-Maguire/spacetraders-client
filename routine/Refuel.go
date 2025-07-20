@@ -19,9 +19,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 		_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
 		return RoutineResult{SetRoutine: r.next}
 	}
-
-	//state.Log(fmt.Sprintf("Has tried market: %v", r.hasTriedMarket))
-	// TODO: rewrite this code for more efficient refuelling
+	
 	if !r.hasTriedMarket {
 		state.Log("Seeing if we have a market here")
 		market, err := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
@@ -29,29 +27,11 @@ func (r Refuel) Run(state *State) RoutineResult {
 			go database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
 		}
 		if err != nil || market.GetTradeGood("FUEL") == nil {
-			state.Log("No market here selling fuel")
-			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
-			for _, waypoint := range *waypoints {
-				if waypoint.HasTrait("MARKETPLACE") && waypoint.Symbol != state.Ship.Nav.WaypointSymbol {
-					state.Log("Trying a different market")
-					if state.Ship.Nav.FlightMode == "DRIFT" {
-						state.Log("We're boned")
-						return RoutineResult{
-							Stop:       true,
-							StopReason: "Unable to refuel",
-						}
-					}
-
-					state.Log("Setting flight mode to drift")
-					_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
-
-					return RoutineResult{
-						SetRoutine: NavigateTo{
-							waypoint: waypoint.Symbol,
-							next:     Refuel{next: r.next},
-						},
-					}
-				}
+			return RoutineResult{
+				SetRoutine: FindNewWaypoint{
+					desiredTrait: "MARKETPLACE",
+					next:         r,
+				},
 			}
 		} else {
 			state.Log("Trying to refuel here")

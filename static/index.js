@@ -32,6 +32,9 @@ function connect() {
 connect();
 
 
+let shipStates = [];
+let waypoints = [];
+
 
 function updateState({ship, http}){
     const ships = document.getElementById("shipState");
@@ -39,6 +42,8 @@ function updateState({ship, http}){
 
     const shipTemplate = document.getElementById("shipTemplate")
 
+    shipStates = ship;
+    drawMap();
 
     const now = new Date();
     ship.forEach((sh)=>{
@@ -111,13 +116,7 @@ const mapIcons = {
 async function populateMap(){
     let req = await fetch("/waypoints")
         .then(res => res.json())
-    req.forEach((waypoint) => {
-        mapLocations.push({
-            x: waypoint.waypointData.x,
-            y: waypoint.waypointData.y,
-            icon: mapIcons[waypoint.waypointData.type] || "?",
-        })
-    })
+    waypoints = req;
 }
 
 
@@ -180,7 +179,12 @@ async function initMap(){
 
 }
 
+function getWaypoint(symbol){
+    return waypoints.find((w)=>w.waypoint === symbol);
+}
+
 function drawMap(){
+    if(!viewingMap)return;
     let canvas = document.getElementById("mapCanvas");
     let ctx = canvas.getContext("2d");
 
@@ -188,10 +192,50 @@ function drawMap(){
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "white";
     ctx.font = `${mapScale*10}px serif`
-    for (let i = 0; i < mapLocations.length; i++){
-        let [x, y] = getCanvasCoords(mapLocations[i].x, mapLocations[i].y);
-        ctx.fillText(mapLocations[i].icon, x, y)//, 10 * mapScale, 10 * mapScale)
-    }
+
+    waypoints.forEach(waypoint => {
+        let icon = mapIcons[waypoint.waypointData.type] || "?";
+        let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
+        ctx.fillText(icon, x, y)//, 10 * mapScale, 10 * mapScale)
+    })
+
+    shipStates.forEach((ship)=>{
+        if(ship.nav.status !== "IN_TRANSIT") {
+            const waypoint = getWaypoint(ship.nav.waypointSymbol);
+            if (!waypoint) {
+                console.log(`Unable to find waypoint belonging to ship`, ship);
+                return
+            }
+            let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
+            ctx.fillText("🚀", x, y)
+            return
+        }
+
+        const originWaypoint = getWaypoint(ship.nav.route.origin.symbol);
+        let [oX, oY] = getCanvasCoords(originWaypoint.waypointData.x, originWaypoint.waypointData.y);
+        const destWaypoint = getWaypoint(ship.nav.route.destination.symbol);
+        let [dX, dY] = getCanvasCoords(destWaypoint.waypointData.x, destWaypoint.waypointData.y);
+        const departedAt = new Date(ship.nav.route.departureTime);
+        const arrivalAt = new Date(ship.nav.route.arrival);
+        const now = new Date();
+        const percentageComplete = (now-departedAt)/(arrivalAt-departedAt);
+
+        ctx.strokeStyle = "red";
+        ctx.beginPath();
+        ctx.setLineDash([5, 15]);
+        ctx.moveTo(oX, oY);
+        ctx.lineTo(dX, dY);
+        ctx.stroke();
+        let [sX, sY] = interpolatePoint(oX, oY, dX, dY, percentageComplete);
+        ctx.fillText("🚀", sX, sY)
+
+    })
+}
+
+function interpolatePoint(x1, y1, x2, y2, t) {
+    const x = x1 + (x2 - x1) * t;
+    const y = y1 + (y2 - y1) * t;
+    return [ x, y ];
 }
 
 let viewingMap = true;

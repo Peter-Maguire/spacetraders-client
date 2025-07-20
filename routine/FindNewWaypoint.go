@@ -3,14 +3,20 @@ package routine
 import (
 	"fmt"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 )
 
 type FindNewWaypoint struct {
+	desiredTrait string
+	next         Routine
 }
 
 func (f FindNewWaypoint) Run(state *State) RoutineResult {
+	if f.next == nil {
+		f.next = Explore{}
+	}
 	// find new place
 	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 	database.LogWaypoints(waypoints)
@@ -39,8 +45,8 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 		return RoutineResult{
 			SetRoutine: NavigateTo{
 				waypoint:     goodWaypoints[0].Symbol,
-				next:         Explore{},
-				nextIfNoFuel: Explore{},
+				next:         f.next,
+				nextIfNoFuel: f.next,
 			},
 		}
 	}
@@ -54,7 +60,7 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 		StopReason: "No more good waypoints left in this system",
 	}
 	for _, waypoint := range *waypoints {
-		if waypoint.Type == "JUMP_GATE" {
+		if waypoint.Type == constant.WaypointTypeJumpGate {
 			if waypoint.Symbol == state.Ship.Nav.WaypointSymbol {
 				state.Log("We're at a jump gate, time to go find a new place")
 				return RoutineResult{
@@ -86,9 +92,15 @@ var desiredTraits = []string{"MARKETPLACE", "SHIPYARD", "UNCHARTED", "TRADING_HU
 
 func (f FindNewWaypoint) hasGoodTraits(traits []entity.Trait) bool {
 	for _, trait := range traits {
-		for _, desiredTrait := range desiredTraits {
-			if trait.Symbol == desiredTrait {
+		if f.desiredTrait != "" {
+			if trait.Symbol == f.desiredTrait {
 				return true
+			}
+		} else {
+			for _, desiredTrait := range desiredTraits {
+				if trait.Symbol == desiredTrait {
+					return true
+				}
 			}
 		}
 	}

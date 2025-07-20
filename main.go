@@ -101,6 +101,7 @@ func updateShipStates() {
 						AsleepUntil:    state.AsleepUntil,
 						ShipName:       state.Ship.Symbol,
 						ShipType:       state.Ship.Registration.Role,
+						Nav:            state.Ship.Nav,
 					})
 					if state.CurrentRoutine == nil {
 						numStopped++

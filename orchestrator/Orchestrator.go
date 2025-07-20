@@ -111,13 +111,16 @@ func Init(token string) *Orchestrator {
 
 	waypoints, _ := agent.Headquarters.GetSystemWaypoints(ctx)
 	database.LogWaypoints(waypoints)
-	for _, waypoint := range *waypoints {
-		if waypoint.HasTrait("SHIPYARD") {
-			ui.MainLog(fmt.Sprintf("Found Shipyard at %s", waypoint.Symbol))
-			orc.Shipyard = waypoint.Symbol
-			break
-		}
-	}
+
+	// TODO: fix shipyard logic
+	orc.Shipyard = "X1-PS43-A2"
+	//for _, waypoint := range *waypoints {
+	//	if waypoint.HasTrait("SHIPYARD") {
+	//		ui.MainLog(fmt.Sprintf("Found Shipyard at %s", waypoint.Symbol))
+	//		orc.Shipyard = waypoint.Symbol
+	//		break
+	//	}
+	//}
 
 	ships, err2 := orc.Agent.Ships(ctx)
 	if err2 != nil {
@@ -136,9 +139,7 @@ func Init(token string) *Orchestrator {
 	}
 
 	// TODO: this logic should be more nuanced
-	if shipCount < 10 {
-		orc.ShipToBuy = "SHIP_ORE_HOUND"
-	} else if shipCount < 30 {
+	if shipCount < 30 {
 		orc.ShipToBuy = "SHIP_MINING_DRONE"
 	} else {
 		orc.ShipToBuy = "SHIP_LIGHT_HAULER"

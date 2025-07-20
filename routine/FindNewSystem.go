@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -189,7 +190,7 @@ func (f FindNewSystem) CanJumpTo(toSystem *entity.System, fromSystem *entity.Sys
 
 func (f FindNewSystem) HasJumpGate(waypoints []entity.LimitedWaypointData) bool {
 	for _, waypoint := range waypoints {
-		if waypoint.Type == "JUMP_GATE" {
+		if waypoint.Type == constant.WaypointTypeJumpGate {
 			return true
 		}
 	}

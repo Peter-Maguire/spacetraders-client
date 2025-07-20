@@ -188,7 +188,8 @@ func (s *Ship) JettisonCargo(ctx context.Context, symbol string, amount int) *ht
 		"units":  amount,
 	})
 
-	if err != nil {
+	if err != nil && shipUpdate != nil {
+		fmt.Println(shipUpdate)
 		s.Cargo = shipUpdate.Cargo
 	}
 	return err
@@ -268,7 +269,7 @@ const (
 )
 
 type NavRoute struct {
-	Departure     WaypointData `json:"departure"`
+	Departure     WaypointData `json:"origin"`
 	Destination   WaypointData `json:"destination"`
 	Arrival       time.Time    `json:"arrival"`
 	DepartureTime time.Time    `json:"departureTime"`
@@ -367,7 +368,7 @@ type ShipCargo struct {
 }
 
 func (sc *ShipCargo) IsFull() bool {
-	return sc.Capacity == sc.Units
+	return sc.Units >= sc.Capacity
 }
 
 func (sc *ShipCargo) GetRemainingCapacity() int {

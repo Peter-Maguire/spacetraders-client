@@ -1,5 +1,7 @@
 package routine
 
+import "spacetraders/constant"
+
 type GoToJumpGate struct {
 	next Routine
 }
@@ -7,7 +9,7 @@ type GoToJumpGate struct {
 func (g GoToJumpGate) Run(state *State) RoutineResult {
 	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 	for _, waypoint := range *waypoints {
-		if waypoint.Type == "JUMP_GATE" {
+		if waypoint.Type == constant.WaypointTypeJumpGate {
 			if waypoint.Symbol == state.Ship.Nav.WaypointSymbol {
 				state.Log("We're at a jump gate, already")
 				return RoutineResult{

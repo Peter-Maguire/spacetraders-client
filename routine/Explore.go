@@ -8,6 +8,7 @@ import (
 )
 
 type Explore struct {
+	desiredTrait  string
 	marketTargets []string
 	oneShot       bool
 	next          Routine
@@ -24,14 +25,16 @@ func (e Explore) Run(state *State) RoutineResult {
 			}
 		}
 		return RoutineResult{
-			SetRoutine: FindNewWaypoint{},
+			SetRoutine: FindNewWaypoint{
+				desiredTrait: e.desiredTrait,
+			},
 		}
 	}
 
 	state.Log(fmt.Sprintf("Checking out %s", state.Ship.Nav.WaypointSymbol))
 	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
-	
+
 	var shipyardData *entity.ShipyardStock
 	var marketData *entity.Market
 
@@ -53,8 +56,10 @@ func (e Explore) Run(state *State) RoutineResult {
 		var err error
 		shipyardData, err = waypointData.Symbol.GetShipyard(state.Context)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("shipyard error", err)
 		} else {
+			fmt.Println("Storing shipyard data")
+			fmt.Println(shipyardData)
 			database.StoreShipCosts(shipyardData)
 		}
 
@@ -113,6 +118,9 @@ func (e Explore) Run(state *State) RoutineResult {
 }
 
 func (e Explore) Name() string {
+	if e.desiredTrait != "" {
+		return fmt.Sprintf("Explore (Find %s)", e.desiredTrait)
+	}
 	if e.marketTargets != nil {
 		return "Explore (Find Market)"
 	}

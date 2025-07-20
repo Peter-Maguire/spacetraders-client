@@ -23,7 +23,10 @@ func (m MineOres) Run(state *State) RoutineResult {
 
 	if state.Ship.Cargo.IsFull() {
 		return RoutineResult{
-			SetRoutine: FullWait{},
+			SetRoutine: Jettison{
+				nextIfFailed:     FullWait{},
+				nextIfSuccessful: m,
+			},
 		}
 	}
 
@@ -52,22 +55,11 @@ func (m MineOres) Run(state *State) RoutineResult {
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),
 			}
 		case http.ErrCargoFull:
-			hasJettisoned := false
-			state.Log("Cargo is full")
-			//for _, slot := range state.Ship.Cargo.Inventory {
-			//    if m.IsUseless(slot.Symbol) {
-			//        state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))
-			//        err = state.Ship.JettisonCargo(slot.Symbol, slot.Units)
-			//        hasJettisoned = hasJettisoned || err == nil
-			//    }
-			//}
-			//return RoutineResult{WaitSeconds: 10}
-			if hasJettisoned {
-				return RoutineResult{}
-			}
 			return RoutineResult{
-				WaitSeconds: 30,
-				SetRoutine:  FullWait{},
+				SetRoutine: Jettison{
+					nextIfFailed:     FullWait{},
+					nextIfSuccessful: m,
+				},
 			}
 		case http.ErrCannotExtractHere:
 			state.Log("We're not at an asteroid field")
@@ -92,6 +84,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 
 	state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
 
+	// TODO: this logic in jettisonwaste
 	//if state.Contract == nil {
 	//    for _, slot := range result.Cargo.Inventory {
 	//        if m.IsUseless(slot.Symbol) {
@@ -106,9 +99,9 @@ func (m MineOres) Run(state *State) RoutineResult {
 	}
 }
 
-var uselessItems = []string{"QUARTZ_SAND", "ICE_WATER", ""}
+var uselessItems = []string{"QUARTZ_SAND", "ICE_WATER"}
 
-func (m *MineOres) IsUseless(item string) bool {
+func (m MineOres) IsUseless(item string) bool {
 	for _, uselessItem := range uselessItems {
 		if uselessItem == item {
 			return true

@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -39,7 +40,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	antimatterCargo := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
 	if antimatterCargo == nil || antimatterCargo.Units == 0 || distance > 500 {
 		wpd, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
-		if wpd.Type != "JUMP_GATE" {
+		if wpd.Type != constant.WaypointTypeJumpGate {
 			state.Log("Going to jump gate")
 			return RoutineResult{
 				SetRoutine: GoToJumpGate{next: g},

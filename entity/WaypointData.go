@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"spacetraders/constant"
 	"spacetraders/http"
 	"time"
 )
 
 type LimitedWaypointData struct {
-	Symbol Waypoint `json:"symbol"`
-	Type   string   `json:"type"`
-	X      int      `json:"x"`
-	Y      int      `json:"y"`
+	Symbol Waypoint              `json:"symbol"`
+	Type   constant.WaypointType `json:"type"`
+	X      int                   `json:"x"`
+	Y      int                   `json:"y"`
 }
 
 func (lw *LimitedWaypointData) GetFullWaypoint(ctx context.Context) (*WaypointData, error) {

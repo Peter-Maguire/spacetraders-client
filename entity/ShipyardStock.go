@@ -8,6 +8,15 @@ type ShipyardStock struct {
 	ModificationsFee int                 `json:"modifications_fee"`
 }
 
+func (ss *ShipyardStock) SellsShipType(shipType string) bool {
+	for _, t := range ss.ShipTypes {
+		if t.Type == shipType {
+			return true
+		}
+	}
+	return false
+}
+
 type ShipType struct {
 	Type string `json:"type"`
 }

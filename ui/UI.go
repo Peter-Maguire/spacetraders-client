@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
+	"spacetraders/entity"
 	"time"
 )
 
@@ -66,13 +67,14 @@ func broadcastLoop() {
 }
 
 type ShipData struct {
-	Stopped        bool       `json:"stopped"`
-	StoppedReason  string     `json:"stoppedReason,omitempty"`
-	WaitingForHttp bool       `json:"waitingForHttp"`
-	AsleepUntil    *time.Time `json:"asleepUntil"`
-	ShipName       string     `json:"name"`
-	ShipType       string     `json:"type"`
-	Routine        string     `json:"routine"`
+	Stopped        bool           `json:"stopped"`
+	StoppedReason  string         `json:"stoppedReason,omitempty"`
+	WaitingForHttp bool           `json:"waitingForHttp"`
+	AsleepUntil    *time.Time     `json:"asleepUntil"`
+	ShipName       string         `json:"name"`
+	ShipType       string         `json:"type"`
+	Routine        string         `json:"routine"`
+	Nav            entity.ShipNav `json:"nav"`
 }
 
 type HttpData struct {

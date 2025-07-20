@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"spacetraders/constant"
 	"spacetraders/http"
 )
 
@@ -37,7 +38,7 @@ func (s *System) GetLimitedWaypoint(ctx context.Context, name Waypoint) *Limited
 
 func (s *System) GetJumpGate() *LimitedWaypointData {
 	for _, wp := range s.Waypoints {
-		if wp.Type == "JUMP_GATE" {
+		if wp.Type == constant.WaypointTypeJumpGate {
 			return &wp
 		}
 	}
