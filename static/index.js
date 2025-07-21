@@ -3,7 +3,8 @@ const logMessages = [];
 
 
 function connect() {
-    const ws = new WebSocket(`ws://${location.host}/ws`)
+
+    const ws = new WebSocket(location.protocol === 'https:' ? `wss://${location.host}/ws` : `ws://${location.host}/ws`)
 
     ws.onmessage = function (message) {
         const update = JSON.parse(message.data);
