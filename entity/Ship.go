@@ -187,9 +187,8 @@ func (s *Ship) JettisonCargo(ctx context.Context, symbol string, amount int) *ht
 		"symbol": symbol,
 		"units":  amount,
 	})
-
-	if err != nil && shipUpdate != nil {
-		fmt.Println(shipUpdate)
+	
+	if err == nil && shipUpdate != nil {
 		s.Cargo = shipUpdate.Cargo
 	}
 	return err
@@ -368,6 +367,7 @@ type ShipCargo struct {
 }
 
 func (sc *ShipCargo) IsFull() bool {
+	fmt.Println(sc.Units, sc.Capacity)
 	return sc.Units >= sc.Capacity
 }
 
