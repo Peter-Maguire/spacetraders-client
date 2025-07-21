@@ -36,6 +36,9 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 	slot := state.Ship.Cargo.GetSlotWithItem(r.item)
 	state.Log(fmt.Sprintf("Deliver %dx %s", slot.Units, r.item))
 	deliverResult, err := state.Contract.Deliver(state.Context, state.Ship.Symbol, r.item, slot.Units)
+	if err != nil {
+		state.Log(err.Error())
+	}
 
 	// Update the cargo
 	_, _ = state.Ship.GetCargo(state.Context)
@@ -47,7 +50,9 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 		metrics.ContractProgress.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsFulfilled))
 		metrics.ContractRequirement.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsRequired))
 	}
-	
+
+	deliverable = &deliverResult.Contract.Terms.Deliver[0]
+
 	if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
 		state.Log("Contract completed")
 		err := state.Contract.Fulfill(state.Context)

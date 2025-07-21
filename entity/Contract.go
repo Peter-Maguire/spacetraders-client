@@ -8,13 +8,13 @@ import (
 )
 
 type Contract struct {
-	Id            string        `json:"id"`
-	FactionSymbol string        `json:"factionSymbol"`
-	Type          string        `json:"type"`
-	Terms         ContractTerms `json:"terms"`
-	Accepted      bool          `json:"accepted"`
-	Fulfilled     bool          `json:"fulfilled"`
-	Expiration    time.Time     `json:"deadlineToAccept"`
+	Id            string         `json:"id"`
+	FactionSymbol string         `json:"factionSymbol"`
+	Type          string         `json:"type"`
+	Terms         *ContractTerms `json:"terms"`
+	Accepted      bool           `json:"accepted"`
+	Fulfilled     bool           `json:"fulfilled"`
+	Expiration    time.Time      `json:"deadlineToAccept"`
 }
 
 func (c *Contract) Accept(ctx context.Context) *http.HttpError {
