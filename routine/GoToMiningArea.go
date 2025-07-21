@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"spacetraders/entity"
+	"spacetraders/util"
 )
 
 type GoToMiningArea struct {
@@ -17,8 +18,38 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	waypoints := *waypointsPtr
 	waypointScores := make(map[entity.Waypoint]int)
 
+	currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
+
 	for _, waypoint := range waypoints {
+		distance := waypoint.GetDistanceFrom(currentWaypoint.LimitedWaypointData)
+		fuelCost := util.GetFuelCost(distance, state.Ship.Nav.FlightMode)
+		if fuelCost > state.Ship.Fuel.Current {
+			// We can't do this because this one is too far away
+			continue
+		}
 		waypointScores[waypoint.Symbol] = g.ScoreWaypoint(waypoint)
+	}
+
+	if len(waypointScores) == 0 {
+		state.Log("No waypoints found within reach")
+		if state.Ship.Fuel.IsFull() {
+			if state.Ship.Nav.FlightMode == "DRIFT" {
+				return RoutineResult{
+					Stop:       true,
+					StopReason: "Unable to find anywhere to mine in range",
+				}
+			}
+			state.Log("Trying again in drift mode")
+			state.Ship.SetFlightMode(state.Context, "DRIFT")
+			return RoutineResult{}
+		}
+
+		state.Log("Attempting to refuel and trying again")
+		return RoutineResult{
+			SetRoutine: Refuel{
+				next: g,
+			},
+		}
 	}
 
 	sort.Slice(waypoints, func(i, j int) bool {
