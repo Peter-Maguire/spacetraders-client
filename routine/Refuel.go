@@ -21,6 +21,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 	//	return RoutineResult{SetRoutine: r.next}
 	//}
 
+	// TODO: this would not be necessary if we properly handled refreshing the ship data
 	ship, _ := state.Agent.GetShip(state.Context, state.Ship.Symbol)
 	if ship != nil {
 		state.Ship = ship

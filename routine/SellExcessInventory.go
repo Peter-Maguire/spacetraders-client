@@ -66,7 +66,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			state.Log("There is a refinery here we can use")
 			refinery = otherState.Ship
 			cargo, _ := refinery.GetCargo(state.Context)
-			refinery.Cargo = *cargo
+			refinery.Cargo = cargo
 			break
 		}
 	}

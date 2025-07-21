@@ -10,17 +10,17 @@ import (
 )
 
 type Ship struct {
-	Symbol       string           `json:"symbol"`
-	Nav          ShipNav          `json:"nav"`
-	Crew         ShipCrew         `json:"crew"`
-	Fuel         ShipFuel         `json:"fuel"`
-	Frame        ShipFrame        `json:"frame"`
-	Reactor      ShipReactor      `json:"reactor"`
-	Engine       ShipEngine       `json:"engine"`
-	Modules      []ShipMount      `json:"modules"`
-	Mounts       []ShipMount      `json:"mounts"`
-	Registration ShipRegistration `json:"registration"`
-	Cargo        ShipCargo        `json:"cargo"`
+	Symbol       string            `json:"symbol"`
+	Nav          *ShipNav          `json:"nav"`
+	Crew         *ShipCrew         `json:"crew"`
+	Fuel         *ShipFuel         `json:"fuel"`
+	Frame        *ShipFrame        `json:"frame"`
+	Reactor      *ShipReactor      `json:"reactor"`
+	Engine       *ShipEngine       `json:"engine"`
+	Modules      []ShipMount       `json:"modules"`
+	Mounts       []ShipMount       `json:"mounts"`
+	Registration *ShipRegistration `json:"registration"`
+	Cargo        *ShipCargo        `json:"cargo"`
 }
 
 func (s *Ship) HasMount(mountSymbol string) bool {
@@ -57,7 +57,7 @@ func (s *Ship) Navigate(ctx context.Context, waypoint Waypoint) (*ShipNav, *http
 	if err == nil {
 		s.Nav = shipUpdate.Nav
 		s.Fuel = shipUpdate.Fuel
-		return &shipUpdate.Nav, err
+		return shipUpdate.Nav, err
 	}
 	return nil, err
 }
@@ -118,7 +118,7 @@ func (s *Ship) SellCargo(ctx context.Context, cargoSymbol string, units int) (*S
 		Units:  units,
 	})
 	if sellResult != nil {
-		s.Cargo = sellResult.Cargo
+		s.Cargo = &sellResult.Cargo
 	}
 	return sellResult, err
 }
@@ -126,7 +126,7 @@ func (s *Ship) SellCargo(ctx context.Context, cargoSymbol string, units int) (*S
 func (s *Ship) Extract(ctx context.Context) (*ExtractionResult, *http.HttpError) {
 	extractionResult, err := http.Request[ExtractionResult](ctx, "POST", fmt.Sprintf("my/ships/%s/extract", s.Symbol), nil)
 	if extractionResult != nil {
-		s.Cargo = extractionResult.Cargo
+		s.Cargo = &extractionResult.Cargo
 	}
 	return extractionResult, err
 }
@@ -136,7 +136,7 @@ func (s *Ship) ExtractSurvey(ctx context.Context, survey *Survey) (*ExtractionRe
 		"survey": survey,
 	})
 	if extractionResult != nil {
-		s.Cargo = extractionResult.Cargo
+		s.Cargo = &extractionResult.Cargo
 	}
 	return extractionResult, err
 }
@@ -150,7 +150,7 @@ func (s *Ship) Jump(ctx context.Context, waypoint Waypoint) (*ShipJumpResult, *h
 		"waypointSymbol": waypoint,
 	})
 	if err == nil {
-		s.Nav = jumpResult.Nav
+		s.Nav = &jumpResult.Nav
 		return jumpResult, nil
 	}
 	return jumpResult, err
@@ -164,8 +164,8 @@ func (s *Ship) Warp(ctx context.Context, waypoint Waypoint) (*ShipWarpResult, *h
 		"waypointSymbol": waypoint,
 	})
 	if err == nil {
-		s.Fuel = warpResult.Fuel
-		s.Nav = warpResult.Nav
+		s.Fuel = &warpResult.Fuel
+		s.Nav = &warpResult.Nav
 	}
 	return warpResult, err
 }
@@ -187,7 +187,7 @@ func (s *Ship) JettisonCargo(ctx context.Context, symbol string, amount int) *ht
 		"symbol": symbol,
 		"units":  amount,
 	})
-	
+
 	if err == nil && shipUpdate != nil {
 		s.Cargo = shipUpdate.Cargo
 	}
@@ -211,7 +211,7 @@ func (s *Ship) GetCargo(ctx context.Context) (*ShipCargo, *http.HttpError) {
 	cargo, err := http.Request[ShipCargo](ctx, "GET", fmt.Sprintf("my/ships/%s/cargo", s.Symbol), nil)
 
 	if err == nil {
-		s.Cargo = *cargo
+		s.Cargo = cargo
 	}
 
 	return cargo, err
@@ -224,7 +224,7 @@ func (s *Ship) Purchase(ctx context.Context, symbol string, amount int) (*ItemPu
 	})
 
 	if err == nil {
-		s.Cargo = *result.Cargo
+		s.Cargo = result.Cargo
 	}
 
 	return result, err
@@ -246,7 +246,7 @@ func (s *Ship) Refine(ctx context.Context, produce string) (*ShipRefineResult, *
 	})
 
 	if err == nil {
-		s.Cargo = result.Cargo
+		s.Cargo = &result.Cargo
 	}
 
 	return result, err
