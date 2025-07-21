@@ -7,21 +7,28 @@ import (
 	"log"
 	"net/http"
 	"spacetraders/entity"
+
 	"time"
 )
 
 var upgrader = websocket.Upgrader{}
 
-func Init() {
+type WebUI struct {
+	orc Orchestrator
+}
 
+func Init(orc Orchestrator) *WebUI {
+	webUi := WebUI{
+		orc: orc,
+	}
 	go broadcastLoop()
-	initApi()
+	webUi.initApi()
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/ws", ws)
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fs)
 	http.ListenAndServe("0.0.0.0:8080", nil)
-
+	return &webUi
 }
 
 var clients []*websocket.Conn
@@ -67,14 +74,15 @@ func broadcastLoop() {
 }
 
 type ShipData struct {
-	Stopped        bool           `json:"stopped"`
-	StoppedReason  string         `json:"stoppedReason,omitempty"`
-	WaitingForHttp bool           `json:"waitingForHttp"`
-	AsleepUntil    *time.Time     `json:"asleepUntil"`
-	ShipName       string         `json:"name"`
-	ShipType       string         `json:"type"`
-	Routine        string         `json:"routine"`
-	Nav            entity.ShipNav `json:"nav"`
+	Stopped        bool             `json:"stopped"`
+	StoppedReason  string           `json:"stoppedReason,omitempty"`
+	WaitingForHttp bool             `json:"waitingForHttp"`
+	AsleepUntil    *time.Time       `json:"asleepUntil"`
+	ShipName       string           `json:"name"`
+	ShipType       string           `json:"type"`
+	Routine        string           `json:"routine"`
+	Nav            entity.ShipNav   `json:"nav"`
+	Cargo          entity.ShipCargo `json:"cargo"`
 }
 
 type HttpData struct {

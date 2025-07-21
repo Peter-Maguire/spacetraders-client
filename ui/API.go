@@ -6,12 +6,17 @@ import (
 	"spacetraders/database"
 )
 
-func initApi() {
+func (wu *WebUI) initApi() {
 	http.HandleFunc("/waypoints", func(writer http.ResponseWriter, request *http.Request) {
 		encoder := json.NewEncoder(writer)
 
 		shipyardData := database.GetWaypoints()
 		encoder.Encode(shipyardData)
+	})
 
+	http.HandleFunc("/contracts", func(writer http.ResponseWriter, request *http.Request) {
+		encoder := json.NewEncoder(writer)
+
+		encoder.Encode(wu.orc.GetContract())
 	})
 }

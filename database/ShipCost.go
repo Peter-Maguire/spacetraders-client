@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"gorm.io/gorm/clause"
 	"spacetraders/entity"
 	"time"
@@ -23,8 +22,7 @@ func StoreShipCosts(costs *entity.ShipyardStock) {
 			PurchasePrice: ship.PurchasePrice,
 		}
 	}
-	tx := db.Clauses(clause.OnConflict{DoNothing: true}).Save(output)
-	fmt.Println("Shipyard data error", tx.Error)
+	db.Clauses(clause.OnConflict{DoNothing: true}).Save(output)
 }
 
 func GetShipCosts() []*ShipCost {

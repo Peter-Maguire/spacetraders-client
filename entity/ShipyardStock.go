@@ -17,6 +17,15 @@ func (ss *ShipyardStock) SellsShipType(shipType string) bool {
 	return false
 }
 
+func (ss *ShipyardStock) GetStockOf(shipType string) *AvailableShip {
+	for _, ship := range ss.Ships {
+		if ship.Type == shipType {
+			return &ship
+		}
+	}
+	return nil
+}
+
 type ShipType struct {
 	Type string `json:"type"`
 }

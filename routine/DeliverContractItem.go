@@ -13,6 +13,24 @@ type DeliverContractItem struct {
 
 func (r DeliverContractItem) Run(state *State) RoutineResult {
 
+	deliverable := state.Contract.Terms.GetDeliverable(r.item)
+	if deliverable == nil {
+		state.Log("Item specified is not in the contract as a deliverable")
+		return RoutineResult{
+			SetRoutine: r.next,
+		}
+	}
+
+	if state.Ship.Nav.WaypointSymbol != deliverable.DestinationSymbol {
+		state.Log("Going to contract location")
+		return RoutineResult{
+			SetRoutine: NavigateTo{
+				waypoint: deliverable.DestinationSymbol,
+				next:     r,
+			},
+		}
+	}
+
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
 	slot := state.Ship.Cargo.GetSlotWithItem(r.item)
@@ -29,9 +47,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 		metrics.ContractProgress.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsFulfilled))
 		metrics.ContractRequirement.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsRequired))
 	}
-
-	deliverable := deliverResult.Contract.Terms.GetDeliverable(r.item)
-
+	
 	if deliverable.UnitsFulfilled >= deliverable.UnitsRequired {
 		state.Log("Contract completed")
 		err := state.Contract.Fulfill(state.Context)

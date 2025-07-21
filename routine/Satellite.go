@@ -1,6 +1,7 @@
 package routine
 
 import (
+	"fmt"
 	"spacetraders/database"
 	"spacetraders/entity"
 )
@@ -31,7 +32,6 @@ func (s Satellite) Run(state *State) RoutineResult {
 	shipToBuy := "SHIP_MINING_DRONE"
 
 	if !s.onShipyard(state, waypointData, shipToBuy) {
-
 		// TODO this should use the database data
 		waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 
@@ -46,7 +46,6 @@ func (s Satellite) Run(state *State) RoutineResult {
 						},
 					}
 				}
-				// TODO: find the closest
 			}
 		}
 
@@ -59,29 +58,43 @@ func (s Satellite) Run(state *State) RoutineResult {
 		}
 	}
 
-	//shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
-	//database.StoreShipCosts(shipyard)
-	//
-	//// TODO: Should use the eventbus to create the new ship here instead of this
-	//result, err := state.Agent.BuyShip(state.Context, state.Ship.Nav.WaypointSymbol, shipToBuy)
-	//if err != nil && result != nil {
-	//	//newState := State{
-	//	//	Agent:    state.Agent,
-	//	//	Contract: state.Contract,
-	//	//	Ship:     result.Ship,
-	//	//	Haulers:  state.Haulers,
-	//	//	EventBus: state.EventBus,
-	//	//	States:   state.States,
-	//	//}
-	//	ui.MainLog(fmt.Sprintln("New ship", result.Ship.Symbol))
-	//	//o.States = append(o.States, &state)
-	//	//go .routineLoop(&state)
-	//}
+	shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
+	database.StoreShipCosts(shipyard)
 
-	return RoutineResult{
-		WaitSeconds: 120,
+	shipStock := shipyard.GetStockOf(shipToBuy)
+
+	if shipStock == nil {
+		state.Log("Somehow the ship isn't in stock here?")
+		return RoutineResult{WaitSeconds: 30}
 	}
 
+	if state.Agent.Credits >= shipStock.PurchasePrice {
+		state.Log("We can buy a ship")
+		shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
+		database.StoreShipCosts(shipyard)
+		// TODO: check the prices again?
+		result, err := state.Agent.BuyShip(state.Context, state.Ship.Nav.WaypointSymbol, shipToBuy)
+
+		if err != nil {
+			state.Log(fmt.Sprintf("Error buying ship: %s", err.Error()))
+			return RoutineResult{WaitSeconds: 30}
+		}
+
+		state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
+	}
+
+	// At this point we should be on the shipyard and waiting, so let's get the next sellComplete event and check there
+
+	state.Log("Waiting for a sell to complete")
+	for {
+		event := <-state.EventBus
+		switch event.Name {
+		case "sellComplete":
+			//agent := event.Data.(*entity.Agent)
+			state.Log("Detected a sell complete")
+			return RoutineResult{}
+		}
+	}
 }
 
 func (s Satellite) onShipyard(state *State, wpd *entity.WaypointData, targetShip string) bool {

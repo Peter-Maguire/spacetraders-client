@@ -30,8 +30,12 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 		waypointScores[waypoint.Symbol] = g.ScoreWaypoint(waypoint)
 	}
 
-	if len(waypointScores) == 0 {
-		state.Log("No waypoints found within reach")
+	sort.Slice(waypoints, func(i, j int) bool {
+		return waypointScores[waypoints[i].Symbol] > waypointScores[waypoints[j].Symbol]
+	})
+
+	if len(waypointScores) == 0 || waypointScores[waypoints[0].Symbol] <= 0 {
+		state.Log("No good waypoints found within reach")
 		if state.Ship.Fuel.IsFull() {
 			if state.Ship.Nav.FlightMode == "DRIFT" {
 				return RoutineResult{
@@ -51,10 +55,6 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 			},
 		}
 	}
-
-	sort.Slice(waypoints, func(i, j int) bool {
-		return waypointScores[waypoints[i].Symbol] > waypointScores[waypoints[j].Symbol]
-	})
 
 	bestWaypoint := waypoints[0]
 
@@ -83,7 +83,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 }
 
 func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData) int {
-	score := 0
+	score := -1
 	if waypoint.HasTrait("PRECIOUS_METAL_DEPOSITS") {
 		score += 25
 	}
@@ -100,9 +100,9 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData) int {
 		score += 5
 	}
 
-	//if waypoint.HasTrait("MARKETPLACE") {
-	//	score += 2
-	//}
+	if waypoint.HasTrait("MARKETPLACE") {
+		score += 1
+	}
 
 	if waypoint.HasTrait("OVERCROWDED") {
 		score -= 5

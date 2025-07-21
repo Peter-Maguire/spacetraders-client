@@ -37,7 +37,7 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Found %d good waypoints", len(goodWaypoints)))
 		sort.Slice(goodWaypoints, func(i, j int) bool {
 			d1 := goodWaypoints[i].GetDistanceFrom(currentWaypointData.LimitedWaypointData)
-			d2 := goodWaypoints[i].GetDistanceFrom(currentWaypointData.LimitedWaypointData)
+			d2 := goodWaypoints[j].GetDistanceFrom(currentWaypointData.LimitedWaypointData)
 			return d1 < d2
 		})
 		distance := goodWaypoints[0].GetDistanceFrom(currentWaypointData.LimitedWaypointData)

@@ -56,12 +56,6 @@ func main() {
 	fmt.Println("Starting Database...")
 	database.Init()
 
-	enableUi = os.Getenv("DISABLE_UI") != "1"
-	if enableUi {
-		fmt.Println("Starting UI...")
-		go ui.Init()
-	}
-
 	fmt.Println("Starting Request Queue...")
 	http.Init()
 
@@ -70,6 +64,12 @@ func main() {
 	orcs = make([]*orchestrator.Orchestrator, len(tokens))
 	for i, token := range tokens {
 		orcs[i] = orchestrator.Init(token)
+	}
+
+	enableUi = os.Getenv("DISABLE_UI") != "1"
+	if enableUi {
+		fmt.Println("Starting UI...")
+		go ui.Init(orcs[0])
 	}
 
 	if enableUi {
@@ -102,6 +102,7 @@ func updateShipStates() {
 						ShipName:       state.Ship.Symbol,
 						ShipType:       state.Ship.Registration.Role,
 						Nav:            state.Ship.Nav,
+						Cargo:          state.Ship.Cargo,
 					})
 					if state.CurrentRoutine == nil {
 						numStopped++

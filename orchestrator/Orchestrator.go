@@ -113,7 +113,19 @@ func Init(token string) *Orchestrator {
 	database.LogWaypoints(waypoints)
 
 	// TODO: fix shipyard logic
-	orc.Shipyard = "X1-PS43-A2"
+	orc.Shipyard = ""
+
+	for _, w := range *waypoints {
+		if w.HasTrait("SHIPYARD") {
+			shipyard, _ := w.Symbol.GetShipyard(ctx)
+			if shipyard.SellsShipType(orc.ShipToBuy) {
+				orc.Shipyard = w.Symbol
+				break
+			}
+			// TODO: find the closest
+		}
+	}
+
 	//for _, waypoint := range *waypoints {
 	//	if waypoint.HasTrait("SHIPYARD") {
 	//		ui.MainLog(fmt.Sprintf("Found Shipyard at %s", waypoint.Symbol))
@@ -147,20 +159,20 @@ func Init(token string) *Orchestrator {
 
 	// TODO: This should be merged into the explore logic
 	// TODO: Does this even work when we're not actually there?
-	shipyardStock, err := orc.Shipyard.GetShipyard(ctx)
-	if err == nil {
-		ui.MainLog(fmt.Sprintf("Shipyard at %s has %d types, %d available", shipyardStock.Symbol, len(shipyardStock.ShipTypes), len(shipyardStock.Ships)))
-		if len(shipyardStock.Ships) > 0 {
-			// TODO: This should maybe store the available ship types here even if we don't know the price
-			go database.StoreShipCosts(shipyardStock)
-		}
-		for _, stock := range shipyardStock.Ships {
-			if stock.Name == orc.ShipToBuy {
-				ui.MainLog(fmt.Sprintf("Ship %s is available to buy at %s for %d credits", orc.ShipToBuy, orc.Shipyard, stock.PurchasePrice))
-				orc.CreditTarget = stock.PurchasePrice
-			}
-		}
-	}
+	//shipyardStock, err := orc.Shipyard.GetShipyard(ctx)
+	//if err == nil {
+	//	ui.MainLog(fmt.Sprintf("Shipyard at %s has %d types, %d available", shipyardStock.Symbol, len(shipyardStock.ShipTypes), len(shipyardStock.Ships)))
+	//	if len(shipyardStock.Ships) > 0 {
+	//		// TODO: This should maybe store the available ship types here even if we don't know the price
+	//		go database.StoreShipCosts(shipyardStock)
+	//	}
+	//	for _, stock := range shipyardStock.Ships {
+	//		if stock.Name == orc.ShipToBuy {
+	//			ui.MainLog(fmt.Sprintf("Ship %s is available to buy at %s for %d credits", orc.ShipToBuy, orc.Shipyard, stock.PurchasePrice))
+	//			orc.CreditTarget = stock.PurchasePrice
+	//		}
+	//	}
+	//}
 
 	go orc.runEvents()
 
@@ -196,8 +208,21 @@ func (o *Orchestrator) runEvents() {
 	for {
 		event := <-o.Channel
 		switch event.Name {
-		case "sellComplete":
-			o.onSellComplete(event.Data.(*entity.Agent))
+		case "newShip":
+			ship := event.Data.(*entity.Ship)
+			newState := routine.State{
+				Agent:    o.Agent,
+				Contract: o.Contract,
+				Ship:     ship,
+				Haulers:  o.Haulers,
+				EventBus: o.Channel,
+				States:   &o.States,
+			}
+			newState.Context = context.WithValue(o.Context, "state", &newState)
+			ui.MainLog(fmt.Sprintln("New ship", ship.Symbol))
+			o.States = append(o.States, &newState)
+			go o.routineLoop(&newState)
+
 		case "goodSurveyFound":
 			ui.MainLog("Someone found a good survey")
 			//o.StatesMutex.Lock()
@@ -278,4 +303,12 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 	}
 	state.CurrentRoutine = nil
 	state.Log("!!!! Loop exited!")
+}
+
+func (o *Orchestrator) GetAgent() *entity.Agent {
+	return o.Agent
+}
+
+func (o *Orchestrator) GetContract() *entity.Contract {
+	return o.Contract
 }
