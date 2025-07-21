@@ -45,7 +45,6 @@ function updateState({ship, http}){
     shipStates = ship;
     drawMap();
 
-    const now = new Date();
     ship.forEach((sh)=>{
         const clone = shipTemplate.content.cloneNode(true);
         const container = document.createElement("div")
@@ -58,11 +57,18 @@ function updateState({ship, http}){
         }
         if(sh.asleepUntil){
             let asleepUntil = new Date(sh.asleepUntil);
-            clone.querySelector(".state").innerText = `Waiting for ${Math.floor((asleepUntil-now)/1000)} seconds`;
+            clone.querySelector(".state").innerText = `Waiting for ${parseTime(asleepUntil)}`;
         }
 
         if(sh.stoppedReason){
             clone.querySelector(".state").innerText = sh.stoppedReason;
+        }
+
+        console.log(sh)
+        if(sh.cargo){
+            clone.querySelector(".inventory").innerText = sh.cargo.inventory.map((cargo)=>{
+                return `${cargo.symbol} x${cargo.units}`
+            }).join("\n");
         }
 
         container.appendChild(clone);
@@ -89,7 +95,22 @@ function updateLog(data){
 }
 
 
-let mapLocations = [];
+function parseTime(asleepUntil){
+    const now = new Date();
+    let seconds = (asleepUntil-now)/1000;
+
+    let d = Math.floor(seconds / (3600*24));
+    let h = Math.floor(seconds % (3600*24) / 3600);
+    let m = Math.floor(seconds % 3600 / 60);
+    let s = Math.floor(seconds % 60);
+
+    let dDisplay = d > 0 ? d + (d === 1 ? " day, " : " days, ") : "";
+    let hDisplay = h > 0 ? h + (h === 1 ? " hour, " : " hours, ") : "";
+    let mDisplay = m > 0 ? m + (m === 1 ? " minute, " : " minutes, ") : "";
+    let sDisplay = s > 0 ? s + (s === 1 ? " second" : " seconds") : "";
+    return dDisplay + hDisplay + mDisplay + sDisplay;
+}
+
 let mapXOffset = 0;
 let mapYOffset = 0;
 let mapScale = 1;
@@ -127,7 +148,6 @@ function getCanvasCoords(x, y){
 async function initMap(){
     await populateMap()
 
-    let canvasContainer = document.getElementById("map")
     let canvas = document.getElementById("mapCanvas");
 
     canvas.style.width ='100%';
