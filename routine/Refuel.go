@@ -21,6 +21,11 @@ func (r Refuel) Run(state *State) RoutineResult {
 	//	return RoutineResult{SetRoutine: r.next}
 	//}
 
+	ship, _ := state.Agent.GetShip(state.Context, state.Ship.Symbol)
+	if ship != nil {
+		state.Ship = ship
+	}
+
 	if !r.hasTriedMarket {
 		state.Log("Seeing if we have a market here")
 		market, err := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
