@@ -3,8 +3,8 @@ package routine
 import (
 	"fmt"
 	"sort"
+	"spacetraders/database"
 	"spacetraders/entity"
-	"spacetraders/util"
 )
 
 type GoToMiningArea struct {
@@ -17,23 +17,28 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	waypoints := *waypointsPtr
 	waypointScores := make(map[entity.Waypoint]int)
 
-	currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
+	//currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 
-	for _, waypoint := range waypoints {
-		distance := waypoint.GetDistanceFrom(currentWaypoint.LimitedWaypointData)
-		fuelCost := util.GetFuelCost(distance, state.Ship.Nav.FlightMode)
-		if fuelCost > state.Ship.Fuel.Current {
-			// We can't do this because this one is too far away
-			continue
-		}
-		waypointScores[waypoint.Symbol] = g.ScoreWaypoint(waypoint)
+	waypointData := make([]*database.Waypoint, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointData[i] = database.GetWaypoint(waypoint.Symbol)
 	}
 
-	sort.Slice(waypoints, func(i, j int) bool {
+	eligibleWaypoints := make([]entity.WaypointData, 0)
+	for _, waypoint := range waypoints {
+		eligible, score := g.ScoreWaypoint(waypoint, state, waypointData)
+		if !eligible {
+			continue
+		}
+		eligibleWaypoints = append(eligibleWaypoints, waypoint)
+		waypointScores[waypoint.Symbol] = score
+	}
+
+	sort.Slice(eligibleWaypoints, func(i, j int) bool {
 		return waypointScores[waypoints[i].Symbol] > waypointScores[waypoints[j].Symbol]
 	})
 
-	if len(waypointScores) == 0 || waypointScores[waypoints[0].Symbol] <= 0 {
+	if len(waypointScores) == 0 {
 		state.Log("No good waypoints found within reach")
 		if state.Ship.Fuel.IsFull() {
 			if state.Ship.Nav.FlightMode == "DRIFT" {
@@ -55,33 +60,31 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 		}
 	}
 
-	bestWaypoint := waypoints[0]
+	bestWaypoint := eligibleWaypoints[0]
 
 	state.Log(fmt.Sprintf("Waypoint %s has score of %d", bestWaypoint.Symbol, waypointScores[bestWaypoint.Symbol]))
 
-	if waypointScores[bestWaypoint.Symbol] > 0 {
-		return RoutineResult{SetRoutine: NavigateTo{
-			waypoint: bestWaypoint.Symbol,
-			next:     MineOres{},
-		}}
-	}
+	return RoutineResult{SetRoutine: NavigateTo{
+		waypoint: bestWaypoint.Symbol,
+		next:     MineOres{},
+	}}
 
-	if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
-		return RoutineResult{
-			SetRoutine: GoToJumpGate{next: GoToSystem{
-				system: state.Agent.Headquarters.GetSystemName(),
-				next:   g,
-			}},
-		}
-	}
-
-	state.Log("Couldn't find a waypoint pointing to an asteroid field")
-	return RoutineResult{
-		WaitSeconds: 60,
-	}
+	//if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
+	//	return RoutineResult{
+	//		SetRoutine: GoToJumpGate{next: GoToSystem{
+	//			system: state.Agent.Headquarters.GetSystemName(),
+	//			next:   g,
+	//		}},
+	//	}
+	//}
+	//
+	//state.Log("Couldn't find a waypoint pointing to an asteroid field")
+	//return RoutineResult{
+	//	WaitSeconds: 60,
+	//}
 }
 
-func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData) int {
+func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State, waypoints []*database.Waypoint) (bool, int) {
 	score := -1
 	if waypoint.HasTrait("PRECIOUS_METAL_DEPOSITS") {
 		score += 25
@@ -99,23 +102,44 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData) int {
 		score += 5
 	}
 
+	if score <= 0 {
+		return false, score
+	}
+
 	if waypoint.HasTrait("MARKETPLACE") {
-		score += 1
+		score += 10
 	}
 
 	if waypoint.HasTrait("OVERCROWDED") {
-		score -= 5
+		return false, 0
 	}
 
 	if waypoint.HasTrait("BARREN") {
-		score -= 10
+		return false, 0
 	}
 
 	if waypoint.HasTrait("STRIPPED") {
-		score -= 20
+		return false, 0
 	}
 
-	return score
+	closestDistance := 2000
+	for _, dbWaypoint := range waypoints {
+		if dbWaypoint.MarketData == nil || string(dbWaypoint.MarketData) == "null" {
+			continue
+		}
+		if dbWaypoint.Waypoint == string(waypoint.Symbol) {
+			continue
+		}
+		wpData := dbWaypoint.GetData()
+		distance := waypoint.GetDistanceFrom(wpData.LimitedWaypointData)
+		if distance < closestDistance {
+			closestDistance = distance
+		}
+	}
+
+	score -= closestDistance
+
+	return true, score
 }
 
 func (g GoToMiningArea) Name() string {

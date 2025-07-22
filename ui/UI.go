@@ -22,7 +22,7 @@ func Init(orc Orchestrator) *WebUI {
 		orc: orc,
 	}
 	go broadcastLoop()
-	webUi.initApi()
+	go webUi.initApi()
 	http.Handle("/metrics", promhttp.Handler())
 	http.HandleFunc("/ws", ws)
 	fs := http.FileServer(http.Dir("./static"))

@@ -112,22 +112,22 @@ func Init(token string) *Orchestrator {
 		Context:      ctx,
 	}
 
-	waypoints, _ := agent.Headquarters.GetSystemWaypoints(ctx)
-	database.LogWaypoints(waypoints)
+	//waypoints, _ := agent.Headquarters.GetSystemWaypoints(ctx)
+	//database.LogWaypoints(waypoints)
 
-	// TODO: fix shipyard logic
-	orc.Shipyard = ""
-
-	for _, w := range *waypoints {
-		if w.HasTrait("SHIPYARD") {
-			shipyard, _ := w.Symbol.GetShipyard(ctx)
-			if shipyard.SellsShipType(orc.ShipToBuy) {
-				orc.Shipyard = w.Symbol
-				break
-			}
-			// TODO: find the closest
-		}
-	}
+	//// TODO: fix shipyard logic
+	//orc.Shipyard = ""
+	//
+	//for _, w := range *waypoints {
+	//	if w.HasTrait("SHIPYARD") {
+	//		shipyard, _ := w.Symbol.GetShipyard(ctx)
+	//		if shipyard.SellsShipType(orc.ShipToBuy) {
+	//			orc.Shipyard = w.Symbol
+	//			break
+	//		}
+	//		// TODO: find the closest
+	//	}
+	//}
 
 	//for _, waypoint := range *waypoints {
 	//	if waypoint.HasTrait("SHIPYARD") {
@@ -184,7 +184,6 @@ func Init(token string) *Orchestrator {
 	ui.MainLog(fmt.Sprint("Starting Routines"))
 	//orc.StatesMutex.Lock()
 	for i, ship := range *ships {
-		fmt.Println("Starting", ship)
 		if shipFilter != "" && !strings.Contains(shipFilter, ship.Symbol) {
 			ui.MainLog(fmt.Sprintf("Skipping %s because it's not in the ship filter", ship.Symbol))
 			continue

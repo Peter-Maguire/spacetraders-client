@@ -137,7 +137,7 @@ func (s Satellite) GetShipToBuy(state *State) string {
 		state.Log(fmt.Sprintf("%dx of type %s", a, t))
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] < 10 {
+	if shipsOfEachType[constant.ShipRoleExcavator] < 5 {
 		return "SHIP_MINING_DRONE"
 	}
 
