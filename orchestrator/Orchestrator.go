@@ -75,6 +75,9 @@ func Init(token string) *Orchestrator {
 	for _, c := range *contracts {
 		if !c.Fulfilled && c.Accepted {
 			contract = &c
+			for _, term := range contract.Terms.Deliver {
+				ui.MainLog(fmt.Sprintf("We are delivering %dx %s to %s for %d credits", term.UnitsRequired, term.TradeSymbol, term.DestinationSymbol, contract.Terms.Payment.GetTotalPayment()))
+			}
 			break
 		}
 	}
@@ -141,7 +144,7 @@ func Init(token string) *Orchestrator {
 	shipCount := len(*ships)
 	ui.MainLog(fmt.Sprintf("We have %d ships:", shipCount))
 	for _, ship := range *ships {
-		agentShips.WithLabelValues(ship.Registration.Role, ship.Nav.SystemSymbol, string(ship.Nav.WaypointSymbol)).Add(1)
+		agentShips.WithLabelValues(string(ship.Registration.Role), ship.Nav.SystemSymbol, string(ship.Nav.WaypointSymbol)).Add(1)
 		ui.MainLog(fmt.Sprintf("%s: %s type", ship.Registration.Name, ship.Registration.Role))
 		if ship.Registration.Role == "HAULER" {
 			ui.MainLog(fmt.Sprintf("%s is HAULER", ship.Registration))
@@ -181,6 +184,7 @@ func Init(token string) *Orchestrator {
 	ui.MainLog(fmt.Sprint("Starting Routines"))
 	//orc.StatesMutex.Lock()
 	for i, ship := range *ships {
+		fmt.Println("Starting", ship)
 		if shipFilter != "" && !strings.Contains(shipFilter, ship.Symbol) {
 			ui.MainLog(fmt.Sprintf("Skipping %s because it's not in the ship filter", ship.Symbol))
 			continue
@@ -202,6 +206,22 @@ func Init(token string) *Orchestrator {
 	}
 	//orc.StatesMutex.Unlock()
 	return &orc
+}
+
+func (o *Orchestrator) startNewContract() {
+	contracts, _ := o.Agent.Contracts(o.Context)
+	for _, c := range *contracts {
+		if !c.Fulfilled {
+			ui.MainLog("Accepted contract")
+			err := c.Accept(o.Context)
+			if err == nil {
+				o.Contract = &c
+			} else {
+				ui.MainLog(err.Error())
+			}
+			break
+		}
+	}
 }
 
 func (o *Orchestrator) runEvents() {
@@ -243,9 +263,10 @@ func (o *Orchestrator) runEvents() {
 			//o.StatesMutex.Unlock()
 		case "contractComplete":
 			ui.MainLog("Contract completed")
+			o.startNewContract()
 			for _, state := range o.States {
-				state.Contract = nil
-				//state.ForceRoutine = routine.DetermineObjective{}
+				//state.Contract = o.Contract
+				state.ForceRoutine = routine.DetermineObjective{}
 			}
 		case "newContract":
 			ui.MainLog("New contract")

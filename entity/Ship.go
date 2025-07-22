@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"spacetraders/constant"
 	"spacetraders/http"
 	"strings"
 	"time"
@@ -356,9 +357,9 @@ type ShipRequirement struct {
 }
 
 type ShipRegistration struct {
-	Name          string `json:"name"`
-	FactionSymbol string `json:"factionSymbol"`
-	Role          string `json:"role"`
+	Name          string            `json:"name"`
+	FactionSymbol string            `json:"factionSymbol"`
+	Role          constant.ShipRole `json:"role"`
 }
 type ShipCargo struct {
 	Capacity  int                 `json:"capacity"`

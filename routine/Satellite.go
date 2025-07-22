@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 )
@@ -14,6 +15,12 @@ func (s Satellite) Run(state *State) RoutineResult {
 	*  to periodically update the prices and go to the next one
 	* e.g if there are 10 markets+shipyards and 2 satellites, they should each take the 5 closest ones and go between them one by one
 	 */
+
+	if state.Contract == nil {
+		return RoutineResult{
+			SetRoutine: NegotiateContract{},
+		}
+	}
 
 	marketRates := database.GetMarkets()
 	if len(marketRates) == 0 {
@@ -29,9 +36,12 @@ func (s Satellite) Run(state *State) RoutineResult {
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 
 	// TODO: this from orchestrator
-	shipToBuy := "SHIP_MINING_DRONE"
+	shipToBuy := s.GetShipToBuy(state)
+
+	state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
 
 	if !s.onShipyard(state, waypointData, shipToBuy) {
+		state.Log("That ship isn't available at this waypoint")
 		// TODO this should use the database data
 		waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 
@@ -39,6 +49,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 			if w.HasTrait("SHIPYARD") {
 				shipyard, _ := w.Symbol.GetShipyard(state.Context)
 				if shipyard.SellsShipType(shipToBuy) {
+					state.Log("Found shipyard selling the desired ship")
 					return RoutineResult{
 						SetRoutine: NavigateTo{
 							waypoint: w.Symbol,
@@ -49,6 +60,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 			}
 		}
 
+		state.Log("Unable to find a shipyard with that ship type, lets go exploring")
 		return RoutineResult{
 			SetRoutine: Explore{
 				oneShot:      true,
@@ -89,7 +101,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	for {
 		event := <-state.EventBus
 		switch event.Name {
-		case "sellComplete":
+		case "sellComplete", "contractComplete":
 			//agent := event.Data.(*entity.Agent)
 			state.Log("Detected a sell complete")
 			return RoutineResult{}
@@ -109,4 +121,31 @@ func (s Satellite) onShipyard(state *State, wpd *entity.WaypointData, targetShip
 
 func (s Satellite) Name() string {
 	return "Satellite"
+}
+
+func (s Satellite) GetShipToBuy(state *State) string {
+	shipsOfEachType := make(map[constant.ShipRole]int)
+
+	for _, st := range *state.States {
+		shipsOfEachType[st.Ship.Registration.Role]++
+	}
+
+	state.Log("We currently have:")
+	for t, a := range shipsOfEachType {
+		state.Log(fmt.Sprintf("%dx of type %s", a, t))
+	}
+
+	if shipsOfEachType[constant.ShipRoleExcavator] == 0 {
+		return "SHIP_MINING_DRONE"
+	}
+
+	if shipsOfEachType[constant.ShipRoleHauler] == 0 {
+		return "SHIP_LIGHT_HAULER"
+	}
+
+	if shipsOfEachType[constant.ShipRoleSurveyor] == 0 {
+		return "SHIP_PROBE"
+	}
+
+	return "SHIP_MINING_DRONE"
 }

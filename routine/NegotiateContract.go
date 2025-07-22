@@ -1,6 +1,7 @@
 package routine
 
 import (
+	"fmt"
 	"spacetraders/entity"
 	"spacetraders/http"
 )
@@ -16,6 +17,9 @@ func (n NegotiateContract) Run(state *State) RoutineResult {
 
 	if err == nil {
 		state.Log("New contract get")
+		for _, term := range newContract.Terms.Deliver {
+			state.Log(fmt.Sprintf("We are delivering %dx %s to %s for %d credits", term.UnitsRequired, term.TradeSymbol, term.DestinationSymbol, newContract.Terms.Payment.GetTotalPayment()))
+		}
 		_ = newContract.Accept(state.Context)
 		state.Contract = newContract
 		state.FireEvent("newContract", newContract)

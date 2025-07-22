@@ -54,5 +54,5 @@ func (a *Agent) BuyShip(ctx context.Context, shipyard Waypoint, shipType string)
 }
 
 func (a *Agent) GetShip(ctx context.Context, ship string) (*Ship, *http.HttpError) {
-	return http.Request[Ship](ctx, "GET", fmt.Sprintf("my/agent/%s", ship), nil)
+	return http.Request[Ship](ctx, "GET", fmt.Sprintf("my/ships/%s", ship), nil)
 }

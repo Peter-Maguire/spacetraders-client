@@ -100,7 +100,7 @@ func updateShipStates() {
 						WaitingForHttp: state.WaitingForHttp,
 						AsleepUntil:    state.AsleepUntil,
 						ShipName:       state.Ship.Symbol,
-						ShipType:       state.Ship.Registration.Role,
+						ShipType:       string(state.Ship.Registration.Role),
 						Nav:            *state.Ship.Nav,
 						Cargo:          *state.Ship.Cargo,
 					})

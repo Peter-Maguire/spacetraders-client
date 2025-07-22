@@ -51,10 +51,12 @@ type BroadcastMessage struct {
 
 func MainLog(str string) {
 	fmt.Println(str)
-	broadcasts <- BroadcastMessage{
-		Type: "log",
-		Data: str,
-	}
+	go func() {
+		broadcasts <- BroadcastMessage{
+			Type: "log",
+			Data: str,
+		}
+	}()
 }
 
 func broadcastLoop() {
