@@ -14,6 +14,12 @@ func (wu *WebUI) initApi() {
 		encoder.Encode(shipyardData)
 	})
 
+	http.HandleFunc("/agent", func(writer http.ResponseWriter, request *http.Request) {
+		encoder := json.NewEncoder(writer)
+
+		encoder.Encode(wu.orc.GetAgent())
+	})
+
 	http.HandleFunc("/contracts", func(writer http.ResponseWriter, request *http.Request) {
 		encoder := json.NewEncoder(writer)
 

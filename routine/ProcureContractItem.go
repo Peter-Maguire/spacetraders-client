@@ -11,7 +11,8 @@ import (
 )
 
 type ProcureContractItem struct {
-	deliverable *entity.ContractDeliverable
+	deliverable   *entity.ContractDeliverable
+	hasSoldExcess bool
 }
 
 func (p ProcureContractItem) Run(state *State) RoutineResult {
@@ -25,6 +26,18 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 					state.Contract = &contract
 					p.deliverable = &deliverable
 					break
+				}
+			}
+		}
+	}
+
+	if !p.hasSoldExcess {
+		for _, slot := range state.Ship.Cargo.Inventory {
+			if slot.Symbol != "FUEL" && slot.Symbol != p.deliverable.TradeSymbol {
+				state.Log("Get rid of what we have to sell first")
+				p.hasSoldExcess = true
+				return RoutineResult{
+					SetRoutine: SellExcessInventory{next: p},
 				}
 			}
 		}
@@ -68,12 +81,12 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 	isCurrentlyAtMarket := false
 
-	for _, m := range markets {
-		if m.Waypoint == state.Ship.Nav.WaypointSymbol {
-			isCurrentlyAtMarket = true
-			break
-		}
-	}
+	//for _, m := range markets {
+	//	if m.Waypoint == state.Ship.Nav.WaypointSymbol {
+	//		isCurrentlyAtMarket = true
+	//		break
+	//	}
+	//}
 
 	if !isCurrentlyAtMarket {
 		state.Log("Going to closest market selling this item")
@@ -103,14 +116,23 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Cost of retrieving %dx %s at cheapest market is %d", unitsRemaining, p.deliverable.TradeSymbol, marketCosts[markets[0].Waypoint]))
 
 		if marketCosts[markets[0].Waypoint] > state.Contract.Terms.Payment.GetTotalPayment() {
+			state.Log("Having a look for more markets")
 			return RoutineResult{
-				Stop:       true,
-				StopReason: fmt.Sprintf("%dx %s = %d vs %d total contract payment", unitsRemaining, p.deliverable.TradeSymbol, marketCosts[markets[0].Waypoint], state.Contract.Terms.Payment.GetTotalPayment()),
+				SetRoutine: Explore{
+					marketTargets: []string{p.deliverable.TradeSymbol},
+					next:          p,
+				},
 			}
+			//return RoutineResult{
+			//	Stop:       true,
+			//	StopReason: fmt.Sprintf("%dx %s = %d vs %d total contract payment", unitsRemaining, p.deliverable.TradeSymbol, marketCosts[markets[0].Waypoint], state.Contract.Terms.Payment.GetTotalPayment()),
+			//}
 		}
 
-		return RoutineResult{
-			SetRoutine: NavigateTo{waypoint: markets[0].Waypoint, next: p},
+		if markets[0].Waypoint != state.Ship.Nav.WaypointSymbol {
+			return RoutineResult{
+				SetRoutine: NavigateTo{waypoint: markets[0].Waypoint, next: p},
+			}
 		}
 	}
 
@@ -128,10 +150,15 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	}
 
 	// Either the amount we can fit in our inventory, the trade volume, the amount we can afford or the amount we need - whichever is smaller
-	purchaseAmount := int(math.Min(math.Min(float64(state.Agent.Credits/tradeGood.PurchasePrice), float64(tradeGood.TradeVolume)), math.Min(float64(unitsRemaining), float64(state.Ship.Cargo.GetRemainingCapacity()))))
+	amountPurchasable := float64(state.Agent.Credits / tradeGood.PurchasePrice)
+	tradeVolume := float64(tradeGood.TradeVolume)
+	remainingCapacity := float64(state.Ship.Cargo.GetRemainingCapacity())
+	purchaseAmount := int(math.Min(math.Min(amountPurchasable, tradeVolume), math.Min(float64(unitsRemaining), remainingCapacity)))
 
 	if purchaseAmount <= 0 {
 		state.Log("We're not able to purchase anything right now for some reason")
+		fmt.Println(state.Agent.Credits, tradeGood.PurchasePrice)
+		fmt.Println(amountPurchasable, tradeVolume, remainingCapacity, purchaseAmount)
 		return RoutineResult{
 			WaitSeconds: 120,
 		}

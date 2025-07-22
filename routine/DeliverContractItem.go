@@ -76,5 +76,5 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 }
 
 func (r DeliverContractItem) Name() string {
-	return fmt.Sprintf("Deliver Contract Item (%s)", r.item)
+	return fmt.Sprintf("Deliver %s -> %s", r.item, r.next.Name())
 }

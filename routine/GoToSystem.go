@@ -18,13 +18,14 @@ type GoToSystem struct {
 func (g GoToSystem) Run(state *State) RoutineResult {
 
 	if state.Ship.Nav.SystemSymbol == g.system {
+		state.Log("We're already in this system")
 		return RoutineResult{SetRoutine: g.next}
 	}
 
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 	if currentSystem != nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
-		state.Log("TODO currentSystem isn't stored in the database!")
+		database.StoreSystem(currentSystem)
 	}
 
 	targetSystem := database.GetSystemData(g.system)

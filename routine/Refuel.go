@@ -126,5 +126,5 @@ func (r Refuel) Run(state *State) RoutineResult {
 }
 
 func (r Refuel) Name() string {
-	return "Refuel"
+	return fmt.Sprintf("Refuel -> %s", r.next.Name())
 }

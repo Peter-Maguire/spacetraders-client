@@ -1,6 +1,9 @@
 package routine
 
-import "spacetraders/constant"
+import (
+	"fmt"
+	"spacetraders/constant"
+)
 
 type GoToJumpGate struct {
 	next Routine
@@ -27,5 +30,5 @@ func (g GoToJumpGate) Run(state *State) RoutineResult {
 }
 
 func (g GoToJumpGate) Name() string {
-	return "Go To Jump Gate"
+	return fmt.Sprintf("Go To Jump Gate -> %s", g.next.Name())
 }

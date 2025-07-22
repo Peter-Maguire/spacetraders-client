@@ -42,6 +42,15 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
+	if state.Ship.Registration.Role == constant.ShipRoleCommand && len(state.Haulers) == 0 && state.Contract != nil && state.Contract.Fulfilled == false {
+		for _, deliverable := range state.Contract.Terms.Deliver {
+			if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
+				state.Log(fmt.Sprintf("We have to find some %s to deliver", deliverable.TradeSymbol))
+				return RoutineResult{SetRoutine: ProcureContractItem{deliverable: &deliverable}}
+			}
+		}
+	}
+
 	if state.Ship.Registration.Role == constant.ShipRoleHauler {
 		haulerNumber := 0
 		for i, hauler := range state.Haulers {

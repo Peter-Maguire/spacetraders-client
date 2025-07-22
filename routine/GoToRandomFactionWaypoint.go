@@ -1,6 +1,7 @@
 package routine
 
 import (
+	"fmt"
 	"math/rand"
 	"spacetraders/entity"
 )
@@ -30,5 +31,5 @@ func (g GoToRandomFactionWaypoint) Run(state *State) RoutineResult {
 }
 
 func (g GoToRandomFactionWaypoint) Name() string {
-	return "Go To Random Faction Waypoint"
+	return fmt.Sprintf("Go To Random Faction Waypoint -> %s", g.next.Name())
 }

@@ -33,7 +33,7 @@ func StoreSystem(system *entity.System) {
 		Visited:       true,
 		FirstVisited:  time.Now(),
 	}
-	db.Clauses(clause.OnConflict{DoNothing: true}).Save(storedSystem)
+	db.Clauses(clause.OnConflict{UpdateAll: true}).Save(storedSystem)
 }
 
 func GetSystem(system string) *System {

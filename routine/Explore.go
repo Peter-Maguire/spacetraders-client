@@ -82,7 +82,8 @@ func (e Explore) Run(state *State) RoutineResult {
 
 		antiMatterTrader := marketData.GetTradeGood("ANTIMATTER")
 		antiMatterSlot := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
-		if antiMatterTrader != nil && antiMatterSlot == nil || antiMatterSlot.Units < 2 {
+		fmt.Println("antimatter", antiMatterSlot, antiMatterTrader)
+		if antiMatterTrader != nil && (antiMatterSlot == nil || antiMatterSlot.Units < 2) {
 			state.Log("Buying some antimatter")
 			_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 			res, _ := state.Ship.Purchase(state.Context, "ANTIMATTER", 5)

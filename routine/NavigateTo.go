@@ -82,5 +82,5 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 }
 
 func (n NavigateTo) Name() string {
-	return fmt.Sprintf("Navigate to %s (then %s)", n.waypoint, n.next.Name())
+	return fmt.Sprintf("Navigate to %s -> %s", n.waypoint, n.next.Name())
 }

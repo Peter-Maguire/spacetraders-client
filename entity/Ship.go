@@ -327,7 +327,7 @@ type ShipEngine struct {
 	Symbol       string          `json:"symbol"`
 	Name         string          `json:"name"`
 	Description  string          `json:"description"`
-	Condition    int             `json:"condition"`
+	Condition    float64         `json:"condition"`
 	Speed        int             `json:"speed"`
 	Requirements ShipRequirement `json:"requirements"`
 }
