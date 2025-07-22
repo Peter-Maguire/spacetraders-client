@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/util"
 	"time"
@@ -35,13 +36,13 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	// TODO: satellite should explore until it's explored the entire system then go to Refresh Markets (rotate through all the markets refreshing each)
-	if /*state.Ship.Registration.Role == "COMMAND" ||*/ state.Ship.Registration.Role == "SATELLITE" {
+	if /*state.Ship.Registration.Role == "COMMAND" ||*/ state.Ship.Registration.Role == constant.ShipRoleSatellite {
 		return RoutineResult{
 			SetRoutine: Satellite{},
 		}
 	}
 
-	if state.Ship.Registration.Role == "HAULER" {
+	if state.Ship.Registration.Role == constant.ShipRoleHauler {
 		haulerNumber := 0
 		for i, hauler := range state.Haulers {
 			if hauler.Symbol == state.Ship.Symbol {
@@ -74,13 +75,13 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Registration.Role == "REFINERY" {
+	if state.Ship.Registration.Role == constant.ShipRoleRefinery {
 		return RoutineResult{
 			SetRoutine: Refine{},
 		}
 	}
 
-	if state.Ship.Registration.Role == "SURVEYOR" {
+	if state.Ship.Registration.Role == constant.ShipRoleSurveyor {
 		//return RoutineResult{
 		//	SetRoutine: GoToMiningArea{GetSurvey{}},
 		//}
@@ -96,7 +97,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 
 		return RoutineResult{
-			SetRoutine: GoToMiningArea{MineOres{}},
+			SetRoutine: GoToMiningArea{},
 		}
 	}
 
