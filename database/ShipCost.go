@@ -20,9 +20,10 @@ func StoreShipCosts(costs *entity.ShipyardStock) {
 			Waypoint:      costs.Symbol,
 			ShipType:      ship.Type,
 			PurchasePrice: ship.PurchasePrice,
+			Date:          time.Now(),
 		}
 	}
-	db.Clauses(clause.OnConflict{DoNothing: true}).Save(output)
+	db.Clauses(clause.OnConflict{UpdateAll: true}).Save(output)
 }
 
 func GetShipCosts() []*ShipCost {
