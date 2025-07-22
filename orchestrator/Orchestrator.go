@@ -310,7 +310,7 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
 		if routineResult.SetRoutine != nil {
 			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
-			state.Log(fmt.Sprintf("%s -> %s", state.CurrentRoutine.Name(), routineResult.SetRoutine.Name()))
+			state.Log(fmt.Sprintf("%s => %s", state.CurrentRoutine.Name(), routineResult.SetRoutine.Name()))
 			state.CurrentRoutine = routineResult.SetRoutine
 		}
 
