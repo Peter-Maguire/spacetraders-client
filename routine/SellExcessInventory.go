@@ -235,7 +235,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	marketFuel := updatedMarketData.GetTradeGood("FUEL")
 
-	if marketFuel != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {
+	if marketFuel != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity {
 		state.Log("Refuelling whilst I have the opportunity")
 		_ = state.Ship.Refuel(state.Context)
 	}
@@ -262,5 +262,5 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 }
 
 func (s SellExcessInventory) Name() string {
-	return "Sell Excess Inventory"
+	return fmt.Sprintf("Sell Excess Inventory -> %s", s.next.Name())
 }
