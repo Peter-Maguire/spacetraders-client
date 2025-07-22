@@ -1,6 +1,7 @@
 package routine
 
 import (
+	"fmt"
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
@@ -15,17 +16,19 @@ type Refuel struct {
 
 func (r Refuel) Run(state *State) RoutineResult {
 
-	//if state.Ship.Fuel.IsFull() {
-	//	state.Log("Fuel is already full")
-	//	_ = state.Ship.SetFlightMode(state.Context, "CRUISE")
-	//	return RoutineResult{SetRoutine: r.next}
-	//}
+	if state.Ship.Fuel.IsFull() {
+		state.Log("Fuel is already full")
+		_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
+		return RoutineResult{SetRoutine: r.next}
+	}
 
 	// TODO: this would not be necessary if we properly handled refreshing the ship data
 	ship, _ := state.Agent.GetShip(state.Context, state.Ship.Symbol)
 	if ship != nil {
 		state.Ship = ship
 	}
+
+	state.Log(fmt.Sprintf("Current fuel level: %d/%d", state.Ship.Fuel.Current, state.Ship.Fuel.Capacity))
 
 	if !r.hasTriedMarket {
 		state.Log("Seeing if we have a market here")
@@ -34,7 +37,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 			go database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
 		}
 		if err != nil || market.GetTradeGood("FUEL") == nil {
-
+			state.Log("No market or market doesn't sell fuel")
 			marketsSellingFuel := database.GetMarketsSelling([]string{"FUEL"})
 
 			currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
@@ -51,6 +54,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 			if len(inRange) == 0 {
 				if state.Ship.Nav.FlightMode == "DRIFT" {
+					state.Log("We are already in drift mode")
 					return RoutineResult{
 						SetRoutine: FindNewWaypoint{
 							desiredTrait: "MARKETPLACE",
@@ -68,6 +72,8 @@ func (r Refuel) Run(state *State) RoutineResult {
 				d2 := inRange[j].GetDistanceFrom(currentWaypoint.LimitedWaypointData)
 				return d1 < d2
 			})
+
+			state.Log(fmt.Sprintf("Found market %s within range (%d)", inRange[0].Symbol, inRange[0].GetDistanceFrom(currentWaypoint.LimitedWaypointData)))
 
 			return RoutineResult{
 				SetRoutine: NavigateTo{waypoint: inRange[0].Symbol, next: r},
