@@ -102,7 +102,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 	if len(systems) == 0 {
 		state.Log("Out of systems")
 		return RoutineResult{
-			SetRoutine: GoToMiningArea{MineOres{}},
+			SetRoutine: GoToMiningArea{},
 		}
 	}
 	database.AddUnvisitedSystems(systems, f.startFromPage)

@@ -368,7 +368,6 @@ type ShipCargo struct {
 }
 
 func (sc *ShipCargo) IsFull() bool {
-	fmt.Println(sc.Units, sc.Capacity)
 	return sc.Units >= sc.Capacity
 }
 
