@@ -22,7 +22,7 @@ type MineOres struct {
 
 func (m MineOres) Run(state *State) RoutineResult {
 
-	if m.latentCooldown != nil {
+	if m.latentCooldown != nil && m.latentCooldown.After(time.Now()) {
 		state.Log("Waiting for Cooldown")
 		return RoutineResult{WaitUntil: m.latentCooldown}
 	}
@@ -61,7 +61,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 		case http.ErrCannotExtractHere:
 			state.Log("We're not at an asteroid field")
 			return RoutineResult{
-				SetRoutine: GoToMiningArea{GetSurvey{}},
+				SetRoutine: GoToMiningArea{},
 			}
 		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
 			state.Log("Something went wrong with the survey " + err.Error())
