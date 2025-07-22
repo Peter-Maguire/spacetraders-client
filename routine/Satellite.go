@@ -80,6 +80,8 @@ func (s Satellite) Run(state *State) RoutineResult {
 		return RoutineResult{WaitSeconds: 30}
 	}
 
+	state.Log(fmt.Sprintf("We need %d credits, we currently have %d credits", shipStock.PurchasePrice, state.Agent.Credits))
+
 	if state.Agent.Credits >= shipStock.PurchasePrice {
 		state.Log("We can buy a ship")
 		shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
@@ -135,7 +137,7 @@ func (s Satellite) GetShipToBuy(state *State) string {
 		state.Log(fmt.Sprintf("%dx of type %s", a, t))
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] == 0 {
+	if shipsOfEachType[constant.ShipRoleExcavator] < 10 {
 		return "SHIP_MINING_DRONE"
 	}
 
