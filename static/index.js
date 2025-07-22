@@ -1,6 +1,6 @@
 const logMessages = [];
 
-
+let headerUpdateTimeout;
 
 function connect() {
 
@@ -18,6 +18,10 @@ function connect() {
 
         }
     }
+
+    clearTimeout(headerUpdateTimeout);
+    headerUpdateTimeout = setInterval(updateHeader, 10000)
+    updateHeader();
 
     ws.onerror = function (error) {
         updateLog("WS Error: "+error);
@@ -65,7 +69,9 @@ function updateState({ship, http}){
             clone.querySelector(".state").innerText = sh.stoppedReason;
         }
 
-        console.log(sh)
+        if(sh.fuel) {
+            clone.querySelector(".fuel").innerText = `Fuel: ${sh.fuel.current}/${sh.fuel.capacity}\n`
+        }
         if(sh.cargo){
             clone.querySelector(".inventory").innerText = sh.cargo.inventory.map((cargo)=>{
                 return `${cargo.symbol} x${cargo.units}`
@@ -146,6 +152,22 @@ function getCanvasCoords(x, y){
     return [(x* mapScale - mapXOffset), (y* mapScale - mapYOffset)];
 }
 
+async function updateHeader(){
+    let agent = await fetch("/agent")
+        .then(res => res.json())
+
+    let contracts = await fetch("/contracts")
+        .then(res => res.json())
+
+
+    document.getElementById("credits").innerText = agent.credits.toLocaleString()+" credits"
+
+     if(contracts){
+         const deliverable = contracts.terms.deliver[0];
+         document.getElementById("contract").innerText = `${contracts.type}: ${deliverable.unitsFulfilled}/${deliverable.unitsRequired} ${deliverable.tradeSymbol} for ${(contracts.terms.payment.onAccepted+contracts.terms.payment.onFulfilled).toLocaleString()}`
+     }
+}
+
 async function initMap(){
     await populateMap()
 
@@ -191,13 +213,7 @@ async function initMap(){
         mapScale += e.wheelDelta * mapZoomSpeed;
         drawMap();
     }
-
-
-
     drawMap()
-
-
-
 }
 
 function getWaypoint(symbol){

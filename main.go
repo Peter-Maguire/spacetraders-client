@@ -86,15 +86,15 @@ func updateShipStates() {
 	for {
 		<-ticker.C
 		shipData := make([]ui.ShipData, 0)
+		numWaiting := 0
+		numSleeping := 0
+		numStopped := 0
+		routinesActive.Reset()
 		for _, orc := range orcs {
-			numWaiting := 0
-			numSleeping := 0
-			numStopped := 0
-			routinesActive.Reset()
-			for i, state := range orc.States {
+			for _, state := range orc.States {
 				if state != nil && state.Ship != nil {
 
-					shipData = append(shipData, ui.ShipData{
+					ship := ui.ShipData{
 						Stopped:        state.CurrentRoutine == nil,
 						StoppedReason:  state.StoppedReason,
 						WaitingForHttp: state.WaitingForHttp,
@@ -103,12 +103,14 @@ func updateShipStates() {
 						ShipType:       string(state.Ship.Registration.Role),
 						Nav:            *state.Ship.Nav,
 						Cargo:          *state.Ship.Cargo,
-					})
+						Fuel:           *state.Ship.Fuel,
+					}
+
 					if state.CurrentRoutine == nil {
 						numStopped++
 					} else {
 						routinesActive.WithLabelValues(state.CurrentRoutine.Name()).Add(1)
-						shipData[i].Routine = state.CurrentRoutine.Name()
+						ship.Routine = state.CurrentRoutine.Name()
 					}
 					if state.WaitingForHttp {
 						numWaiting++
@@ -116,35 +118,35 @@ func updateShipStates() {
 					if state.AsleepUntil != nil {
 						numSleeping++
 					}
+					shipData = append(shipData, ship)
 				}
 			}
 
-			httpData := ui.HttpData{
-				Active: http.IsRunningRequests,
-			}
-
-			numBacklog := 0
-			http.RBufferLock.Lock()
-			httpList := make([]ui.HttpRequestList, len(http.RequestBuffer))
-			for i, request := range http.RequestBuffer {
-				numBacklog++
-				httpList[i] = ui.HttpRequestList{
-					Receivers: len(request.ReturnChannels),
-					Priority:  request.Priority,
-					Method:    request.Req.Method,
-					Path:      request.OriginalPath,
-				}
-			}
-			http.RBufferLock.Unlock()
-
-			httpData.Requests = httpList
-
-			routineWaiting.Set(float64(numWaiting))
-			routineSleeping.Set(float64(numSleeping))
-			routineStopped.Set(float64(numStopped))
-			httpBacklog.Set(float64(numBacklog))
-
-			ui.WriteShipState(shipData, httpData)
 		}
+		httpData := ui.HttpData{
+			Active: http.IsRunningRequests,
+		}
+
+		numBacklog := 0
+		http.RBufferLock.Lock()
+		httpList := make([]ui.HttpRequestList, len(http.RequestBuffer))
+		for i, request := range http.RequestBuffer {
+			numBacklog++
+			httpList[i] = ui.HttpRequestList{
+				Receivers: len(request.ReturnChannels),
+				Priority:  request.Priority,
+				Method:    request.Req.Method,
+				Path:      request.OriginalPath,
+			}
+		}
+		http.RBufferLock.Unlock()
+
+		httpData.Requests = httpList
+		routineWaiting.Set(float64(numWaiting))
+		routineSleeping.Set(float64(numSleeping))
+		routineStopped.Set(float64(numStopped))
+		httpBacklog.Set(float64(numBacklog))
+
+		ui.WriteShipState(shipData, httpData)
 	}
 }

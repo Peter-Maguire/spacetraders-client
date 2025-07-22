@@ -85,6 +85,7 @@ type ShipData struct {
 	Routine        string           `json:"routine"`
 	Nav            entity.ShipNav   `json:"nav"`
 	Cargo          entity.ShipCargo `json:"cargo"`
+	Fuel           entity.ShipFuel  `json:"fuel"`
 }
 
 type HttpData struct {
