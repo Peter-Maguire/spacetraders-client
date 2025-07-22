@@ -17,17 +17,14 @@ var (
 )
 
 type MineOres struct {
+	latentCooldown *time.Time
 }
 
 func (m MineOres) Run(state *State) RoutineResult {
 
-	if state.Ship.Cargo.IsFull() {
-		return RoutineResult{
-			SetRoutine: Jettison{
-				nextIfFailed:     FullWait{},
-				nextIfSuccessful: m,
-			},
-		}
+	if m.latentCooldown != nil {
+		state.Log("Waiting for Cooldown")
+		return RoutineResult{WaitUntil: m.latentCooldown}
 	}
 
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
@@ -84,15 +81,16 @@ func (m MineOres) Run(state *State) RoutineResult {
 
 	state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
 
-	// TODO: this logic in jettisonwaste
-	//if state.Contract == nil {
-	//    for _, slot := range result.Cargo.Inventory {
-	//        if m.IsUseless(slot.Symbol) {
-	//            state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))
-	//            err = state.Ship.JettisonCargo(slot.Symbol, slot.Units)
-	//        }
-	//    }
-	//}
+	if state.Ship.Cargo.IsFull() {
+		return RoutineResult{
+			SetRoutine: Jettison{
+				nextIfFailed: FullWait{},
+				nextIfSuccessful: MineOres{
+					latentCooldown: &result.Cooldown.Expiration,
+				},
+			},
+		}
+	}
 
 	return RoutineResult{
 		WaitUntil: &result.Cooldown.Expiration,
