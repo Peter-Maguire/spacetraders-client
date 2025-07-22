@@ -23,6 +23,8 @@ const (
 	ErrNoWarpDrive               ErrorCode = 4241
 	ErrJumpGateUnderConstruction ErrorCode = 4256
 
+	ErrContractTermsMet ErrorCode = 4509
+
 	ErrInsufficientFunds ErrorCode = 4600
 	ErrNoFactionPresence ErrorCode = 4700
 )

@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"spacetraders/entity"
+	"spacetraders/http"
 	"spacetraders/metrics"
 )
 
@@ -44,6 +45,13 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 	_, _ = state.Ship.GetCargo(state.Context)
 
 	if err != nil {
+		if err.Code == http.ErrContractTermsMet {
+			err := state.Contract.Fulfill(state.Context)
+			if err == nil {
+				state.FireEvent("contractComplete", nil)
+			}
+			return RoutineResult{SetRoutine: r.next}
+		}
 		state.Log(fmt.Sprintf("Error delivering contract: %s", err))
 		return RoutineResult{SetRoutine: r.next}
 	} else {
