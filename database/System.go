@@ -41,7 +41,7 @@ func GetSystem(system string) *System {
 		System: system,
 	}
 	tx := db.Take(&visitedSystem)
-	fmt.Println(tx.Error)
+	fmt.Println("getSystem", tx.Error)
 	if tx.Error == gorm.ErrRecordNotFound {
 		return nil
 	}
@@ -104,6 +104,9 @@ func GetSystemData(system string) *entity.System {
 	}
 
 	systemData := entity.System{}
-	json.Unmarshal(dbSystem.Data, &systemData)
+	err := json.Unmarshal(dbSystem.Data, &systemData)
+	if err != nil {
+		fmt.Println("getsystemdata", err)
+	}
 	return &systemData
 }

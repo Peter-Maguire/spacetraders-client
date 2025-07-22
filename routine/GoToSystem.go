@@ -30,13 +30,15 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 
 	targetSystem := database.GetSystemData(g.system)
 
-	if targetSystem != nil {
-		state.Log("TODO targetSystem isn't stored in the database!")
+	if targetSystem == nil {
+		//state.Log("TODO targetSystem isn't stored in the database!")
+		//return RoutineResult{SetRoutine: FindNewSystem{}}
 		targetSystem, _ = state.Agent.GetSystem(state.Context, g.system)
-		database.AddUnvisitedSystems([]entity.System{*targetSystem}, 0)
+		database.StoreSystem(targetSystem)
+		//database.AddUnvisitedSystems([]entity.System{*targetSystem}, 0)
 	}
 
-	distance := currentSystem.GetDistanceFrom(targetSystem)
+	distance := targetSystem.GetDistanceFrom(currentSystem)
 
 	antimatterCargo := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
 	if antimatterCargo == nil || antimatterCargo.Units == 0 || distance > 500 {
@@ -54,25 +56,28 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		intermediaries := database.GetVisitedSystems()
 		jumpableIntermediaries := make([]database.System, 0)
 		for _, intermediary := range intermediaries {
+			if intermediary.System == g.system || intermediary.System == state.Ship.Nav.SystemSymbol {
+				continue
+			}
 			if util.CalcDistance(currentSystem.X, currentSystem.Y, intermediary.X, intermediary.Y) < 2000 {
 				jumpableIntermediaries = append(jumpableIntermediaries, intermediary)
 			}
 		}
 
 		if len(jumpableIntermediaries) == 0 {
+			state.Log("Cannot escape System - going exploring")
 			return RoutineResult{
-				Stop:       true,
-				StopReason: "Cannot escape system",
+				SetRoutine: Explore{},
 			}
 		}
 
 		sort.Slice(jumpableIntermediaries, func(i, j int) bool {
 			iDistance := util.CalcDistance(jumpableIntermediaries[i].X, jumpableIntermediaries[i].Y, targetSystem.X, targetSystem.Y)
 			jDistance := util.CalcDistance(jumpableIntermediaries[j].X, jumpableIntermediaries[j].Y, targetSystem.X, targetSystem.Y)
-			return iDistance < jDistance
+			return iDistance > jDistance
 		})
 
-		state.Log(fmt.Sprintf("Jumping to intermediary system %s", jumpableIntermediaries[0].System))
+		state.Log(fmt.Sprintf("Jumping to intermediary system %s with distance %d", jumpableIntermediaries[0].System, util.CalcDistance(jumpableIntermediaries[0].X, jumpableIntermediaries[0].Y, targetSystem.X, targetSystem.Y)))
 		return RoutineResult{
 			SetRoutine: GoToSystem{
 				system: jumpableIntermediaries[0].System,
