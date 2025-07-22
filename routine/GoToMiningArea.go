@@ -8,7 +8,6 @@ import (
 )
 
 type GoToMiningArea struct {
-	next Routine
 }
 
 func (g GoToMiningArea) Run(state *State) RoutineResult {
