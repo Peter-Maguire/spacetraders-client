@@ -5,24 +5,24 @@ type FullWait struct {
 
 func (f FullWait) Run(state *State) RoutineResult {
 
-    if true || len(state.Haulers) == 0 {
-        return RoutineResult{
-            SetRoutine: SellExcessInventory{next: MineOres{}},
-        }
-    }
+	if true || len(state.Haulers) == 0 {
+		return RoutineResult{
+			SetRoutine: SellExcessInventory{next: GoToMiningArea{}},
+		}
+	}
 
-    if state.Ship.Cargo.Units == state.Ship.Cargo.Capacity {
-        //state.Log("Still full..")
-        return RoutineResult{
-            WaitSeconds: 30,
-        }
-    }
+	if state.Ship.Cargo.Units == state.Ship.Cargo.Capacity {
+		//state.Log("Still full..")
+		return RoutineResult{
+			WaitSeconds: 30,
+		}
+	}
 
-    return RoutineResult{
-        SetRoutine: MineOres{},
-    }
+	return RoutineResult{
+		SetRoutine: MineOres{},
+	}
 }
 
 func (f FullWait) Name() string {
-    return "Full Inv Wait"
+	return "Full Inv Wait"
 }
