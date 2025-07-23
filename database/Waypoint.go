@@ -34,7 +34,7 @@ func (w *Waypoint) GetMarketData() *entity.Market {
 		return nil
 	}
 	mData := entity.Market{}
-	err := json.Unmarshal(w.Data, &mData)
+	err := json.Unmarshal(w.MarketData, &mData)
 	if err != nil {
 		return nil
 	}
@@ -46,11 +46,17 @@ func (w *Waypoint) GetShipyardData() *entity.ShipyardStock {
 		return nil
 	}
 	mData := entity.ShipyardStock{}
-	err := json.Unmarshal(w.Data, &mData)
+	err := json.Unmarshal(w.ShipyardData, &mData)
 	if err != nil {
 		return nil
 	}
 	return &mData
+}
+
+func GetLeastVisitedWaypointInSystem(system string) *Waypoint {
+	wp := &Waypoint{}
+	db.Order("first_visited ASC").Where("system = ?", system).First(&wp)
+	return wp
 }
 
 func GetWaypoint(waypoint entity.Waypoint) *Waypoint {

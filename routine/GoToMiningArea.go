@@ -36,13 +36,27 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}
 
 	sort.Slice(eligibleWaypoints, func(i, j int) bool {
-		return waypointScores[waypoints[i].Symbol] > waypointScores[waypoints[j].Symbol]
+		return waypointScores[waypoints[i].Symbol] < waypointScores[waypoints[j].Symbol]
 	})
 
 	if len(waypointScores) == 0 {
 		state.Log("No good waypoints found within reach")
 		if state.Ship.Fuel.IsFull() {
 			if state.Ship.Nav.FlightMode == "DRIFT" {
+				if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
+					state.Log("Going back to home system")
+					return RoutineResult{
+						SetRoutine: GoToSystem{
+							system: state.Agent.Headquarters.GetSystemName(),
+							next:   g,
+						},
+					}
+				}
+				if state.Ship.Cargo.Units > 0 {
+					state.Log("Unable to find anywhere to mine")
+					return RoutineResult{SetRoutine: SellExcessInventory{next: Explore{}}}
+				}
+
 				return RoutineResult{
 					Stop:       true,
 					StopReason: "Unable to find anywhere to mine in range",
@@ -123,14 +137,20 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 		return false, 0
 	}
 
-	closestDistance := 2000
+	closestDistance := 5000000
 	for _, dbWaypoint := range waypoints {
+		if dbWaypoint.Waypoint == string(waypoint.Symbol) {
+			continue
+		}
+
 		marketData := dbWaypoint.GetMarketData()
 		if marketData == nil {
 			continue
 		}
 		buysOres := false
+		fmt.Println(marketData.TradeGoods)
 		for _, tg := range marketData.TradeGoods {
+			fmt.Println("Buys", tg.Symbol)
 			if strings.HasSuffix(tg.Symbol, "_ORE") {
 				buysOres = true
 				break
@@ -141,14 +161,15 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 			continue
 		}
 
-		if dbWaypoint.Waypoint == string(waypoint.Symbol) {
-			continue
-		}
 		wpData := dbWaypoint.GetData()
 		distance := waypoint.GetDistanceFrom(wpData.LimitedWaypointData)
 		if distance < closestDistance {
 			closestDistance = distance
 		}
+	}
+
+	if closestDistance == 5000000 {
+		return false, score
 	}
 
 	score -= closestDistance

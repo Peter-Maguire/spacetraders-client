@@ -270,6 +270,7 @@ func (o *Orchestrator) runEvents() {
 		case "newContract":
 			ui.MainLog("New contract")
 			contract := event.Data.(*entity.Contract)
+			o.Contract = contract
 			for _, state := range o.States {
 				state.Contract = contract
 				//state.ForceRoutine = routine.DetermineObjective{}

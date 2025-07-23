@@ -16,6 +16,13 @@ func (s Satellite) Run(state *State) RoutineResult {
 	* e.g if there are 10 markets+shipyards and 2 satellites, they should each take the 5 closest ones and go between them one by one
 	 */
 
+	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
+
+	mkt, _ := waypointData.Symbol.GetMarket(state.Context)
+	syd, _ := waypointData.Symbol.GetShipyard(state.Context)
+
+	database.VisitWaypoint(waypointData, mkt, syd)
+
 	if state.Contract == nil {
 		return RoutineResult{
 			SetRoutine: NegotiateContract{},
@@ -33,16 +40,21 @@ func (s Satellite) Run(state *State) RoutineResult {
 		}
 	}
 
-	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
-
-	// TODO: this from orchestrator
 	shipToBuy := s.GetShipToBuy(state)
 
 	state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
 
-	if !s.onShipyard(state, waypointData, shipToBuy) {
-		state.Log("That ship isn't available at this waypoint")
-		// TODO this should use the database data
+	shipCost := database.GetShipCost(shipToBuy)
+
+	if shipCost != nil && shipCost.PurchasePrice > state.Agent.Credits {
+		state.Log("We can't buy the ship right now")
+		// TODO: deduplicate this (maybe it's own state?)
+		wp := database.GetLeastVisitedWaypointInSystem(state.Ship.Nav.SystemSymbol)
+		return RoutineResult{SetRoutine: NavigateTo{waypoint: entity.Waypoint(wp.Waypoint), next: s}}
+	}
+
+	if shipCost == nil {
+		state.Log("We aren't aware of any shipyards selling this ship type yet")
 		waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 
 		for _, w := range *waypoints {
@@ -59,14 +71,19 @@ func (s Satellite) Run(state *State) RoutineResult {
 				}
 			}
 		}
-
-		state.Log("Unable to find a shipyard with that ship type, lets go exploring")
 		return RoutineResult{
 			SetRoutine: Explore{
 				oneShot:      true,
 				desiredTrait: "SHIPYARD",
 				next:         s,
 			},
+		}
+	}
+
+	if shipCost.Waypoint != string(state.Ship.Nav.WaypointSymbol) {
+		state.Log("Going to where this ship is cheapest")
+		return RoutineResult{
+			SetRoutine: NavigateTo{waypoint: entity.Waypoint(shipCost.Waypoint)},
 		}
 	}
 
@@ -86,7 +103,6 @@ func (s Satellite) Run(state *State) RoutineResult {
 		state.Log("We can buy a ship")
 		shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
 		database.StoreShipCosts(shipyard)
-		// TODO: check the prices again?
 		result, err := state.Agent.BuyShip(state.Context, state.Ship.Nav.WaypointSymbol, shipToBuy)
 
 		if err != nil {
@@ -98,6 +114,9 @@ func (s Satellite) Run(state *State) RoutineResult {
 	}
 
 	// At this point we should be on the shipyard and waiting, so let's get the next sellComplete event and check there
+
+	wp := database.GetLeastVisitedWaypointInSystem(state.Ship.Nav.SystemSymbol)
+	return RoutineResult{SetRoutine: NavigateTo{waypoint: entity.Waypoint(wp.Waypoint), next: s}}
 
 	state.Log("Waiting for a sell to complete")
 	for {

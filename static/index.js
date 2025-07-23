@@ -24,7 +24,6 @@ function connect() {
     updateHeader();
 
     ws.onerror = function (error) {
-        updateLog("WS Error: "+error);
         ws.close();
     }
 
@@ -244,7 +243,7 @@ function drawMap(){
                 return
             }
             let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
-            ctx.fillText("🚀", x, y)
+            drawShip(ctx, x, y, ship);
             return
         }
 
@@ -264,9 +263,29 @@ function drawMap(){
         ctx.lineTo(dX, dY);
         ctx.stroke();
         let [sX, sY] = interpolatePoint(oX, oY, dX, dY, percentageComplete);
-        ctx.fillText("🚀", sX, sY)
+        let heading = Math.atan2(dY - oY, dX - oX) + 0.8;
+        drawShip(ctx, sX, sY, ship, heading);
 
     })
+}
+
+function drawShip(ctx, x, y, ship, heading = 0) {
+    let fontSize = mapScale*5;
+    if(heading !== 0){
+        ctx.save();
+        ctx.translate(x-(fontSize/2), y);
+        ctx.rotate(heading);
+        ctx.translate(-(x-fontSize/2), -y);
+    }
+    ctx.fillText("🚀", x, y-fontSize)
+    if(heading !== 0){
+        ctx.restore();
+    }
+    let lastFont = ctx.font;
+    ctx.font = `${fontSize}px serif`
+    ctx.fillText(ship.name, x, y+(fontSize*2))
+    ctx.font = lastFont;
+
 }
 
 function interpolatePoint(x1, y1, x2, y2, t) {

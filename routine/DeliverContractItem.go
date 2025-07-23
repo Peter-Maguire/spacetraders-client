@@ -50,7 +50,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 			if err == nil {
 				state.FireEvent("contractComplete", nil)
 			}
-			return RoutineResult{SetRoutine: r.next}
+			return RoutineResult{SetRoutine: GoToRandomFactionWaypoint{next: NegotiateContract{}}}
 		}
 		state.Log(fmt.Sprintf("Error delivering contract: %s", err))
 		return RoutineResult{SetRoutine: r.next}
