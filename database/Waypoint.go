@@ -29,6 +29,30 @@ func (w *Waypoint) GetData() entity.WaypointData {
 	return wpData
 }
 
+func (w *Waypoint) GetMarketData() *entity.Market {
+	if w.MarketData == nil || string(w.MarketData) == "null" {
+		return nil
+	}
+	mData := entity.Market{}
+	err := json.Unmarshal(w.Data, &mData)
+	if err != nil {
+		return nil
+	}
+	return &mData
+}
+
+func (w *Waypoint) GetShipyardData() *entity.ShipyardStock {
+	if w.ShipyardData == nil || string(w.ShipyardData) == "null" {
+		return nil
+	}
+	mData := entity.ShipyardStock{}
+	err := json.Unmarshal(w.Data, &mData)
+	if err != nil {
+		return nil
+	}
+	return &mData
+}
+
 func GetWaypoint(waypoint entity.Waypoint) *Waypoint {
 	visitedWaypoint := Waypoint{
 		Waypoint: string(waypoint),

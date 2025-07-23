@@ -5,6 +5,7 @@ import (
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"strings"
 )
 
 type GoToMiningArea struct {
@@ -124,9 +125,22 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 
 	closestDistance := 2000
 	for _, dbWaypoint := range waypoints {
-		if dbWaypoint.MarketData == nil || string(dbWaypoint.MarketData) == "null" {
+		marketData := dbWaypoint.GetMarketData()
+		if marketData == nil {
 			continue
 		}
+		buysOres := false
+		for _, tg := range marketData.TradeGoods {
+			if strings.HasSuffix(tg.Symbol, "_ORE") {
+				buysOres = true
+				break
+			}
+		}
+
+		if !buysOres {
+			continue
+		}
+
 		if dbWaypoint.Waypoint == string(waypoint.Symbol) {
 			continue
 		}
