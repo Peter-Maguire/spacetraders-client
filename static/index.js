@@ -262,9 +262,10 @@ function drawMap(){
         ctx.moveTo(oX, oY);
         ctx.lineTo(dX, dY);
         ctx.stroke();
-        let [sX, sY] = interpolatePoint(oX, oY, dX, dY, percentageComplete);
+        let [sX, sY] = interpolatePoint(originWaypoint.waypointData.x, originWaypoint.waypointData.y, destWaypoint.waypointData.x, destWaypoint.waypointData.y, percentageComplete);
+        let [ssX, ssY] = getCanvasCoords(sX, sY)
         let heading = Math.atan2(dY - oY, dX - oX) + 0.8;
-        drawShip(ctx, sX, sY, ship, heading);
+        drawShip(ctx, ssX, ssY, ship, heading);
 
     })
 }
