@@ -44,6 +44,9 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 			inRange := make([]entity.LimitedWaypointData, 0)
 			for _, rate := range marketsSellingFuel {
+				if rate.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+					continue
+				}
 				rateWaypoint := entity.LimitedWaypointData{Symbol: rate.Waypoint, X: rate.WaypointX, Y: rate.WaypointY}
 				distance := rateWaypoint.GetDistanceFrom(currentWaypoint.LimitedWaypointData)
 				fuelCost := util.GetFuelCost(distance, state.Ship.Nav.FlightMode)
