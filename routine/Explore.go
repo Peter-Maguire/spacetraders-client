@@ -11,22 +11,20 @@ type Explore struct {
 	desiredTrait  string
 	marketTargets []string
 	oneShot       bool
+	visitVisited  bool
 	next          Routine
 }
 
 func (e Explore) Run(state *State) RoutineResult {
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
-	if dbWaypoint != nil && dbWaypoint.FirstVisited.Unix() > 0 {
+	if !e.visitVisited && dbWaypoint != nil && dbWaypoint.FirstVisited.Unix() > 0 {
 		state.Log("We've already explored this waypoint")
-		if e.oneShot {
-			return RoutineResult{
-				SetRoutine: e.next,
-			}
-		}
 		return RoutineResult{
 			SetRoutine: FindNewWaypoint{
+				visitVisited: e.visitVisited,
 				desiredTrait: e.desiredTrait,
+				next:         e,
 			},
 		}
 	}
@@ -120,11 +118,13 @@ func (e Explore) Run(state *State) RoutineResult {
 }
 
 func (e Explore) Name() string {
+	name := "Explore"
+
 	if e.desiredTrait != "" {
-		return fmt.Sprintf("Explore (Find %s)", e.desiredTrait)
+		name += fmt.Sprintf(" (Find %s)", e.desiredTrait)
 	}
 	if e.marketTargets != nil {
-		return "Explore (Find Market)"
+		name += " (Find Market)"
 	}
-	return "Explore"
+	return fmt.Sprintf("%s -> %s", name, e.next.Name())
 }

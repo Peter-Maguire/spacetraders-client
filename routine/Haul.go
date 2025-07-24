@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/entity"
+	"spacetraders/http"
+	"time"
 )
 
 type Haul struct {
@@ -13,7 +16,7 @@ type Haul struct {
 func (h Haul) Run(state *State) RoutineResult {
 	//state.StatesMutex.Lock()
 
-	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
 	cargo, _ := state.Ship.GetCargo(state.Context)
 
@@ -22,20 +25,40 @@ func (h Haul) Run(state *State) RoutineResult {
 	sellables := cargo.Inventory
 
 	ships := make([]*entity.Ship, 0)
-	haulerCount := len(state.Haulers)
-	haulerNum := 0
 
-	for i, hauler := range state.Haulers {
-		if hauler.Symbol == state.Ship.Symbol {
-			haulerNum = i
-			break
+	shipsPerWaypoint := make(map[entity.Waypoint]int)
+	for _, otherState := range *state.States {
+		if otherState.Ship.Nav.Status == "IN_TRANSIT" || (otherState.Ship.Registration.Role != constant.ShipRoleExcavator && otherState.Ship.Registration.Role != constant.ShipRoleCommand) {
+			continue
+		}
+
+		shipsPerWaypoint[otherState.Ship.Nav.WaypointSymbol]++
+	}
+
+	var mostShips *entity.Waypoint
+	var mostShipsCount int
+
+	for wp, count := range shipsPerWaypoint {
+		if count > mostShipsCount {
+			mostShipsCount = count
+			mostShips = &wp
 		}
 	}
 
-	for i, otherState := range *state.States {
-		if haulerCount > 1 && (otherState.Ship.Registration.Role != "EXCAVATOR" || i%haulerCount == haulerNum) {
-			continue
+	if mostShips == nil {
+		state.Log("Couldn't find any not in-transit excavators")
+		return RoutineResult{
+			WaitSeconds: 60,
 		}
+	}
+
+	if state.Ship.Nav.WaypointSymbol != *mostShips {
+		state.Log(fmt.Sprintf("%dx excavators are at %s", mostShipsCount, *mostShips))
+		return RoutineResult{SetRoutine: NavigateTo{waypoint: *mostShips, next: h}}
+	}
+
+	for _, otherState := range *state.States {
+		// TODO: maybe this should be different, or is it completely redundant now?
 		//if otherState.Ship.Cargo.Capacity-otherState.Ship.Cargo.Units <= 0 {
 		ships = append(ships, otherState.Ship)
 		//}
@@ -47,11 +70,11 @@ func (h Haul) Run(state *State) RoutineResult {
 
 	//state.Log(fmt.Sprintf("Most full: %d/%d / Least full: %d/%d", ships[0].Cargo.Capacity-ships[0].Cargo.Units, ships[0].Cargo.Capacity, ships[len(ships)-1].Cargo.Capacity-ships[len(ships)-1].Cargo.Units, ships[len(ships)-1].Cargo.Capacity))
 
-	state.Log(fmt.Sprintf("Current cargo count: %d. #%d of %d haulers. We're in charge of %d ships", cargoCount, haulerNum, haulerCount, len(ships)))
+	//state.Log(fmt.Sprintf("Current cargo count: %d. #%d of %d haulers. We're in charge of %d ships", cargoCount, haulerNum, haulerCount, len(ships)))
 
 	full := false
 	for _, ship := range ships {
-		if ship.Registration.Role != "EXCAVATOR" {
+		if len(ship.Cargo.Inventory) == 0 || !h.ShouldHaulFrom(state, ship) {
 			continue
 		}
 
@@ -59,7 +82,7 @@ func (h Haul) Run(state *State) RoutineResult {
 			return ship.Cargo.Inventory[i].Units > ship.Cargo.Inventory[j].Units
 		})
 
-		state.Log(fmt.Sprintf("Biggest %d / Smallest %d", ship.Cargo.Inventory[0].Units, ship.Cargo.Inventory[len(ship.Cargo.Inventory)-1].Units))
+		//state.Log(fmt.Sprintf("Biggest %d / Smallest %d", ship.Cargo.Inventory[0].Units, ship.Cargo.Inventory[len(ship.Cargo.Inventory)-1].Units))
 
 		for _, slot := range ship.Cargo.Inventory {
 			if slot.Symbol == "ANTIMATTER" {
@@ -75,6 +98,10 @@ func (h Haul) Run(state *State) RoutineResult {
 			state.Log(fmt.Sprintf("Transferring %d/%d %s from %s to %s (%d/%d cargo)", transferAmount, slot.Units, slot.Symbol, ship.Symbol, state.Ship.Symbol, cargoCount, state.Ship.Cargo.Capacity))
 			err := ship.TransferCargo(state.Context, state.Ship.Symbol, slot.Symbol, transferAmount)
 			if err != nil {
+				if err.Code == http.ErrShipInTransit {
+					t, _ := time.Parse(time.RFC3339, err.Data["arrival"].(string))
+					return RoutineResult{WaitUntil: &t}
+				}
 				state.Log(err.Error())
 				full = true
 			} else {
@@ -103,19 +130,10 @@ func (h Haul) Run(state *State) RoutineResult {
 	//state.StatesMutex.Unlock()
 
 	if full {
-		state.Log("Time to start selling")
-		for _, slot := range sellables {
-			sellResult, err := state.Ship.SellCargo(state.Context, slot.Symbol, slot.Units)
-			if err == nil {
-				state.Agent = &sellResult.Agent
-				state.Log(fmt.Sprintf("Sold %dx %s for %d credits", slot.Units, slot.Symbol, sellResult.Transaction.TotalPrice))
-			} else {
-				state.Log(err.Error())
-			}
+		return RoutineResult{
+			SetRoutine: Jettison{nextIfFailed: SellExcessInventory{next: h}, nextIfSuccessful: h},
 		}
 	}
-
-	state.FireEvent("sellComplete", state.Agent)
 
 	if len(sellables) == 0 {
 		return RoutineResult{
@@ -123,7 +141,36 @@ func (h Haul) Run(state *State) RoutineResult {
 		}
 	}
 
+	allAreWaiting := true
+	var lowestWaitTime *time.Time
+	for _, otherState := range *state.States {
+		if !h.ShouldHaulFrom(state, otherState.Ship) {
+			continue
+		}
+
+		if otherState.AsleepUntil == nil {
+			allAreWaiting = false
+			break
+		}
+		if lowestWaitTime == nil || otherState.AsleepUntil.Before(*lowestWaitTime) {
+			lowestWaitTime = otherState.AsleepUntil
+		}
+	}
+
+	if allAreWaiting {
+		tPlusOne := lowestWaitTime.Add(1 * time.Second)
+		lowestWaitTime = &tPlusOne
+		state.Log("All ships are waiting, so wait until the first one is finished.")
+		return RoutineResult{
+			WaitUntil: lowestWaitTime,
+		}
+	}
+
 	return RoutineResult{}
+}
+
+func (h Haul) ShouldHaulFrom(state *State, ship *entity.Ship) bool {
+	return (ship.Registration.Role == "EXCAVATOR" || ship.Registration.Role == "COMMAND") && ship.Nav.Status != "IN_TRANSIT" && ship.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol
 }
 
 func (h Haul) Name() string {

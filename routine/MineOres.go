@@ -97,7 +97,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 	}
 }
 
-var uselessItems = []string{"QUARTZ_SAND", "ICE_WATER"}
+var uselessItems = []string{"QUARTZ_SAND", "ICE_WATER", "AMMONIA_ICE", "PRECIOUS_STONES"}
 
 func (m MineOres) IsUseless(item string) bool {
 	for _, uselessItem := range uselessItems {

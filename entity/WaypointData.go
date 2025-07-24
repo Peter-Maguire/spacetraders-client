@@ -31,11 +31,12 @@ func (lw *LimitedWaypointData) GetDistanceFrom(lw2 LimitedWaypointData) int {
 
 type WaypointData struct {
 	LimitedWaypointData
-	SystemSymbol string    `json:"systemSymbol"`
-	Orbitals     []Orbital `json:"orbitals"`
-	Traits       []Trait   `json:"traits"`
-	Chart        Chart     `json:"chart"`
-	Faction      Faction   `json:"faction"`
+	SystemSymbol        string    `json:"systemSymbol"`
+	Orbitals            []Orbital `json:"orbitals"`
+	Traits              []Trait   `json:"traits"`
+	Chart               Chart     `json:"chart"`
+	Faction             Faction   `json:"faction"`
+	IsUnderConstruction bool      `json:"isUnderConstruction"`
 }
 
 func (w *WaypointData) HasTrait(symbol string) bool {

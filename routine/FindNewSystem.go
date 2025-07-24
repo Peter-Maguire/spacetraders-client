@@ -15,10 +15,11 @@ type FindNewSystem struct {
 	isAtJumpGate  bool
 	systems       *[]entity.System
 	startFromPage int
+	next          Routine
+	skipVisited   bool
 }
 
 func (f FindNewSystem) Run(state *State) RoutineResult {
-
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 
 	if currentSystem == nil {
@@ -26,8 +27,15 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 		database.AddUnvisitedSystems([]entity.System{*currentSystem}, 0)
 	}
 
+	return RoutineResult{Stop: true, StopReason: "System jumping not supported"}
+
 	if f.startFromPage == 0 {
 		unvisitedSystems := database.GetUnvisitedSystems()
+
+		if !f.skipVisited {
+			visitedSystems := database.GetVisitedSystems()
+			unvisitedSystems = append(visitedSystems, unvisitedSystems...)
+		}
 
 		if len(unvisitedSystems) == 0 {
 			f.startFromPage = 1
@@ -42,10 +50,10 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 
 		for _, candidate := range unvisitedSystems {
 			// Because we are sorted by distance, we can stop at 2000 since no other systems will be reachable
-			if util.CalcDistance(currentSystem.X, currentSystem.Y, candidate.X, candidate.Y) > 2000 {
-				state.Log(fmt.Sprintf("System %s is over 2000 units away", candidate.System))
-				break
-			}
+			//if util.CalcDistance(currentSystem.X, currentSystem.Y, candidate.X, candidate.Y) > 2000 {
+			//	state.Log(fmt.Sprintf("System %s is over 2000 units away", candidate.System))
+			//	continue
+			//}
 
 			var systemEntity entity.System
 			err := json.Unmarshal(candidate.Data, &systemEntity)
@@ -56,7 +64,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 
 			if f.CanJumpTo(&systemEntity, currentSystem) {
 				state.Log(fmt.Sprintf("Found good known but unexplored system %s", systemEntity.Symbol))
-				jumpGate := systemEntity.GetJumpGate()
+				jumpGate := systemEntity.GetJumpGate(state.Context)
 				if jumpGate != nil {
 					jumpResult, err := state.Ship.Jump(state.Context, systemEntity.Waypoints[0].Symbol)
 					if err != nil {
@@ -66,7 +74,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 						cooldownTime := jumpResult.Cooldown.Expiration
 						return RoutineResult{
 							WaitUntil:  &cooldownTime,
-							SetRoutine: Explore{},
+							SetRoutine: f.next,
 						}
 					}
 				} else {
@@ -102,7 +110,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 	if len(systems) == 0 {
 		state.Log("Out of systems")
 		return RoutineResult{
-			SetRoutine: GoToMiningArea{},
+			SetRoutine: f.next,
 		}
 	}
 	database.AddUnvisitedSystems(systems, f.startFromPage)
@@ -115,7 +123,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 		if f.CanJumpTo(&system, currentSystem) {
 			if f.isAtJumpGate || state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 0 {
 				state.Log(fmt.Sprintf("Jumping to %s", system.Symbol))
-				jumpGate := system.GetJumpGate()
+				jumpGate := system.GetJumpGate(state.Context)
 				if jumpGate == nil {
 					state.Log("No jump gate in this system")
 					continue
@@ -132,7 +140,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 					cooldownTime := jumpResult.Cooldown.Expiration
 					return RoutineResult{
 						WaitUntil:  &cooldownTime,
-						SetRoutine: Explore{},
+						SetRoutine: f.next,
 					}
 				}
 			}
@@ -143,7 +151,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 			}
 		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current && state.Ship.CanWarp() {
 			_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
-			jumpGate := system.GetJumpGate()
+			jumpGate := system.GetJumpGate(state.Context)
 			if jumpGate == nil {
 				state.Log("No jump gate in this system")
 				continue
@@ -156,11 +164,11 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 			arrival := res.Nav.Route.Arrival
 			return RoutineResult{
 				WaitUntil:  &arrival,
-				SetRoutine: Explore{},
+				SetRoutine: f.next,
 			}
 		}
 	}
-	state.Log("No new systems to check on this page")
+	state.Log("No eligible systems on this page")
 	f.startFromPage++
 	return RoutineResult{
 		SetRoutine: f,
@@ -198,5 +206,5 @@ func (f FindNewSystem) HasJumpGate(waypoints []entity.LimitedWaypointData) bool 
 }
 
 func (f FindNewSystem) Name() string {
-	return fmt.Sprintf("Find New System - Page %d", f.startFromPage)
+	return fmt.Sprintf("Find New System (Page %d) -> %s", f.startFromPage, f.next.Name())
 }

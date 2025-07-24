@@ -219,6 +219,8 @@ function getWaypoint(symbol){
     return waypoints.find((w)=>w.waypoint === symbol);
 }
 
+let mapSystem = "X1-PS43";
+
 function drawMap(){
     if(!viewingMap)return;
     let canvas = document.getElementById("mapCanvas");
@@ -230,12 +232,15 @@ function drawMap(){
     ctx.font = `${mapScale*10}px serif`
 
     waypoints.forEach(waypoint => {
+        if(waypoint.system !== mapSystem)return;
         let icon = mapIcons[waypoint.waypointData.type] || "?";
         let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
         ctx.fillText(icon, x, y)//, 10 * mapScale, 10 * mapScale)
+        // ctx.fillText(waypoint.waypoint, x+10, y+10)
     })
 
     shipStates.forEach((ship)=>{
+        if(ship.nav.systemSymbol !== mapSystem)return;
         if(ship.nav.status !== "IN_TRANSIT") {
             const waypoint = getWaypoint(ship.nav.waypointSymbol);
             if (!waypoint) {

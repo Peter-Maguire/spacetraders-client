@@ -63,6 +63,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 			}
 		}
 
+		state.Log(fmt.Sprintf("Hauler number: %d", haulerNumber))
 		if haulerNumber == 0 {
 			if state.Contract != nil && state.Contract.Fulfilled == false {
 				for _, deliverable := range state.Contract.Terms.Deliver {
@@ -80,8 +81,9 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
 		// TODO: Fix hauling
 		return RoutineResult{
-			Stop:       true,
-			StopReason: "Hauling not supported",
+			SetRoutine: Haul{},
+			//Stop:       true,
+			//StopReason: "Hauling not supported",
 			//SetRoutine:  Explore{},
 			//WaitSeconds: int(time.Now().UnixMilli()%100) * 10,
 		}
@@ -103,7 +105,10 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
 			state.Log("We're full up here")
 			return RoutineResult{
-				SetRoutine: FullWait{},
+				SetRoutine: Jettison{
+					nextIfSuccessful: d,
+					nextIfFailed:     FullWait{},
+				},
 				//SetRoutine: SellExcessInventory{MineOres{}},
 			}
 		}

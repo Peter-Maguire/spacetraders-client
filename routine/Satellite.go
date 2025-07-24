@@ -83,7 +83,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	if shipCost.Waypoint != string(state.Ship.Nav.WaypointSymbol) {
 		state.Log("Going to where this ship is cheapest")
 		return RoutineResult{
-			SetRoutine: NavigateTo{waypoint: entity.Waypoint(shipCost.Waypoint)},
+			SetRoutine: NavigateTo{waypoint: entity.Waypoint(shipCost.Waypoint), next: s},
 		}
 	}
 

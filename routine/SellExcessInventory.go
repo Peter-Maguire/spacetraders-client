@@ -112,6 +112,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		return RoutineResult{
 			SetRoutine: Explore{
 				marketTargets: sellableItems,
+				oneShot:       true,
 				next:          s,
 			},
 		}
@@ -120,10 +121,10 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	marketOpportunities := make([]*marketOpportunity, 0)
 
 	for _, market := range markets {
-		//// Disable other systems for now
-		//if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
-		//	continue
-		//}
+		// Disable other systems for now
+		if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+			continue
+		}
 		var mop *marketOpportunity
 		// Find an existing mop at this waypoint, if so add the sellable to the list
 		for _, lmop := range marketOpportunities {
@@ -143,10 +144,16 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			}
 
 			// The distance between the current system and that one
-			systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
+			//systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
 			waypointDistance := util.CalcDistance(currentWaypoint.X, currentWaypoint.Y, market.WaypointX, market.WaypointY)
 
-			mop.TravelCost = util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
+			mop.TravelCost = /*util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) +*/ util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)
+
+			if mop.TravelCost > state.Ship.Fuel.Capacity {
+				fmt.Println("Not enough fuel to go here")
+				continue
+			}
+
 			slot := state.Ship.Cargo.GetSlotWithItem(market.Good)
 			if slot == nil {
 				// We lost this somehow due to a race condition
@@ -159,17 +166,27 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		mop.PossibleProfit = mop.SalePrice - mop.TravelCost
 	}
 
-	if len(marketOpportunities) == 0 {
-		state.Log("No markets in this system available")
-		return RoutineResult{
-			Stop:       true,
-			StopReason: "No markets available to sell to",
-		}
-	}
-
 	sort.Slice(marketOpportunities, func(i, j int) bool {
 		return marketOpportunities[i].PossibleProfit > marketOpportunities[j].PossibleProfit
 	})
+
+	if len(marketOpportunities) == 0 {
+		if state.Ship.Nav.FlightMode == "DRIFT" {
+			state.Log("No markets in this system available")
+			return RoutineResult{
+				SetRoutine: Explore{
+					marketTargets: sellableItems,
+					oneShot:       true,
+					visitVisited:  true,
+					next:          s,
+				},
+			}
+		} else {
+			state.Log("Trying again in drift mode")
+			state.Ship.SetFlightMode(state.Context, "DRIFT")
+			return RoutineResult{}
+		}
+	}
 
 	accountedForItems := make([]string, 0)
 
@@ -188,6 +205,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 				}
 			}
 		}
+
 		// If this market still has items that are not accounted for elsewhere, then we should count this opportunity as sensible
 		if alreadyAccountedFor < len(mop.SellableHere) {
 			sensibleOpportunities = append(sensibleOpportunities, mop)

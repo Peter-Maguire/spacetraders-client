@@ -36,7 +36,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}
 
 	sort.Slice(eligibleWaypoints, func(i, j int) bool {
-		return waypointScores[waypoints[i].Symbol] < waypointScores[waypoints[j].Symbol]
+		return waypointScores[waypoints[i].Symbol] > waypointScores[waypoints[j].Symbol]
 	})
 
 	if len(waypointScores) == 0 {
@@ -77,7 +77,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 
 	bestWaypoint := eligibleWaypoints[0]
 
-	state.Log(fmt.Sprintf("Waypoint %s has score of %d", bestWaypoint.Symbol, waypointScores[bestWaypoint.Symbol]))
+	state.Log(fmt.Sprintf("Choosing waypoint %s which has score of %d", bestWaypoint.Symbol, waypointScores[bestWaypoint.Symbol]))
 
 	return RoutineResult{SetRoutine: NavigateTo{
 		waypoint: bestWaypoint.Symbol,
@@ -100,21 +100,21 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 }
 
 func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State, waypoints []*database.Waypoint) (bool, int) {
-	score := -1
+	score := 0
 	if waypoint.HasTrait("PRECIOUS_METAL_DEPOSITS") {
-		score += 25
+		score += 15
 	}
 
 	if waypoint.HasTrait("RARE_METAL_DEPOSITS") {
-		score += 20
+		score += 10
 	}
 
 	if waypoint.HasTrait("COMMON_METAL_DEPOSITS") {
-		score += 20
+		score += 5
 	}
 
 	if waypoint.HasTrait("MINERAL_DEPOSITS") {
-		score += 5
+		score += 1
 	}
 
 	if score <= 0 {
@@ -122,7 +122,7 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 	}
 
 	if waypoint.HasTrait("MARKETPLACE") {
-		score += 10
+		score += 1
 	}
 
 	if waypoint.HasTrait("OVERCROWDED") {
@@ -138,6 +138,7 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 	}
 
 	closestDistance := 5000000
+	var closestWaypoint *database.Waypoint
 	for _, dbWaypoint := range waypoints {
 		if dbWaypoint.Waypoint == string(waypoint.Symbol) {
 			continue
@@ -148,9 +149,7 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 			continue
 		}
 		buysOres := false
-		fmt.Println(marketData.TradeGoods)
 		for _, tg := range marketData.TradeGoods {
-			fmt.Println("Buys", tg.Symbol)
 			if strings.HasSuffix(tg.Symbol, "_ORE") {
 				buysOres = true
 				break
@@ -165,10 +164,11 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 		distance := waypoint.GetDistanceFrom(wpData.LimitedWaypointData)
 		if distance < closestDistance {
 			closestDistance = distance
+			closestWaypoint = dbWaypoint
 		}
 	}
 
-	if closestDistance == 5000000 {
+	if closestWaypoint == nil {
 		return false, score
 	}
 

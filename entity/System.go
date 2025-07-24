@@ -36,10 +36,14 @@ func (s *System) GetLimitedWaypoint(ctx context.Context, name Waypoint) *Limited
 	return nil
 }
 
-func (s *System) GetJumpGate() *LimitedWaypointData {
+func (s *System) GetJumpGate(ctx context.Context) *LimitedWaypointData {
 	for _, wp := range s.Waypoints {
 		if wp.Type == constant.WaypointTypeJumpGate {
-			return &wp
+			fullWaypoint, _ := wp.GetFullWaypoint(ctx)
+			fmt.Println(fullWaypoint)
+			if !fullWaypoint.IsUnderConstruction {
+				return &wp
+			}
 		}
 	}
 	return nil

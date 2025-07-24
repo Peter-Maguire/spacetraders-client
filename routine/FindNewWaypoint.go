@@ -10,12 +10,16 @@ import (
 
 type FindNewWaypoint struct {
 	desiredTrait string
+	visitVisited bool
 	next         Routine
 }
 
 func (f FindNewWaypoint) Run(state *State) RoutineResult {
 	if f.next == nil {
-		f.next = Explore{}
+		f.next = Explore{
+			desiredTrait: f.desiredTrait,
+			visitVisited: f.visitVisited,
+		}
 	}
 	// find new place
 	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
@@ -24,7 +28,7 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 	for _, waypoint := range *waypoints {
 		if f.hasGoodTraits(waypoint.Traits) {
 			visited := database.GetWaypoint(waypoint.Symbol)
-			if visited == nil || visited.FirstVisited.Unix() < 0 {
+			if waypoint.Symbol != state.Ship.Nav.WaypointSymbol && f.visitVisited || visited == nil || visited.FirstVisited.Unix() < 0 {
 				//state.Log(fmt.Sprintf("Found interesting waypoint at %s", waypoint.Symbol))
 				goodWaypoints = append(goodWaypoints, waypoint)
 			}
@@ -53,31 +57,31 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 
 	system, _ := state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 	database.VisitSystem(system, waypoints)
-	// TODO: Fix system jumping
-	state.Log("No more good waypoints left in this system")
-	return RoutineResult{
-		Stop:       true,
-		StopReason: "No more good waypoints left in this system",
-	}
+	//// TODO: Fix system jumping
+	//state.Log("No more good waypoints left in this system")
+	//return RoutineResult{
+	//	Stop:       true,
+	//	StopReason: "No more good waypoints left in this system",
+	//}
 	for _, waypoint := range *waypoints {
 		if waypoint.Type == constant.WaypointTypeJumpGate {
 			if waypoint.Symbol == state.Ship.Nav.WaypointSymbol {
 				state.Log("We're at a jump gate, time to go find a new place")
 				return RoutineResult{
-					SetRoutine: FindNewSystem{isAtJumpGate: true},
+					SetRoutine: FindNewSystem{isAtJumpGate: true, next: f},
 					//WaitUntil:  &cooldownUntil,
 				}
 			}
 			state.Log("Going to jump gate")
 			return RoutineResult{
-				SetRoutine: NavigateTo{waypoint: waypoint.Symbol, next: Explore{}},
+				SetRoutine: NavigateTo{waypoint: waypoint.Symbol, next: f},
 				//WaitUntil:  &cooldownUntil,
 			}
 		}
 	}
 	if state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 2 {
 		return RoutineResult{
-			SetRoutine: FindNewSystem{},
+			SetRoutine: FindNewSystem{next: f},
 			//WaitUntil:  &cooldownUntil,
 		}
 	}
@@ -108,5 +112,5 @@ func (f FindNewWaypoint) hasGoodTraits(traits []entity.Trait) bool {
 }
 
 func (f FindNewWaypoint) Name() string {
-	return "Find New Waypoint"
+	return fmt.Sprintf("Find New Waypoint -> %s", f.next.Name())
 }

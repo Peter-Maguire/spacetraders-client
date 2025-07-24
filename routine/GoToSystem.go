@@ -22,6 +22,8 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: g.next}
 	}
 
+	return RoutineResult{Stop: true, StopReason: "System jumping not supported"}
+
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 	if currentSystem != nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
@@ -43,7 +45,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	antimatterCargo := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
 	if antimatterCargo == nil || antimatterCargo.Units == 0 || distance > 500 {
 		wpd, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
-		if wpd.Type != constant.WaypointTypeJumpGate {
+		if wpd.Type != constant.WaypointTypeJumpGate || wpd.IsUnderConstruction {
 			state.Log("Going to jump gate")
 			return RoutineResult{
 				SetRoutine: GoToJumpGate{next: g},
@@ -67,7 +69,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		if len(jumpableIntermediaries) == 0 {
 			state.Log("Cannot escape System - going exploring")
 			return RoutineResult{
-				SetRoutine: Explore{},
+				SetRoutine: Explore{next: DetermineObjective{}},
 			}
 		}
 
@@ -89,7 +91,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 	systemData, _ := entity.GetSystem(state.Context, g.system)
-	jumpGate := systemData.GetJumpGate()
+	jumpGate := systemData.GetJumpGate(state.Context)
 	if jumpGate == nil {
 		return RoutineResult{
 			Stop:       true,
@@ -122,5 +124,5 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 }
 
 func (g GoToSystem) Name() string {
-	return fmt.Sprintf("Go To System %s", g.system)
+	return fmt.Sprintf("Go To System %s -> %s", g.system, g.next.Name())
 }

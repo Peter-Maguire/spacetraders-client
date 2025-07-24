@@ -101,6 +101,11 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		marketCosts := make(map[entity.Waypoint]int)
 
 		for _, market := range markets {
+			if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+				// TODO: make this less stupid
+				marketCosts[market.Waypoint] = 999999999
+				continue
+			}
 			systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
 			waypointDistance := util.CalcDistance(lw.X, lw.Y, market.WaypointX, market.WaypointY)
 			roundTrips := int(math.Min(1, float64(unitsRemaining/state.Ship.Cargo.Capacity)))
@@ -113,7 +118,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 			return marketCosts[markets[i].Waypoint] < marketCosts[markets[j].Waypoint]
 		})
 
-		state.Log(fmt.Sprintf("Cost of retrieving %dx %s at cheapest market is %d", unitsRemaining, p.deliverable.TradeSymbol, marketCosts[markets[0].Waypoint]))
+		state.Log(fmt.Sprintf("Cost of retrieving %dx %s at cheapest market (%s) is %d", unitsRemaining, p.deliverable.TradeSymbol, markets[0].Waypoint, marketCosts[markets[0].Waypoint]))
 
 		if marketCosts[markets[0].Waypoint] > state.Contract.Terms.Payment.GetTotalPayment() {
 			state.Log("Having a look for more markets")
@@ -156,7 +161,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	purchaseAmount := int(math.Min(math.Min(amountPurchasable, tradeVolume), math.Min(float64(unitsRemaining), remainingCapacity)))
 
 	if purchaseAmount <= 0 {
-		state.Log("We're not able to purchase anything right now for some reason")
+		state.Log("We're not able to purchase anything right now")
 		fmt.Println(state.Agent.Credits, tradeGood.PurchasePrice)
 		fmt.Println(amountPurchasable, tradeVolume, remainingCapacity, purchaseAmount)
 		return RoutineResult{
@@ -181,7 +186,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 			}
 		}
 
-		state.Log("Enable to purchase: " + err.Error())
+		state.Log("Unable to purchase: " + err.Error())
 		return RoutineResult{
 			Stop:       true,
 			StopReason: err.Error(),

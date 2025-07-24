@@ -10,9 +10,16 @@ type GoToJumpGate struct {
 }
 
 func (g GoToJumpGate) Run(state *State) RoutineResult {
+
+	return RoutineResult{Stop: true, StopReason: "System jumping not supported"}
+
 	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 	for _, waypoint := range *waypoints {
 		if waypoint.Type == constant.WaypointTypeJumpGate {
+			fullWp, _ := waypoint.GetFullWaypoint(state.Context)
+			if fullWp.IsUnderConstruction {
+				continue
+			}
 			if waypoint.Symbol == state.Ship.Nav.WaypointSymbol {
 				state.Log("We're at a jump gate, already")
 				return RoutineResult{

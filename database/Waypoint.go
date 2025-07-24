@@ -25,7 +25,10 @@ func (w *Waypoint) Visit() error {
 
 func (w *Waypoint) GetData() entity.WaypointData {
 	wpData := entity.WaypointData{}
-	_ = json.Unmarshal(w.Data, &w)
+	err := json.Unmarshal(w.Data, &wpData)
+	if err != nil {
+		panic(err)
+	}
 	return wpData
 }
 
