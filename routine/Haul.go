@@ -47,6 +47,12 @@ func (h Haul) Run(state *State) RoutineResult {
 
 	if mostShips == nil {
 		state.Log("Couldn't find any not in-transit excavators")
+		if state.Ship.Cargo.Units > 0 {
+			return RoutineResult{
+				SetRoutine:  SellExcessInventory{next: h},
+				WaitSeconds: 10,
+			}
+		}
 		return RoutineResult{
 			WaitSeconds: 60,
 		}
