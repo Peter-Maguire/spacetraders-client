@@ -166,7 +166,9 @@ func (h Haul) Run(state *State) RoutineResult {
 		}
 	}
 
-	return RoutineResult{}
+	return RoutineResult{
+		WaitSeconds: 1,
+	}
 }
 
 func (h Haul) ShouldHaulFrom(state *State, ship *entity.Ship) bool {

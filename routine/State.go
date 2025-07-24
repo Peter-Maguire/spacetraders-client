@@ -3,6 +3,7 @@ package routine
 import (
 	"context"
 	"fmt"
+	"spacetraders/constant"
 	"spacetraders/entity"
 	"spacetraders/ui"
 	"sync"
@@ -49,4 +50,24 @@ func (s *State) FireEvent(event string, data any) {
 		Name: event,
 		Data: data,
 	}
+}
+
+func (s *State) GetShipsWithRole(t constant.ShipRole) []*entity.Ship {
+	ships := make([]*entity.Ship, 0)
+	for _, s := range *s.States {
+		if s.Ship.Registration.Role == t {
+			ships = append(ships, s.Ship)
+		}
+	}
+	return ships
+}
+
+func (s *State) GetShipsWithRoleAtOrGoingToWaypoint(t constant.ShipRole, waypoint entity.Waypoint) []*entity.Ship {
+	ships := make([]*entity.Ship, 0)
+	for _, s := range *s.States {
+		if s.Ship.Registration.Role == t && s.Ship.Nav.WaypointSymbol == waypoint || (s.Ship.Nav.Status == "IN_TRANSIT" && s.Ship.Nav.Route.Destination.Symbol == waypoint) {
+			ships = append(ships, s.Ship)
+		}
+	}
+	return ships
 }

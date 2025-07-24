@@ -68,6 +68,11 @@ func (m MineOres) Run(state *State) RoutineResult {
 			state.FireEvent("surveyExhausted", state.Survey)
 			state.Survey = nil
 			return RoutineResult{}
+		case http.ErrOverExtracted:
+			state.Log("Asteroid Over-extracted")
+			return RoutineResult{
+				SetRoutine: GoToMiningArea{blacklist: []entity.Waypoint{state.Ship.Nav.WaypointSymbol}},
+			}
 		}
 
 		state.Log(fmt.Sprintf("Unknown error: %s", err))

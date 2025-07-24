@@ -21,6 +21,7 @@ const (
 	ErrShipSurveyExpired         ErrorCode = 4221
 	ErrShipSurveyExhausted       ErrorCode = 4224
 	ErrNoWarpDrive               ErrorCode = 4241
+	ErrOverExtracted             ErrorCode = 4253
 	ErrJumpGateUnderConstruction ErrorCode = 4256
 
 	ErrContractTermsMet ErrorCode = 4509

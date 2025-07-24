@@ -56,9 +56,9 @@ func (w *Waypoint) GetShipyardData() *entity.ShipyardStock {
 	return &mData
 }
 
-func GetLeastVisitedWaypointInSystem(system string) *Waypoint {
-	wp := &Waypoint{}
-	db.Order("first_visited ASC").Where("system = ?", system).First(&wp)
+func GetLeastVisitedWaypointsInSystem(system string) []*Waypoint {
+	var wp []*Waypoint
+	db.Order("first_visited ASC").Where("system = ?", system).Find(&wp)
 	return wp
 }
 

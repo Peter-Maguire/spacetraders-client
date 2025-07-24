@@ -40,18 +40,24 @@ func (s Satellite) Run(state *State) RoutineResult {
 		}
 	}
 
+	sats := state.GetShipsWithRole(constant.ShipRoleSatellite)
+	isSatZero := len(sats) > 1 && sats[0].Symbol == state.Ship.Symbol
+
+	if !isSatZero {
+		wps := database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
+		for _, wp := range wps {
+			shipsAtWaypoint := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleSatellite, entity.Waypoint(wp.Waypoint))
+			if len(shipsAtWaypoint) == 0 {
+				return RoutineResult{SetRoutine: NavigateTo{waypoint: entity.Waypoint(wp.Waypoint), next: s}}
+			}
+		}
+	}
+
 	shipToBuy := s.GetShipToBuy(state)
 
 	state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
 
-	shipCost := database.GetShipCost(shipToBuy)
-
-	if shipCost != nil && shipCost.PurchasePrice > state.Agent.Credits {
-		state.Log("We can't buy the ship right now")
-		// TODO: deduplicate this (maybe it's own state?)
-		wp := database.GetLeastVisitedWaypointInSystem(state.Ship.Nav.SystemSymbol)
-		return RoutineResult{SetRoutine: NavigateTo{waypoint: entity.Waypoint(wp.Waypoint), next: s}}
-	}
+	shipCost := database.GetShipCost(shipToBuy, state.Ship.Nav.SystemSymbol)
 
 	if shipCost == nil {
 		state.Log("We aren't aware of any shipyards selling this ship type yet")
@@ -80,6 +86,13 @@ func (s Satellite) Run(state *State) RoutineResult {
 		}
 	}
 
+	if shipCost.Waypoint == "" {
+		fmt.Println(shipCost)
+		return RoutineResult{
+			Stop:       true,
+			StopReason: "ship cost fuck",
+		}
+	}
 	if shipCost.Waypoint != string(state.Ship.Nav.WaypointSymbol) {
 		state.Log("Going to where this ship is cheapest")
 		return RoutineResult{
@@ -114,9 +127,6 @@ func (s Satellite) Run(state *State) RoutineResult {
 	}
 
 	// At this point we should be on the shipyard and waiting, so let's get the next sellComplete event and check there
-
-	wp := database.GetLeastVisitedWaypointInSystem(state.Ship.Nav.SystemSymbol)
-	return RoutineResult{SetRoutine: NavigateTo{waypoint: entity.Waypoint(wp.Waypoint), next: s}}
 
 	state.Log("Waiting for a sell to complete")
 	for {
@@ -165,7 +175,7 @@ func (s Satellite) GetShipToBuy(state *State) string {
 	}
 
 	if shipsOfEachType[constant.ShipRoleSurveyor] == 0 {
-		return "SHIP_PROBE"
+		return "SHIP_SURVEYOR"
 	}
 
 	return "SHIP_MINING_DRONE"

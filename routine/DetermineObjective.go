@@ -42,7 +42,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Registration.Role == constant.ShipRoleCommand && len(state.Haulers) == 0 {
+	if state.Ship.Registration.Role == constant.ShipRoleCommand && len(state.Haulers) < 1 {
 		if state.Contract == nil || state.Contract.Fulfilled {
 			return RoutineResult{SetRoutine: GoToRandomFactionWaypoint{next: NegotiateContract{}}}
 		}
@@ -64,7 +64,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 
 		state.Log(fmt.Sprintf("Hauler number: %d", haulerNumber))
-		if haulerNumber == 0 {
+		if haulerNumber == 0 && len(state.Haulers) > 1 {
 			if state.Contract != nil && state.Contract.Fulfilled == false {
 				for _, deliverable := range state.Contract.Terms.Deliver {
 					if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
@@ -96,9 +96,9 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleSurveyor {
-		//return RoutineResult{
-		//	SetRoutine: GoToMiningArea{GetSurvey{}},
-		//}
+		return RoutineResult{
+			SetRoutine: GoToMiningArea{then: GetSurvey{}},
+		}
 	}
 
 	if state.Ship.IsMiningShip() {
@@ -121,7 +121,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprintf("This type of ship (%s) isn't supported yet", state.Ship.Registration.Role))
 	return RoutineResult{
 		Stop:       true,
-		StopReason: "Unknown Ship Type",
+		StopReason: fmt.Sprintf("Unknown Ship Type %s", state.Ship.Registration.Role),
 	}
 }
 

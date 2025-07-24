@@ -72,9 +72,10 @@ function updateState({ship, http}){
             clone.querySelector(".fuel").innerText = `Fuel: ${sh.fuel.current}/${sh.fuel.capacity}\n`
         }
         if(sh.cargo){
-            clone.querySelector(".inventory").innerText = sh.cargo.inventory.map((cargo)=>{
+            clone.querySelector(".inventory").innerHTML = `Cargo: ${sh.cargo.units}/${sh.cargo.capacity}</br>`
+            clone.querySelector(".inventory").innerHTML += sh.cargo.inventory.map((cargo)=>{
                 return `${cargo.symbol} x${cargo.units}`
-            }).join("\n");
+            }).join("</br>");
         }
 
         container.appendChild(clone);
@@ -236,7 +237,9 @@ function drawMap(){
         let icon = mapIcons[waypoint.waypointData.type] || "?";
         let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
         ctx.fillText(icon, x, y)//, 10 * mapScale, 10 * mapScale)
-        // ctx.fillText(waypoint.waypoint, x+10, y+10)
+        ctx.font = `${mapScale*5}px serif`
+        ctx.fillText(waypoint.waypoint, x-5, y+10)
+        ctx.font = `${mapScale*10}px serif`
     })
 
     shipStates.forEach((ship)=>{

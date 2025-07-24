@@ -26,9 +26,9 @@ func StoreShipCosts(costs *entity.ShipyardStock) {
 	db.Clauses(clause.OnConflict{UpdateAll: true}).Save(output)
 }
 
-func GetShipCost(ship string) *ShipCost {
+func GetShipCost(ship string, system string) *ShipCost {
 	sc := ShipCost{}
-	db.Where("ship_type = ?", ship).Order("purchase_price ASC").First(&sc)
+	db.Where("ship_type = ? AND waypoint LIKE ?", ship, system+"-%").Order("purchase_price ASC").First(&sc)
 	return &sc
 }
 

@@ -9,9 +9,14 @@ import (
 )
 
 type GoToMiningArea struct {
+	then      Routine
+	blacklist []entity.Waypoint
 }
 
 func (g GoToMiningArea) Run(state *State) RoutineResult {
+	if g.then == nil {
+		g.then = MineOres{}
+	}
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
 	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
@@ -27,6 +32,9 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 
 	eligibleWaypoints := make([]entity.WaypointData, 0)
 	for _, waypoint := range waypoints {
+		if g.IsWaypointBlacklisted(waypoint.Symbol) {
+			continue
+		}
 		eligible, score := g.ScoreWaypoint(waypoint, state, waypointData)
 		if !eligible {
 			continue
@@ -36,7 +44,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}
 
 	sort.Slice(eligibleWaypoints, func(i, j int) bool {
-		return waypointScores[waypoints[i].Symbol] > waypointScores[waypoints[j].Symbol]
+		return waypointScores[eligibleWaypoints[i].Symbol] > waypointScores[eligibleWaypoints[j].Symbol]
 	})
 
 	if len(waypointScores) == 0 {
@@ -137,6 +145,14 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 		return false, 0
 	}
 
+	if waypoint.HasTrait("UNSTABLE") {
+		return false, 0
+	}
+
+	if waypoint.HasTrait("CRITICAL_LIMIT") {
+		return false, 0
+	}
+
 	closestDistance := 5000000
 	var closestWaypoint *database.Waypoint
 	for _, dbWaypoint := range waypoints {
@@ -175,6 +191,18 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 	score -= closestDistance
 
 	return true, score
+}
+
+func (g GoToMiningArea) IsWaypointBlacklisted(waypoint entity.Waypoint) bool {
+	if g.blacklist == nil {
+		return false
+	}
+	for _, bl := range g.blacklist {
+		if bl == waypoint {
+			return true
+		}
+	}
+	return false
 }
 
 func (g GoToMiningArea) Name() string {
