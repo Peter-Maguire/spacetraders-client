@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"strings"
@@ -35,6 +36,13 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 		if g.IsWaypointBlacklisted(waypoint.Symbol) {
 			continue
 		}
+		shipsCurrentlyThere := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleExcavator, waypoint.Symbol)
+
+		// More than 9 on an asteroid and bad things happen
+		if len(shipsCurrentlyThere) >= 9 {
+			continue
+		}
+
 		eligible, score := g.ScoreWaypoint(waypoint, state, waypointData)
 		if !eligible {
 			continue
