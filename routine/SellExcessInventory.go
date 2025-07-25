@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"math"
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
@@ -108,7 +109,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	if len(markets) == 0 {
 		state.Log("Could not sell, no markets were found that are selling what we need")
-		// TODO: This should specifically be exploring until it finds a market, then going back to s.next
+		// TODO: This should specifically be exploring until it finds a market, next going back to s.next
 		return RoutineResult{
 			SetRoutine: Explore{
 				marketTargets: sellableItems,
@@ -123,6 +124,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	for _, market := range markets {
 		// Disable other systems for now
 		if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+			fmt.Printf("Skipping %s as it's not in our system %s\n", market.Waypoint, state.Ship.Nav.SystemSymbol)
 			continue
 		}
 		var mop *marketOpportunity
@@ -136,7 +138,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			}
 		}
 
-		// mop does not yet exist, create it then proceed to the calculation
+		// mop does not yet exist, create it next proceed to the calculation
 		if mop == nil {
 			mop = &marketOpportunity{
 				Waypoint:     market.Waypoint,
@@ -159,7 +161,8 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 				// We lost this somehow due to a race condition
 				continue
 			}
-			mop.SalePrice = market.SellCost * slot.Units
+			maxSell := int(math.Max(float64(slot.Units), float64(market.TradeVolume)))
+			mop.SalePrice = market.SellCost * maxSell
 			marketOpportunities = append(marketOpportunities, mop)
 		}
 
@@ -174,12 +177,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if state.Ship.Nav.FlightMode == "DRIFT" {
 			state.Log("No markets in this system available")
 			return RoutineResult{
-				SetRoutine: Explore{
-					marketTargets: sellableItems,
-					oneShot:       true,
-					visitVisited:  true,
-					next:          s,
-				},
+				SetRoutine: Jettison{nextIfSuccessful: s.next, nextIfFailed: GoToRandomFactionWaypoint{next: s}},
 			}
 		} else {
 			state.Log("Trying again in drift mode")
@@ -206,7 +204,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			}
 		}
 
-		// If this market still has items that are not accounted for elsewhere, then we should count this opportunity as sensible
+		// If this market still has items that are not accounted for elsewhere, next we should count this opportunity as sensible
 		if alreadyAccountedFor < len(mop.SellableHere) {
 			sensibleOpportunities = append(sensibleOpportunities, mop)
 			// Add all sellable here to the accounted for items list
@@ -241,7 +239,10 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if sellableSlot == nil {
 			continue
 		}
-		sellResult, err := state.Ship.SellCargo(state.Context, sellableSlot.Symbol, sellableSlot.Units)
+
+		tradeGood := updatedMarketData.GetTradeGood(item)
+		tradeAmount := int(math.Min(float64(tradeGood.TradeVolume), float64(sellableSlot.Units)))
+		sellResult, err := state.Ship.SellCargo(state.Context, sellableSlot.Symbol, tradeAmount)
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
