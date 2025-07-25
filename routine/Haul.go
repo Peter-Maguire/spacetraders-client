@@ -28,11 +28,15 @@ func (h Haul) Run(state *State) RoutineResult {
 
 	shipsPerWaypoint := make(map[entity.Waypoint]int)
 	for _, otherState := range *state.States {
-		if otherState.Ship.Nav.Status == "IN_TRANSIT" || (otherState.Ship.Registration.Role != constant.ShipRoleExcavator && otherState.Ship.Registration.Role != constant.ShipRoleCommand) {
+		if otherState.Ship.Registration.Role != constant.ShipRoleExcavator && otherState.Ship.Registration.Role != constant.ShipRoleCommand {
 			continue
 		}
 
-		shipsPerWaypoint[otherState.Ship.Nav.WaypointSymbol]++
+		if otherState.Ship.Nav.Status == "IN_TRANSIT" {
+			shipsPerWaypoint[otherState.Ship.Nav.Route.Destination.Symbol]++
+		} else {
+			shipsPerWaypoint[otherState.Ship.Nav.WaypointSymbol]++
+		}
 	}
 
 	var mostShips *entity.Waypoint
@@ -163,7 +167,7 @@ func (h Haul) Run(state *State) RoutineResult {
 		}
 	}
 
-	if allAreWaiting {
+	if lowestWaitTime != nil && allAreWaiting {
 		tPlusOne := lowestWaitTime.Add(1 * time.Second)
 		lowestWaitTime = &tPlusOne
 		state.Log("All ships are waiting, so wait until the first one is finished.")
