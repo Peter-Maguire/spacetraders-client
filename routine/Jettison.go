@@ -14,7 +14,7 @@ func (j Jettison) Run(state *State) RoutineResult {
 	hasJettisoned := false
 	state.Log("Cargo is full")
 	for _, slot := range state.Ship.Cargo.Inventory {
-		marketsSelling := database.GetMarketsSelling([]string{slot.Symbol})
+		marketsSelling := database.GetMarketsSellingInSystem([]string{slot.Symbol}, state.Ship.Nav.SystemSymbol)
 
 		if j.IsUseless(slot.Symbol) || len(marketsSelling) == 0 {
 			state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))

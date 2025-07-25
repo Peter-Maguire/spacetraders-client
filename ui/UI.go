@@ -14,12 +14,12 @@ import (
 var upgrader = websocket.Upgrader{}
 
 type WebUI struct {
-	orc Orchestrator
+	st *entity.SpaceTraders
 }
 
-func Init(orc Orchestrator) *WebUI {
+func Init(st *entity.SpaceTraders) *WebUI {
 	webUi := WebUI{
-		orc: orc,
+		st: st,
 	}
 	go broadcastLoop()
 	go webUi.initApi()

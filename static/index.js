@@ -153,18 +153,20 @@ function getCanvasCoords(x, y){
 }
 
 async function updateHeader(){
-    let agent = await fetch("/agent")
+    let agents = await fetch("/agent")
         .then(res => res.json())
 
     let contracts = await fetch("/contracts")
         .then(res => res.json())
 
+    let agent = agents[Object.keys(agents)[0]];
 
     document.getElementById("credits").innerText = agent.credits.toLocaleString()+" credits"
 
      if(contracts){
-         const deliverable = contracts.terms.deliver[0];
-         document.getElementById("contract").innerText = `${contracts.type}: ${deliverable.unitsFulfilled}/${deliverable.unitsRequired} ${deliverable.tradeSymbol} for ${(contracts.terms.payment.onAccepted+contracts.terms.payment.onFulfilled).toLocaleString()}`
+         let contract = contracts[Object.keys(contracts)[0]];
+         const deliverable = contract.terms.deliver[0];
+         document.getElementById("contract").innerText = `${contract.type}: ${deliverable.unitsFulfilled}/${deliverable.unitsRequired} ${deliverable.tradeSymbol} for ${(contract.terms.payment.onAccepted+contract.terms.payment.onFulfilled).toLocaleString()}`
      }
 }
 

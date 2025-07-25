@@ -35,7 +35,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		_ = state.Ship.SetFlightMode(state.Context, "CRUISE")
 	}
 
-	// TODO: satellite should explore until it's explored the entire system then go to Refresh Markets (rotate through all the markets refreshing each)
+	// TODO: satellite should explore until it's explored the entire system next go to Refresh Markets (rotate through all the markets refreshing each)
 	if /*state.Ship.Registration.Role == "COMMAND" ||*/ state.Ship.Registration.Role == constant.ShipRoleSatellite {
 		return RoutineResult{
 			SetRoutine: Satellite{},
@@ -96,8 +96,10 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleSurveyor {
+		rout := GoToMiningArea{}
+		rout.next = GetSurvey{next: Explore{next: GoToRandomFactionWaypoint{next: rout}}}
 		return RoutineResult{
-			SetRoutine: GoToMiningArea{then: GetSurvey{}},
+			SetRoutine: rout,
 		}
 	}
 

@@ -43,14 +43,24 @@ var (
 
 func main() {
 
+	st := entity.SpaceTraders{}
 	serverStatus, _ := entity.GetServerStatus()
 	fmt.Printf("SpaceTraders version %s\n", serverStatus.Version)
 	fmt.Printf("%s\n", serverStatus.Status)
-	fmt.Printf("Next Reset: %s\n", serverStatus.ResetDate)
+	fmt.Printf("Next Reset: %s\n", serverStatus.ServerResets.Next)
+
+	st.ServerStart, _ = time.Parse(time.DateOnly, serverStatus.ResetDate)
+	st.ServerEnd, _ = time.Parse(time.RFC3339, serverStatus.ServerResets.Next)
 
 	if os.Getenv("TOKEN") == "" {
 		fmt.Println("Token not provided")
 		return
+	}
+
+	enableUi = os.Getenv("DISABLE_UI") != "1"
+	if enableUi {
+		fmt.Println("Starting UI...")
+		go ui.Init(&st)
 	}
 
 	fmt.Println("Starting Database...")
@@ -62,14 +72,11 @@ func main() {
 	fmt.Println("Starting Orchestrators...")
 	tokens := strings.Split(os.Getenv("TOKEN"), ",")
 	orcs = make([]*orchestrator.Orchestrator, len(tokens))
+	st.Orchestrators = make([]entity.Orchestrator, len(tokens))
 	for i, token := range tokens {
-		orcs[i] = orchestrator.Init(token)
-	}
-
-	enableUi = os.Getenv("DISABLE_UI") != "1"
-	if enableUi {
-		fmt.Println("Starting UI...")
-		go ui.Init(orcs[0])
+		orc := orchestrator.Init(token)
+		orcs[i] = orc
+		st.Orchestrators[i] = orc
 	}
 
 	if enableUi {

@@ -65,7 +65,7 @@ func (s *State) GetShipsWithRole(t constant.ShipRole) []*entity.Ship {
 func (s *State) GetShipsWithRoleAtOrGoingToWaypoint(t constant.ShipRole, waypoint entity.Waypoint) []*entity.Ship {
 	ships := make([]*entity.Ship, 0)
 	for _, s := range *s.States {
-		if s.Ship.Registration.Role == t && s.Ship.Nav.WaypointSymbol == waypoint || (s.Ship.Nav.Status == "IN_TRANSIT" && s.Ship.Nav.Route.Destination.Symbol == waypoint) {
+		if s.Ship.Registration.Role == t && (s.Ship.Nav.WaypointSymbol == waypoint || (s.Ship.Nav.Status == "IN_TRANSIT" && s.Ship.Nav.Route.Destination.Symbol == waypoint)) {
 			ships = append(ships, s.Ship)
 		}
 	}

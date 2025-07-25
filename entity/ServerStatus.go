@@ -7,10 +7,16 @@ import (
 )
 
 type ServerStatus struct {
-	Status      string `json:"status"`
-	Version     string `json:"version"`
-	ResetDate   string `json:"resetDate"`
-	Description string `json:"description"`
+	Status       string       `json:"status"`
+	Version      string       `json:"version"`
+	ResetDate    string       `json:"resetDate"`
+	ServerResets ServerResets `json:"serverResets"`
+	Description  string       `json:"description"`
+}
+
+type ServerResets struct {
+	Next      string `json:"next"`
+	Frequency string `json:"frequency"`
 }
 
 func GetServerStatus() (*ServerStatus, error) {

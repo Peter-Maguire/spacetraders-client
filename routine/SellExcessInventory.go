@@ -241,6 +241,10 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		}
 
 		tradeGood := updatedMarketData.GetTradeGood(item)
+		if tradeGood == nil {
+			state.Log("no trade good :(" + item)
+			continue
+		}
 		tradeAmount := int(math.Min(float64(tradeGood.TradeVolume), float64(sellableSlot.Units)))
 		sellResult, err := state.Ship.SellCargo(state.Context, sellableSlot.Symbol, tradeAmount)
 		if err != nil {

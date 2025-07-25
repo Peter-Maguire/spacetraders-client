@@ -43,6 +43,17 @@ var (
 
 func Init(token string) *Orchestrator {
 
+	//TODO:
+	// There should be an overall goal for stages of development which determines the actions of each type
+	// In no particular order, these are the various stages I see
+	// 1. Construct jump gate (Mining, fulfilling contracts and purchasing materials to build the jump gate)
+	// 2. Expand fleet (Mining and fulfilling contracts in order to have enough ships to make money)
+	// 3. Begin charting (Start charting uncharted waypoints in other systems)
+	// 4. Begin trading  (Replace mining fleet with trading fleet)
+	// ALSO:
+	// - It would be great to be able to set specific parameters (e.g how many ships of each type to buy, wait times, etc)
+	//   between different agents, and compare the outcomes for each agent per reset
+
 	ctx := context.WithValue(context.Background(), "token", token)
 
 	shipFilter := os.Getenv("SHIP_FILTER")

@@ -1,18 +1,14 @@
 package routine
 
+import "spacetraders/constant"
+
 type FullWait struct {
 }
 
 func (f FullWait) Run(state *State) RoutineResult {
 
 	// TODO: wait for hauler to come back if going to the market and back would take longer than the hauler is going to take to come back
-	hasHauler := false
-	for _, hauler := range state.Haulers {
-		if hauler.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol && hauler.Nav.Status != "IN_TRANSIT" {
-			hasHauler = true
-			break
-		}
-	}
+	hasHauler := len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleHauler, state.Ship.Nav.WaypointSymbol)) > 0
 
 	if !hasHauler {
 		state.Log("We have no hauler here")
