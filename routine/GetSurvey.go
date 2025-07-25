@@ -9,15 +9,18 @@ import (
 )
 
 type GetSurvey struct {
+	next Routine
 }
 
 func (g GetSurvey) Run(state *State) RoutineResult {
-	state.Survey = nil
+	if g.next == nil {
+		g.next = MineOres{}
+	}
 
 	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") || state.Survey != nil || state.Contract == nil {
 		state.Log("No surveyor mount or survey exists")
 		return RoutineResult{
-			SetRoutine: MineOres{},
+			SetRoutine: g.next,
 		}
 	}
 
@@ -64,7 +67,7 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 	ui.MainLog(fmt.Sprintf("Waiting %d seconds", surveyResult.Cooldown.RemainingSeconds))
 
 	return RoutineResult{
-		SetRoutine: MineOres{},
+		SetRoutine: g.next,
 		WaitUntil:  &surveyResult.Cooldown.Expiration,
 	}
 }

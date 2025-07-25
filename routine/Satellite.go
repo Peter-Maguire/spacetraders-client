@@ -11,9 +11,12 @@ type Satellite struct{}
 
 func (s Satellite) Run(state *State) RoutineResult {
 
-	/* TODO: If there is more than one satellite, each should go to a different shipyard or market
-	*  to periodically update the prices and go to the next one
-	* e.g if there are 10 markets+shipyards and 2 satellites, they should each take the 5 closest ones and go between them one by one
+	/* TODO:
+	*    If there is more than one satellite, each should go to a different shipyard or market
+	*    to periodically update the prices and go to the next one
+	*    e.g if there are 10 markets+shipyards and 2 satellites, they should each take the 5 closest ones and go between them one by one
+	*    EDIT: waypoint data should probably be edited to have "times visited" so that they always go to the closest waypoint with
+	*    less visits than the one they're currently on. It's also worth checking if there's any point to me going to waypoints that have no market or shipyard.
 	 */
 
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)

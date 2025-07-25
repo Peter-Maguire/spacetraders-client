@@ -10,13 +10,13 @@ import (
 )
 
 type GoToMiningArea struct {
-	then      Routine
+	next      Routine
 	blacklist []entity.Waypoint
 }
 
 func (g GoToMiningArea) Run(state *State) RoutineResult {
-	if g.then == nil {
-		g.then = MineOres{}
+	if g.next == nil {
+		g.next = MineOres{}
 	}
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
@@ -36,6 +36,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 		if g.IsWaypointBlacklisted(waypoint.Symbol) {
 			continue
 		}
+		eligible, score := g.ScoreWaypoint(waypoint, waypointData)
 		shipsCurrentlyThere := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleExcavator, waypoint.Symbol)
 
 		// More than 9 on an asteroid and bad things happen
@@ -43,7 +44,6 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 			continue
 		}
 
-		eligible, score := g.ScoreWaypoint(waypoint, state, waypointData)
 		if !eligible {
 			continue
 		}
@@ -70,7 +70,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 				}
 				if state.Ship.Cargo.Units > 0 {
 					state.Log("Unable to find anywhere to mine")
-					return RoutineResult{SetRoutine: SellExcessInventory{next: Explore{}}}
+					return RoutineResult{SetRoutine: SellExcessInventory{next: g}}
 				}
 
 				return RoutineResult{
@@ -97,7 +97,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 
 	return RoutineResult{SetRoutine: NavigateTo{
 		waypoint: bestWaypoint.Symbol,
-		next:     MineOres{},
+		next:     g.next,
 	}}
 
 	//if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
@@ -115,7 +115,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	//}
 }
 
-func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State, waypoints []*database.Waypoint) (bool, int) {
+func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []*database.Waypoint) (bool, int) {
 	score := 0
 	if waypoint.HasTrait("PRECIOUS_METAL_DEPOSITS") {
 		score += 15
@@ -186,14 +186,15 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, state *State
 
 		wpData := dbWaypoint.GetData()
 		distance := waypoint.GetDistanceFrom(wpData.LimitedWaypointData)
-		if distance < closestDistance {
+		if closestWaypoint == nil || distance < closestDistance {
 			closestDistance = distance
 			closestWaypoint = dbWaypoint
 		}
 	}
 
 	if closestWaypoint == nil {
-		return false, score
+		fmt.Printf("No closest waypoint found for %s\n", waypoint.Symbol)
+		return true, score - 2000
 	}
 
 	score -= closestDistance
@@ -214,5 +215,8 @@ func (g GoToMiningArea) IsWaypointBlacklisted(waypoint entity.Waypoint) bool {
 }
 
 func (g GoToMiningArea) Name() string {
+	if g.next != nil {
+		return fmt.Sprintf("Go To Mining Area -> %s", g.next.Name())
+	}
 	return "Go To Mining Area"
 }

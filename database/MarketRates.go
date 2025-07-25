@@ -63,6 +63,15 @@ func GetMarketsSelling(items []string) []MarketRates {
 	return rates
 }
 
+func GetMarketsSellingInSystem(items []string, system string) []MarketRates {
+	var rates []MarketRates
+	tx := db.Where("good IN ? AND waypoint LIKE ?", items, system+"-%").Find(&rates)
+	if tx.Error != nil && tx.Error != gorm.ErrRecordNotFound {
+		fmt.Println("GetMarketsSelling error", tx.Error)
+	}
+	return rates
+}
+
 func GetMarkets() []MarketRates {
 	var rates []MarketRates
 	db.Find(&rates)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"spacetraders/database"
+	"spacetraders/entity"
 )
 
 func (wu *WebUI) initApi() {
@@ -17,12 +18,23 @@ func (wu *WebUI) initApi() {
 	http.HandleFunc("/agent", func(writer http.ResponseWriter, request *http.Request) {
 		encoder := json.NewEncoder(writer)
 
-		encoder.Encode(wu.orc.GetAgent())
+		agents := make(map[string]*entity.Agent)
+		for _, orc := range wu.st.Orchestrators {
+			agent := orc.GetAgent()
+			agents[agent.Symbol] = agent
+		}
+		encoder.Encode(agents)
 	})
 
 	http.HandleFunc("/contracts", func(writer http.ResponseWriter, request *http.Request) {
 		encoder := json.NewEncoder(writer)
 
-		encoder.Encode(wu.orc.GetContract())
+		contracts := make(map[string]*entity.Contract)
+		for _, orc := range wu.st.Orchestrators {
+			agent := orc.GetAgent()
+			contract := orc.GetContract()
+			contracts[agent.Symbol] = contract
+		}
+		encoder.Encode(contracts)
 	})
 }
