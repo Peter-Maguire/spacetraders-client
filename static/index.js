@@ -1,6 +1,34 @@
-const logMessages = [];
+let mapXOffset = 0;
+let mapYOffset = 0;
+let mapScale = 1;
+let mapPanSpeed = 1;
+let mapZoomSpeed = 0.001;
+
+const mapIcons = {
+    "PLANET": "🌍",
+    "GAS_GIANT": "☀️",
+    "MOON": "🌕",
+    "ORBITAL_STATION": "🛰️",
+    "JUMP_GATE": "🚪",
+    "ASTEROID": "*",
+    "ENGINEERED_ASTEROID": "+",
+    "ASTEROID_BASE": "🏢",
+    "NEBULA": "💨",
+    "DEBRIS_FIELD": "::",
+    "GRAVITY_WELL": "🔽",
+    "ARTIFICIAL_GRAVITY_WELL": "⏬",
+    "FUEL_STATION": "⛽",
+}
 
 let headerUpdateTimeout;
+const logMessages = [];
+
+let shipStates = [];
+let waypoints = [];
+let mapSystem = "X1-PS43";
+let viewingMap = true;
+let agents = [];
+let currentAgent = "AGENT1";
 
 function connect() {
 
@@ -35,11 +63,6 @@ function connect() {
 
 connect();
 
-
-let shipStates = [];
-let waypoints = [];
-
-
 function updateState({ship, http}){
     const ships = document.getElementById("shipState");
     const requests = document.getElementById("httpCalls");
@@ -48,8 +71,9 @@ function updateState({ship, http}){
 
     shipStates = ship;
     drawMap();
-
+    ships.innerText = "";
     ship.forEach((sh)=>{
+        if(!sh.name.startsWith(currentAgent))return;
         const clone = shipTemplate.content.cloneNode(true);
         const container = document.createElement("div")
         container.classList.add("ship", sh.name);
@@ -79,10 +103,6 @@ function updateState({ship, http}){
         }
 
         container.appendChild(clone);
-        const currentShip = ships.querySelector(`.${sh.name}`);
-        if(currentShip) {
-            currentShip.remove()
-        }
         ships.appendChild(container);
 
 
@@ -118,27 +138,7 @@ function parseTime(asleepUntil){
     return dDisplay + hDisplay + mDisplay + sDisplay;
 }
 
-let mapXOffset = 0;
-let mapYOffset = 0;
-let mapScale = 1;
-let mapPanSpeed = 1;
-let mapZoomSpeed = 0.001;
 
-const mapIcons = {
-    "PLANET": "🌍",
-    "GAS_GIANT": "☀️",
-    "MOON": "🌕",
-    "ORBITAL_STATION": "🛰️",
-    "JUMP_GATE": "🚪",
-    "ASTEROID": "*",
-    "ENGINEERED_ASTEROID": "+",
-    "ASTEROID_BASE": "🏢",
-    "NEBULA": "💨",
-    "DEBRIS_FIELD": "::",
-    "GRAVITY_WELL": "🔽",
-    "ARTIFICIAL_GRAVITY_WELL": "⏬",
-    "FUEL_STATION": "⛽",
-}
 
 
 async function populateMap(){
@@ -153,18 +153,33 @@ function getCanvasCoords(x, y){
 }
 
 async function updateHeader(){
-    let agents = await fetch("/agent")
+    agents = await fetch("/agent")
         .then(res => res.json())
 
     let contracts = await fetch("/contracts")
         .then(res => res.json())
 
-    let agent = agents[Object.keys(agents)[0]];
+    let agent = agents[currentAgent];
+
+    document.getElementById("tabList").textContent = "";
+    Object.keys(agents).forEach((a)=>{
+        let d = document.createElement("span");
+        d.classList.add("tab");
+        d.innerText = a;
+        if(a === currentAgent){
+            d.classList.add("active");
+        }
+        d.onclick = ()=>{
+            currentAgent = a;
+            updateHeader();
+        }
+        document.getElementById("tabList").appendChild(d);
+    })
 
     document.getElementById("credits").innerText = agent.credits.toLocaleString()+" credits"
 
      if(contracts){
-         let contract = contracts[Object.keys(contracts)[0]];
+         let contract = contracts[currentAgent];
          const deliverable = contract.terms.deliver[0];
          document.getElementById("contract").innerText = `${contract.type}: ${deliverable.unitsFulfilled}/${deliverable.unitsRequired} ${deliverable.tradeSymbol} for ${(contract.terms.payment.onAccepted+contract.terms.payment.onFulfilled).toLocaleString()}`
      }
@@ -222,8 +237,6 @@ function getWaypoint(symbol){
     return waypoints.find((w)=>w.waypoint === symbol);
 }
 
-let mapSystem = "X1-PS43";
-
 function drawMap(){
     if(!viewingMap)return;
     let canvas = document.getElementById("mapCanvas");
@@ -245,6 +258,7 @@ function drawMap(){
     })
 
     shipStates.forEach((ship)=>{
+        if(!ship.name.startsWith(currentAgent))return;
         if(ship.nav.systemSymbol !== mapSystem)return;
         if(ship.nav.status !== "IN_TRANSIT") {
             const waypoint = getWaypoint(ship.nav.waypointSymbol);
@@ -305,7 +319,7 @@ function interpolatePoint(x1, y1, x2, y2, t) {
     return [ x, y ];
 }
 
-let viewingMap = true;
+
 function toggleViewMap() {
     viewingMap = !viewingMap;
     document.getElementById("shipState").style.display = viewingMap ? "none" : null;

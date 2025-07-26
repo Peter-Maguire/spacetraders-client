@@ -10,28 +10,30 @@
     <link rel="preload" as="image" href="img/ships/EXCAVATOR.png">
 </head>
 <body>
-
-    <div id="header">
-        <span id="credits"></span>
-        <span id="contract"></span>
+    <div id="tabList">
     </div>
-    <div id="lower">
-        <div id="log">
-
+    <div id="tabContainer">
+        <div id="header">
+            <span id="credits"></span>
+            <span id="contract"></span>
         </div>
-        <div id="httpCalls" class="inner">
+        <div id="lower">
+            <div id="log">
 
+            </div>
+            <div id="httpCalls" class="inner">
+
+            </div>
+            <button name="View Map" onclick="toggleViewMap()">View Map</button>
         </div>
-        <button name="View Map" onclick="toggleViewMap()">View Map</button>
-    </div>
+        <div id="container">
+            <div id="shipState" class="inner">
 
-    <div id="container">
-        <div id="shipState" class="inner">
+            </div>
+            <div id="map" class="inner">
+                <canvas id="mapCanvas"/>
 
-        </div>
-        <div id="map" class="inner">
-            <canvas id="mapCanvas"/>
-
+            </div>
         </div>
     </div>
     <template id="shipTemplate">

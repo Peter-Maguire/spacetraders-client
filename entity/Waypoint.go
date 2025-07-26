@@ -33,3 +33,7 @@ func (w *Waypoint) GetShipyard(ctx context.Context) (*ShipyardStock, *http.HttpE
 func (w *Waypoint) GetWaypointData(ctx context.Context) (*WaypointData, *http.HttpError) {
 	return http.Request[WaypointData](ctx, "GET", fmt.Sprintf("systems/%s/waypoints/%s", w.GetSystemName(), *w), nil)
 }
+
+func (w *Waypoint) GetConstructionSite(ctx context.Context) (*ConstructionSite, *http.HttpError) {
+	return http.Request[ConstructionSite](ctx, "GET", fmt.Sprintf("systems/%s/waypoints/%s/construction", w.GetSystemName(), *w), nil)
+}

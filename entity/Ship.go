@@ -253,6 +253,10 @@ func (s *Ship) Refine(ctx context.Context, produce string) (*ShipRefineResult, *
 	return result, err
 }
 
+func (s *Ship) IsAtWaypoint(wp Waypoint) bool {
+	return s.Nav.WaypointSymbol == wp
+}
+
 type ShipNav struct {
 	SystemSymbol   string   `json:"systemSymbol"`
 	WaypointSymbol Waypoint `json:"waypointSymbol"`
