@@ -21,6 +21,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
 	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+	database.LogWaypoints(waypointsPtr)
 	waypoints := *waypointsPtr
 	waypointScores := make(map[entity.Waypoint]int)
 

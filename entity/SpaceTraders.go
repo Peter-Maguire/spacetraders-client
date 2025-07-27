@@ -3,9 +3,9 @@ package entity
 import "time"
 
 type SpaceTraders struct {
-	ServerStart   time.Time
-	ServerEnd     time.Time
-	Orchestrators []Orchestrator
+	ServerStart   time.Time      `json:"start"`
+	ServerEnd     time.Time      `json:"end"`
+	Orchestrators []Orchestrator `json:"-"`
 }
 
 type Orchestrator interface {

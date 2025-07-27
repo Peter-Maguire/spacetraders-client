@@ -37,4 +37,18 @@ func (wu *WebUI) initApi() {
 		}
 		encoder.Encode(contracts)
 	})
+
+	http.HandleFunc("/status", func(writer http.ResponseWriter, request *http.Request) {
+		encoder := json.NewEncoder(writer)
+
+		encoder.Encode(wu.st)
+	})
+
+	http.HandleFunc("/systems", func(writer http.ResponseWriter, request *http.Request) {
+		encoder := json.NewEncoder(writer)
+
+		systems := database.GetSystems()
+
+		encoder.Encode(systems)
+	})
 }

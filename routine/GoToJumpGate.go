@@ -32,7 +32,7 @@ func (g GoToJumpGate) Run(state *State) RoutineResult {
 	}
 	state.Log("Jump gate is under construction")
 
-	return RoutineResult{SetRoutine: BuildJumpGate{}}
+	return RoutineResult{SetRoutine: BuildJumpGate{next: g.next}}
 }
 
 func (g GoToJumpGate) Name() string {

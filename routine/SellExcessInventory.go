@@ -23,7 +23,8 @@ var (
 )
 
 type SellExcessInventory struct {
-	next Routine
+	next             Routine
+	skipOtherSystems bool
 }
 
 type marketOpportunity struct {
@@ -80,6 +81,11 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if slot.Symbol == "ANTIMATTER" || slot.Symbol == targetItem {
 			continue
 		}
+
+		if state.ConstructionSite != nil && !state.ConstructionSite.IsComplete && state.ConstructionSite.GetMaterial(slot.Symbol) != nil && !state.ConstructionSite.GetMaterial(slot.Symbol).IsComplete() {
+			continue
+		}
+
 		if util.IsRefineable(slot.Symbol) {
 			sellableRefineableItems = append(sellableRefineableItems, slot.Symbol)
 		} else {
@@ -93,8 +99,25 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	}
 
 	if len(sellableItems) == 0 && cargo.IsFull() {
+		if state.Contract != nil && cargo.GetSlotWithItem(targetItem) != nil {
+			return RoutineResult{
+				SetRoutine: DeliverContractItem{item: targetItem, next: s.next},
+			}
+		}
+
+		if state.ConstructionSite != nil && !state.ConstructionSite.IsComplete {
+			for _, cargo := range inventory {
+				if state.ConstructionSite.GetMaterial(cargo.Symbol) != nil {
+					return RoutineResult{
+						SetRoutine: DeliverConstructionSiteItem{next: s.next},
+					}
+				}
+			}
+		}
+
 		return RoutineResult{
-			SetRoutine: DeliverContractItem{item: targetItem, next: s.next},
+			Stop:       true,
+			StopReason: "Full with no sellables, no contract items and no construction items",
 		}
 	}
 
@@ -122,8 +145,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	marketOpportunities := make([]*marketOpportunity, 0)
 
 	for _, market := range markets {
-		// Disable other systems for now
-		if market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+		if !s.skipOtherSystems && market.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
 			fmt.Printf("Skipping %s as it's not in our system %s\n", market.Waypoint, state.Ship.Nav.SystemSymbol)
 			continue
 		}
@@ -176,8 +198,9 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	if len(marketOpportunities) == 0 {
 		if state.Ship.Nav.FlightMode == "DRIFT" {
 			state.Log("No markets in this system available")
+			s.skipOtherSystems = false
 			return RoutineResult{
-				SetRoutine: Jettison{nextIfSuccessful: s.next, nextIfFailed: GoToRandomFactionWaypoint{next: s}},
+				SetRoutine: Jettison{nextIfSuccessful: s.next, nextIfFailed: BuildJumpGate{next: s}},
 			}
 		} else {
 			state.Log("Trying again in drift mode")
@@ -220,6 +243,15 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	// Travel to the market if it's not the waypoint we're currently at
 	if sensibleOpportunities[0].Waypoint != state.Ship.Nav.WaypointSymbol {
 		state.Log(fmt.Sprintf("Going to available market at %s", sensibleOpportunities[0].Waypoint))
+		system, _ := entity.GetSystem(state.Context, state.Ship.Nav.SystemSymbol)
+		waypoints, _ := system.GetWaypoints(state.Context)
+		if !util.SystemHasBuiltJumpGate(waypoints) {
+			state.Log("No built jump gates")
+			s.skipOtherSystems = true
+			return RoutineResult{
+				SetRoutine: s,
+			}
+		}
 		return RoutineResult{
 			SetRoutine: NavigateTo{
 				waypoint: sensibleOpportunities[0].Waypoint,

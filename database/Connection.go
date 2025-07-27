@@ -40,3 +40,13 @@ func Init() {
 		os.Exit(1)
 	}
 }
+
+func Reset() {
+	fmt.Println("Resetting database")
+	db.Where("1 = 1").Delete(&MarketRates{})
+	db.Where("1 = 1").Delete(&MarketExchange{})
+	db.Where("1 = 1").Delete(&ShipCost{})
+	db.Where("1 = 1").Delete(&Survey{})
+	db.Where("1 = 1").Delete(&System{})
+	db.Where("1 = 1").Delete(&Waypoint{})
+}

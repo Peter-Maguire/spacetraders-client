@@ -3,6 +3,7 @@ package util
 import (
 	"math"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/entity"
 )
 
@@ -16,4 +17,13 @@ func SortWaypointsClosestTo(waypoints []*entity.WaypointData, waypoint entity.Li
 		d2 := waypoints[j].GetDistanceFrom(waypoint)
 		return d1 < d2
 	})
+}
+
+func SystemHasBuiltJumpGate(waypoints *[]entity.WaypointData) bool {
+	for _, waypoint := range *waypoints {
+		if waypoint.Type == constant.WaypointTypeJumpGate && !waypoint.IsUnderConstruction {
+			return true
+		}
+	}
+	return false
 }

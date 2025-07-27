@@ -77,6 +77,12 @@ func VisitSystem(data *entity.System, waypoints *[]entity.WaypointData) {
 	db.Model(sys).Updates(sys)
 }
 
+func GetSystems() []System {
+	var systems []System
+	db.Find(&systems)
+	return systems
+}
+
 func GetUnvisitedSystems() []System {
 	var systems []System
 	tx := db.Where("visited = false").Order("page ASC").Find(&systems)

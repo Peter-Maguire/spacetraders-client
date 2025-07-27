@@ -55,6 +55,10 @@ function connect() {
         ws.close();
     }
 
+    ws.onopen = function () {
+        updateHeader();
+    }
+
     ws.onclose = function () {
         updateLog("Connection lost... Reconnecting...")
         setTimeout(connect, 1000)
@@ -138,12 +142,48 @@ function parseTime(asleepUntil){
     return dDisplay + hDisplay + mDisplay + sDisplay;
 }
 
+function shortParseTime(time){
+    let seconds = time/1000;
+
+    let d = Math.floor(seconds / (3600*24));
+    let h = Math.floor(seconds % (3600*24) / 3600);
+    let m = Math.floor(seconds % 3600 / 60);
+    let s = Math.floor(seconds % 60);
+
+    if(d > 0)
+        return d + (d === 1 ? " day" : " days");
+    if(h > 0)
+        return h + (h === 1 ? " hour" : " hours");
+    if(m > 0)
+        return m + (m === 1 ? " minute" : " minutes");
+    if(s > 0)
+        return s + (s === 1 ? " second" : " seconds");
+    return time;
+}
+
+
 
 
 
 async function populateMap(){
     let req = await fetch("/waypoints")
         .then(res => res.json())
+
+
+    let systemDropdown = document.getElementById("selectSystem");
+    systemDropdown.innerText = "";
+    systemDropdown.value = mapSystem;
+    systemDropdown.onchange = (e)=>{console.log(e.target.value); mapSystem = e.target.value; drawMap();}
+    let systems = [];
+    req.map((wp)=>!systems.includes(wp.system) && systems.push(wp.system));
+    systems.forEach(system => {
+        let option = document.createElement("option");
+        option.text = system;
+        option.value = system;
+        systemDropdown.appendChild(option);
+    })
+
+
     waypoints = req;
 }
 
@@ -155,9 +195,15 @@ function getCanvasCoords(x, y){
 async function updateHeader(){
     agents = await fetch("/agent")
         .then(res => res.json())
+        .catch(()=>null);
+
+    let serverStatus = await fetch("/status")
+        .then(res=>res.json())
+        .catch(()=>null);
 
     let contracts = await fetch("/contracts")
         .then(res => res.json())
+        .catch(()=>null);
 
     let agent = agents[currentAgent];
 
@@ -183,7 +229,18 @@ async function updateHeader(){
          const deliverable = contract.terms.deliver[0];
          document.getElementById("contract").innerText = `${contract.type}: ${deliverable.unitsFulfilled}/${deliverable.unitsRequired} ${deliverable.tradeSymbol} for ${(contract.terms.payment.onAccepted+contract.terms.payment.onFulfilled).toLocaleString()}`
      }
+
+     if(serverStatus){
+        let now = new Date();
+        let timeSinceStart = Math.floor((now-(new Date(serverStatus.start)))/8.64e+7);
+        let timeLeft = shortParseTime(new Date(serverStatus.end)-now)
+        document.getElementById("status").innerText = `Day ${timeSinceStart} (${timeLeft} left)`;
+     }
+
+
 }
+
+
 
 async function initMap(){
     await populateMap()

@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"spacetraders/constant"
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/util"
 )
@@ -31,20 +32,12 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 			SetRoutine: b.next,
 		}
 	}
-
-	// TODO: get from database
-	wpData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
+	
+	wpData := database.GetWaypoint(state.Ship.Nav.WaypointSymbol).GetData()
 
 	util.SortWaypointsClosestTo(jumpGatesUnderConstruction, wpData.LimitedWaypointData)
 
 	closestJumpGate := jumpGatesUnderConstruction[0]
-	if !state.Ship.IsAtWaypoint(closestJumpGate.Symbol) {
-		state.Log("Going to under construction jump gate")
-		return RoutineResult{
-			SetRoutine: NavigateTo{waypoint: closestJumpGate.Symbol, next: b},
-		}
-	}
-
 	constructionSite, _ := closestJumpGate.Symbol.GetConstructionSite(state.Context)
 
 	for _, material := range constructionSite.Materials {
@@ -60,7 +53,7 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 	}
 
 	return RoutineResult{
-		SetRoutine: MineOres{},
+		SetRoutine: ProcureConstructionSiteItem{next: b.next},
 	}
 }
 

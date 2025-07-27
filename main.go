@@ -53,7 +53,10 @@ func main() {
 	st.ServerEnd, _ = time.Parse(time.RFC3339, serverStatus.ServerResets.Next)
 
 	if os.Getenv("TOKEN") == "" {
-		fmt.Println("Token not provided")
+		fmt.Println("Resetting...")
+		time.Sleep(10 * time.Second)
+		database.Init()
+		database.Reset()
 		return
 	}
 
