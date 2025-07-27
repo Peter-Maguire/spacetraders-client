@@ -245,7 +245,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			state.Log("no trade good :(" + item)
 			continue
 		}
-		tradeAmount := int(math.Min(float64(tradeGood.TradeVolume), float64(sellableSlot.Units)))
+		tradeAmount := min(tradeGood.TradeVolume, sellableSlot.Units)
 		sellResult, err := state.Ship.SellCargo(state.Context, sellableSlot.Symbol, tradeAmount)
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())

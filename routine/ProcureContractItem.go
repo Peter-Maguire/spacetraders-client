@@ -2,7 +2,6 @@ package routine
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"spacetraders/database"
 	"spacetraders/entity"
@@ -108,7 +107,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 			}
 			systemDistance := util.CalcDistance(currentSystem.X, currentSystem.Y, market.SystemX, market.SystemY)
 			waypointDistance := util.CalcDistance(lw.X, lw.Y, market.WaypointX, market.WaypointY)
-			roundTrips := int(math.Min(1, float64(unitsRemaining/state.Ship.Cargo.Capacity)))
+			roundTrips := min(1, unitsRemaining/state.Ship.Cargo.Capacity)
 			travelCost := (util.GetFuelCost(systemDistance, state.Ship.Nav.FlightMode) + util.GetFuelCost(waypointDistance, state.Ship.Nav.FlightMode)) * roundTrips
 			saleCost := market.BuyCost * unitsRemaining
 			marketCosts[market.Waypoint] = travelCost + saleCost
@@ -155,10 +154,10 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	}
 
 	// Either the amount we can fit in our inventory, the trade volume, the amount we can afford or the amount we need - whichever is smaller
-	amountPurchasable := float64(state.Agent.Credits / tradeGood.PurchasePrice)
-	tradeVolume := float64(tradeGood.TradeVolume)
-	remainingCapacity := float64(state.Ship.Cargo.GetRemainingCapacity())
-	purchaseAmount := int(math.Min(math.Min(amountPurchasable, tradeVolume), math.Min(float64(unitsRemaining), remainingCapacity)))
+	amountPurchasable := state.Agent.Credits / tradeGood.PurchasePrice
+	tradeVolume := tradeGood.TradeVolume
+	remainingCapacity := state.Ship.Cargo.GetRemainingCapacity()
+	purchaseAmount := min(amountPurchasable, tradeVolume, unitsRemaining, remainingCapacity)
 
 	if purchaseAmount <= 0 {
 		state.Log("We're not able to purchase anything right now")

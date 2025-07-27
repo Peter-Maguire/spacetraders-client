@@ -63,6 +63,7 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 	//	Stop:       true,
 	//	StopReason: "No more good waypoints left in this system",
 	//}
+
 	for _, waypoint := range *waypoints {
 		if waypoint.Type == constant.WaypointTypeJumpGate {
 			if waypoint.Symbol == state.Ship.Nav.WaypointSymbol {
@@ -73,23 +74,24 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 				}
 			}
 			state.Log("Going to jump gate")
-			return RoutineResult{
-				SetRoutine: NavigateTo{waypoint: waypoint.Symbol, next: f},
-				//WaitUntil:  &cooldownUntil,
-			}
 		}
 	}
-	if state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 2 {
-		return RoutineResult{
-			SetRoutine: FindNewSystem{next: f},
-			//WaitUntil:  &cooldownUntil,
-		}
-	}
-	state.Log("No jump gate either, not sure how we got here. May as well go mining.")
+
 	return RoutineResult{
-		Stop:       true,
-		StopReason: "Unable to leave system",
+		SetRoutine: GoToJumpGate{next: f},
 	}
+
+	//if state.Ship.Cargo.GetSlotWithItem("ANTIMATTER").Units > 2 {
+	//	return RoutineResult{
+	//		SetRoutine: FindNewSystem{next: f},
+	//		//WaitUntil:  &cooldownUntil,
+	//	}
+	//}
+	//state.Log("No jump gate either, not sure how we got here.")
+	//return RoutineResult{
+	//	Stop:       true,
+	//	StopReason: "Unable to leave system",
+	//}
 }
 
 var desiredTraits = []string{"MARKETPLACE", "SHIPYARD", "UNCHARTED", "TRADING_HUB", "BLACK_MARKET", "COMMON_METAL_DEPOSITS", "RARE_METAL_DEPOSITS", "PRECIOUS_METAL_DEPOSITS", "MINERAL_DEPOSITS"}

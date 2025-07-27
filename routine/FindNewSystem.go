@@ -27,8 +27,6 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 		database.AddUnvisitedSystems([]entity.System{*currentSystem}, 0)
 	}
 
-	return RoutineResult{Stop: true, StopReason: "System jumping not supported"}
-
 	if f.startFromPage == 0 {
 		unvisitedSystems := database.GetUnvisitedSystems()
 
@@ -68,6 +66,9 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				if jumpGate != nil {
 					jumpResult, err := state.Ship.Jump(state.Context, systemEntity.Waypoints[0].Symbol)
 					if err != nil {
+						if err.Code == http.ErrJumpGateUnderConstruction {
+							return RoutineResult{SetRoutine: BuildJumpGate{next: f}}
+						}
 						state.Log("Error jumping")
 						fmt.Println(err)
 					} else {

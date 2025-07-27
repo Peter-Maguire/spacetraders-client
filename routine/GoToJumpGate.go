@@ -19,7 +19,7 @@ func (g GoToJumpGate) Run(state *State) RoutineResult {
 				continue
 			}
 			if waypoint.Symbol == state.Ship.Nav.WaypointSymbol {
-				state.Log("We're at a jump gate, already")
+				state.Log("We're at a jump gate already")
 				return RoutineResult{
 					SetRoutine: g.next,
 				}

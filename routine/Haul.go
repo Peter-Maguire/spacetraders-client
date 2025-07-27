@@ -2,7 +2,6 @@ package routine
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"spacetraders/constant"
 	"spacetraders/entity"
@@ -108,7 +107,7 @@ func (h Haul) Run(state *State) RoutineResult {
 				full = true
 				break
 			}
-			transferAmount := int(math.Min(float64(slot.Units), float64(remainingCapacity)))
+			transferAmount := min(slot.Units, remainingCapacity)
 			state.Log(fmt.Sprintf("Transferring %d/%d %s from %s to %s (%d/%d cargo)", transferAmount, slot.Units, slot.Symbol, ship.Symbol, state.Ship.Symbol, cargoCount, state.Ship.Cargo.Capacity))
 			err := ship.TransferCargo(state.Context, state.Ship.Symbol, slot.Symbol, transferAmount)
 			if err != nil {

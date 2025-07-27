@@ -2,7 +2,6 @@ package routine
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -94,7 +93,7 @@ func (r Refine) Run(state *State) RoutineResult {
 
 			for _, slot := range otherState.Ship.Cargo.Inventory {
 				if util.IsRefineable(slot.Symbol) {
-					transferAmount := int(math.Min(float64(availableSpace-usedSpace), float64(slot.Units)))
+					transferAmount := min(availableSpace-usedSpace, slot.Units)
 					if transferAmount <= 0 {
 						break
 					}

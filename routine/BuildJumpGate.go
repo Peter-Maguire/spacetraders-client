@@ -55,6 +55,10 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Construction site has %d/%d %s", material.Fulfilled, material.Required, material.TradeSymbol))
 	}
 
+	for _, state := range *state.States {
+		state.ConstructionSite = constructionSite
+	}
+
 	return RoutineResult{
 		SetRoutine: MineOres{},
 	}

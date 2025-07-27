@@ -20,6 +20,14 @@ type MarketRates struct {
 	Date        time.Time
 }
 
+func (mr MarketRates) GetLimitedWaypointData() entity.LimitedWaypointData {
+	return entity.LimitedWaypointData{
+		Symbol: mr.Waypoint,
+		X:      mr.WaypointX,
+		Y:      mr.WaypointY,
+	}
+}
+
 func StoreMarketRates(system *entity.System, waypointData *entity.WaypointData, goods []entity.MarketGood) {
 	rates := make([]MarketRates, len(goods))
 	for i, good := range goods {

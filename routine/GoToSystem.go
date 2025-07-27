@@ -22,8 +22,6 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: g.next}
 	}
 
-	return RoutineResult{Stop: true, StopReason: "System jumping not supported"}
-
 	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
 	if currentSystem != nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
