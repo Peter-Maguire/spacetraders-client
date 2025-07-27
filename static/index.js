@@ -289,7 +289,7 @@ async function initMap(){
     canvas.onmousewheel = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        mapScale += e.wheelDelta * mapZoomSpeed;
+        mapScale += e.wheelDelta * (mapZoomSpeed * mapScale);
         drawMap();
     }
     drawMap()
