@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"fmt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"spacetraders/entity"
@@ -15,6 +16,7 @@ type Waypoint struct {
 	MarketData   []byte `gorm:"type:json"`
 	ShipyardData []byte `gorm:"type:json"`
 	FirstVisited time.Time
+	TimesVisited int `gorm:"default:0"`
 }
 
 func (w *Waypoint) Visit() error {
@@ -56,9 +58,15 @@ func (w *Waypoint) GetShipyardData() *entity.ShipyardStock {
 	return &mData
 }
 
-func GetLeastVisitedWaypointsInSystem(system string) []*Waypoint {
+func GetLeastVisitedWaypointsInSystem(system string, currentTimesVisited int) []*Waypoint {
 	var wp []*Waypoint
-	db.Order("first_visited ASC").Where("system = ?", system).Find(&wp)
+	db.Order("times_visited ASC").Where("system = ? AND times_visited < ?", system, currentTimesVisited).Find(&wp)
+	return wp
+}
+
+func GetUnvisitedWaypointsInSystem(system string) []*Waypoint {
+	var wp []*Waypoint
+	db.Where("times_visited = 0 AND system = ?", system).Find(&wp)
 	return wp
 }
 
@@ -111,21 +119,26 @@ func LogWaypoints(data *[]entity.WaypointData) {
 			MarketData:   nil,
 			ShipyardData: nil,
 			FirstVisited: time.Time{},
+			TimesVisited: 0,
 		}
 	}
 	db.Clauses(clause.OnConflict{DoNothing: true}).Save(dbWaypoints)
 }
 
 func VisitWaypoint(data *entity.WaypointData, market *entity.Market, shipyard *entity.ShipyardStock) {
+	currentWaypoint := GetWaypoint(data.Symbol)
 	waypointData, _ := json.Marshal(data)
 	shipyardData, _ := json.Marshal(shipyard)
 	marketData, _ := json.Marshal(market)
-	db.Clauses(clause.OnConflict{UpdateAll: true}).Save(Waypoint{
-		Waypoint:     string(data.Symbol),
-		System:       data.Symbol.GetSystemName(),
-		Data:         waypointData,
-		MarketData:   marketData,
-		ShipyardData: shipyardData,
-		FirstVisited: time.Now(),
-	})
+	currentWaypoint.TimesVisited++
+	currentWaypoint.Waypoint = string(data.Symbol)
+	currentWaypoint.System = data.SystemSymbol
+	currentWaypoint.Data = waypointData
+	currentWaypoint.MarketData = marketData
+	currentWaypoint.ShipyardData = shipyardData
+	if currentWaypoint.FirstVisited.Unix() < 0 {
+		currentWaypoint.FirstVisited = time.Now()
+	}
+	tx := db.Clauses(clause.OnConflict{UpdateAll: true}).Save(&currentWaypoint)
+	fmt.Println(tx.Error)
 }

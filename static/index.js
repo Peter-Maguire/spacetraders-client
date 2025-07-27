@@ -25,7 +25,7 @@ const logMessages = [];
 
 let shipStates = [];
 let waypoints = [];
-let mapSystem = "X1-PS43";
+let mapSystem = "";
 let viewingMap = true;
 let agents = [];
 let currentAgent = "AGENT1";
@@ -169,13 +169,18 @@ async function populateMap(){
     let req = await fetch("/waypoints")
         .then(res => res.json())
 
+    let systems = [];
+
+    req.map((wp)=>!systems.includes(wp.system) && systems.push(wp.system));
+    if(mapSystem === "")
+        mapSystem = systems[0]
+
 
     let systemDropdown = document.getElementById("selectSystem");
     systemDropdown.innerText = "";
     systemDropdown.value = mapSystem;
     systemDropdown.onchange = (e)=>{console.log(e.target.value); mapSystem = e.target.value; drawMap();}
-    let systems = [];
-    req.map((wp)=>!systems.includes(wp.system) && systems.push(wp.system));
+
     systems.forEach(system => {
         let option = document.createElement("option");
         option.text = system;

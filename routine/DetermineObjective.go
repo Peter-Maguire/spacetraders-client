@@ -22,6 +22,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
 	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
 	if dbWaypoint == nil || dbWaypoint.FirstVisited.Unix() < 0 {
+		state.Log("Visiting waypoint")
 		return RoutineResult{
 			SetRoutine: Explore{
 				oneShot: true,
@@ -36,7 +37,18 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	// TODO: satellite should explore until it's explored the entire system next go to Refresh Markets (rotate through all the markets refreshing each)
-	if /*state.Ship.Registration.Role == "COMMAND" ||*/ state.Ship.Registration.Role == constant.ShipRoleSatellite {
+	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
+
+	goodUnvisitedWaypoints := false
+	for _, uw := range unvisitedWaypoints {
+		data := uw.GetData()
+		if data.HasTrait("MARKETPLACE") || data.HasTrait("SHIPYARD") {
+			goodUnvisitedWaypoints = true
+			break
+		}
+	}
+
+	if (state.Ship.Registration.Role == "COMMAND" && goodUnvisitedWaypoints) || state.Ship.Registration.Role == constant.ShipRoleSatellite {
 		return RoutineResult{
 			SetRoutine: Satellite{},
 		}

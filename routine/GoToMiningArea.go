@@ -194,7 +194,7 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 	}
 
 	if closestWaypoint == nil {
-		fmt.Printf("No closest waypoint found for %s\n", waypoint.Symbol)
+		//fmt.Printf("No closest waypoint found for %s\n", waypoint.Symbol)
 		return true, score - 2000
 	}
 

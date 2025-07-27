@@ -5,6 +5,7 @@ import (
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/util"
 )
 
 type Satellite struct{}
@@ -47,13 +48,43 @@ func (s Satellite) Run(state *State) RoutineResult {
 	isSatZero := len(sats) > 1 && sats[0].Symbol == state.Ship.Symbol
 
 	if !isSatZero {
-		wps := database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
-		for _, wp := range wps {
-			shipsAtWaypoint := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleSatellite, entity.Waypoint(wp.Waypoint))
-			if len(shipsAtWaypoint) == 0 {
-				return RoutineResult{SetRoutine: NavigateTo{waypoint: entity.Waypoint(wp.Waypoint), next: s}}
+		dbWaypoint := database.GetWaypoint(waypointData.Symbol)
+		fmt.Printf("Looking for waypoitns visited less than %d times\n", dbWaypoint.TimesVisited)
+		wps := database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol, dbWaypoint.TimesVisited)
+		if len(wps) == 0 {
+			fmt.Printf("Looking for waypoitns visited less than %d times\n", dbWaypoint.TimesVisited+1)
+			wps = database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol, dbWaypoint.TimesVisited+1)
+		}
+		wpDatas := make([]*entity.WaypointData, len(wps))
+		for i, wp := range wps {
+			wpData := wp.GetData()
+			wpDatas[i] = &wpData
+		}
+
+		goodWps := make([]*entity.WaypointData, 0)
+		for _, wpData := range wpDatas {
+			if wpData.HasTrait("MARKETPLACE") || wpData.HasTrait("SHIPYARD") {
+				goodWps = append(goodWps, wpData)
 			}
 		}
+		if len(goodWps) > 0 {
+			wpDatas = goodWps
+		} else if state.Ship.Registration.Role != constant.ShipRoleSatellite {
+			return RoutineResult{
+				SetRoutine: DetermineObjective{},
+			}
+		}
+
+		fmt.Println(wpDatas, waypointData)
+		util.SortWaypointsClosestTo(wpDatas, waypointData.LimitedWaypointData)
+		for _, wp := range wpDatas {
+			shipsAtWaypoint := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleSatellite, wp.Symbol)
+			if len(shipsAtWaypoint) == 0 {
+				return RoutineResult{SetRoutine: NavigateTo{waypoint: wp.Symbol, next: s}}
+			}
+			fmt.Println("Ship already going to ", wp.Symbol)
+		}
+		state.Log("!!! Found no waypoints to go to")
 	}
 
 	shipToBuy := s.GetShipToBuy(state)
