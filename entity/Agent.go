@@ -50,6 +50,15 @@ func (a *Agent) BuyShip(ctx context.Context, shipyard Waypoint, shipType string)
 		ShipType:       shipType,
 		WaypointSymbol: shipyard,
 	})
+
+	if err != nil && err.Code == http.ErrPurchaseShipInsufficientFunds {
+		a.Credits = err.Data["creditsAvailable"].(int)
+	}
+
+	if result != nil {
+		a.Credits = result.Agent.Credits
+	}
+	
 	return result, err
 }
 

@@ -12,9 +12,10 @@ const (
 	ErrAlreadyInSystem        ErrorCode = 4208
 	ErrInsufficientAntimatter ErrorCode = 4212
 
-	ErrTransferCargoFull   ErrorCode = 4217
-	ErrCargoUnitCountError ErrorCode = 4219
-	ErrShipInTransit       ErrorCode = 4214
+	ErrPurchaseShipInsufficientFunds ErrorCode = 4216
+	ErrTransferCargoFull             ErrorCode = 4217
+	ErrCargoUnitCountError           ErrorCode = 4219
+	ErrShipInTransit                 ErrorCode = 4214
 
 	ErrShipSurveyVerification ErrorCode = 4220
 
