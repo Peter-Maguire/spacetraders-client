@@ -88,6 +88,10 @@ func (h Haul) Run(state *State) RoutineResult {
 			continue
 		}
 
+		if state.Ship.Nav.Status == "IN_TRANSIT" {
+			continue
+		}
+
 		sort.Slice(ship.Cargo.Inventory, func(i, j int) bool {
 			return ship.Cargo.Inventory[i].Units > ship.Cargo.Inventory[j].Units
 		})
