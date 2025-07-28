@@ -15,17 +15,17 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 
 	fuelSlot := cargo.GetSlotWithItem("FUEL")
 	if fuelSlot == nil {
+		if state.Ship.Cargo.IsFull() {
+			return RoutineResult{
+				SetRoutine: Jettison{
+					nextIfSuccessful: a,
+					nextIfFailed:     a,
+				},
+			}
+		}
+
 		return RoutineResult{
 			WaitSeconds: 60,
-		}
-	}
-
-	if state.Ship.Cargo.IsFull() {
-		return RoutineResult{
-			SetRoutine: Jettison{
-				nextIfSuccessful: a,
-				nextIfFailed:     a,
-			},
 		}
 	}
 
