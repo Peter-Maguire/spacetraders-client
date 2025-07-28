@@ -23,6 +23,13 @@ func (r Refuel) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: r.next}
 	}
 
+	fuelSlot := state.Ship.Cargo.GetSlotWithItem("FUEL")
+	if fuelSlot != nil {
+		err := state.Ship.RefuelFromCargo(state.Context, fuelSlot.Units)
+		fmt.Println(err)
+		return RoutineResult{SetRoutine: r.next}
+	}
+
 	// TODO: rescue
 	if state.Ship.Fuel.Current == 0 {
 

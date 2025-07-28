@@ -79,9 +79,10 @@ func (s *Ship) Refuel(ctx context.Context) *http.HttpError {
 	return err
 }
 
-func (s *Ship) RefuelFromCargo(ctx context.Context) *http.HttpError {
+func (s *Ship) RefuelFromCargo(ctx context.Context, amount int) *http.HttpError {
 	shipRefuelUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), map[string]any{
 		"fromCargo": true,
+		"units":     amount * 100,
 	})
 	if shipRefuelUpdate != nil {
 		s.Fuel = shipRefuelUpdate.Fuel

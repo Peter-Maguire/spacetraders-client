@@ -9,7 +9,7 @@ import (
 )
 
 type FindNewWaypoint struct {
-	desiredTrait string
+	desiredTrait constant.WaypointTrait
 	visitVisited bool
 	next         Routine
 }
@@ -94,7 +94,7 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 	//}
 }
 
-var desiredTraits = []string{"MARKETPLACE", "SHIPYARD", "UNCHARTED", "TRADING_HUB", "BLACK_MARKET", "COMMON_METAL_DEPOSITS", "RARE_METAL_DEPOSITS", "PRECIOUS_METAL_DEPOSITS", "MINERAL_DEPOSITS"}
+var desiredTraits = []constant.WaypointTrait{"MARKETPLACE", "SHIPYARD", "UNCHARTED", "TRADING_HUB", "BLACK_MARKET", "COMMON_METAL_DEPOSITS", "RARE_METAL_DEPOSITS", "PRECIOUS_METAL_DEPOSITS", "MINERAL_DEPOSITS"}
 
 func (f FindNewWaypoint) hasGoodTraits(traits []entity.Trait) bool {
 	for _, trait := range traits {

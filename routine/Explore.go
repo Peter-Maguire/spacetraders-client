@@ -9,7 +9,7 @@ import (
 )
 
 type Explore struct {
-	desiredTrait  string
+	desiredTrait  constant.WaypointTrait
 	marketTargets []string
 	oneShot       bool
 	visitVisited  bool

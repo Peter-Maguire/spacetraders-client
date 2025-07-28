@@ -29,7 +29,7 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 		}
 	}
 
-	err := state.Ship.RefuelFromCargo(state.Context)
+	err := state.Ship.RefuelFromCargo(state.Context, fuelSlot.Units)
 	if err != nil {
 		state.Log("Refuel failed: " + err.Message)
 		return RoutineResult{
