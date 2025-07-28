@@ -2,8 +2,11 @@ package routine
 
 import (
 	"fmt"
+	"sort"
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
+	"spacetraders/util"
 	"time"
 )
 
@@ -30,11 +33,82 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
+	if state.Ship.Fuel.Current == 1 {
+		state.Log("Refuelling so we don't run out of fuel")
+		return RoutineResult{
+			SetRoutine: Refuel{next: n},
+		}
+	}
+
 	if state.Ship.Nav.SystemSymbol != n.waypoint.GetSystemName() {
 		fmt.Println(state.Ship.Nav.SystemSymbol, n.waypoint.GetSystemName())
 		state.Log("Jumping to system first")
 		return RoutineResult{
 			SetRoutine: GoToSystem{next: n, system: n.waypoint.GetSystemName()},
+		}
+	}
+
+	dbTargetWaypoint := database.GetWaypoint(n.waypoint)
+	targetData := dbTargetWaypoint.GetData()
+	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
+	wpData := dbWaypoint.GetData()
+	distanceToWaypoint := wpData.GetDistanceFrom(targetData.LimitedWaypointData)
+	fuelToWaypoint := util.GetFuelCost(distanceToWaypoint, state.Ship.Nav.FlightMode)
+
+	if fuelToWaypoint > state.Ship.Fuel.Current {
+		fuelMarkets := database.GetMarketsSelling([]string{"FUEL"})
+
+		combinedDistances := make(map[entity.Waypoint]int)
+		eligibleMarkets := make([]database.MarketRates, 0)
+		for _, fuelMarket := range fuelMarkets {
+			// We can't go here because it's in a different system
+			if fuelMarket.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
+				continue
+			}
+
+			fuelMarketWaypoint := fuelMarket.GetLimitedWaypointData()
+			distanceToFuelMarket := wpData.GetDistanceFrom(fuelMarketWaypoint)
+			fuelToFuelMarket := util.GetFuelCost(distanceToFuelMarket, state.Ship.Nav.FlightMode)
+			// We can't go here because it'll take more fuel than we have
+			if fuelToFuelMarket > state.Ship.Fuel.Current {
+				continue
+			}
+
+			distanceFromFuelMarketToTarget := fuelMarketWaypoint.GetDistanceFrom(targetData.LimitedWaypointData)
+
+			// We can't go here because the market is further away then we currently are
+			if distanceFromFuelMarketToTarget > distanceToWaypoint {
+				continue
+			}
+
+			fuelToTarget := util.GetFuelCost(distanceFromFuelMarketToTarget, state.Ship.Nav.FlightMode)
+			// We can't go here because going from here to the target would take more fuel than available
+			if fuelToTarget > state.Ship.Fuel.Capacity {
+				continue
+			}
+			eligibleMarkets = append(eligibleMarkets, fuelMarket)
+			// TODO: should we take into account fuel cost here?
+			combinedDistances[fuelMarket.Waypoint] = distanceToFuelMarket + distanceFromFuelMarketToTarget
+		}
+
+		if len(eligibleMarkets) == 0 {
+			if state.Ship.Nav.FlightMode == "DRIFT" {
+				return RoutineResult{
+					SetRoutine: Refuel{next: n},
+				}
+			}
+			state.Log("Trying again in drift mode")
+			state.Ship.SetFlightMode(state.Context, "DRIFT")
+			return RoutineResult{}
+		}
+
+		sort.Slice(eligibleMarkets, func(i, j int) bool {
+			return combinedDistances[eligibleMarkets[i].Waypoint] < combinedDistances[eligibleMarkets[j].Waypoint]
+		})
+
+		state.Log(fmt.Sprintf("Taking a detour via market %s", eligibleMarkets[0].Waypoint))
+		return RoutineResult{
+			SetRoutine: NavigateTo{waypoint: eligibleMarkets[0].Waypoint, next: Refuel{next: n}},
 		}
 	}
 
