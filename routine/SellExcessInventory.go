@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"math"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/util"
@@ -204,7 +205,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			}
 		} else {
 			state.Log("Trying again in drift mode")
-			state.Ship.SetFlightMode(state.Context, "DRIFT")
+			state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 			return RoutineResult{}
 		}
 	}

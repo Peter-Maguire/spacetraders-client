@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -98,7 +99,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 				}
 			}
 			state.Log("Trying again in drift mode")
-			state.Ship.SetFlightMode(state.Context, "DRIFT")
+			state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 			return RoutineResult{}
 		}
 

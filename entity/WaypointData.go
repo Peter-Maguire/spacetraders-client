@@ -39,7 +39,7 @@ type WaypointData struct {
 	IsUnderConstruction bool      `json:"isUnderConstruction"`
 }
 
-func (w *WaypointData) HasTrait(symbol string) bool {
+func (w *WaypointData) HasTrait(symbol constant.WaypointTrait) bool {
 	for _, trait := range w.Traits {
 		if trait.Symbol == symbol {
 			return true

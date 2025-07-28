@@ -1,7 +1,9 @@
 package entity
 
+import "spacetraders/constant"
+
 type Trait struct {
-	Symbol      string `json:"symbol"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Symbol      constant.WaypointTrait `json:"symbol"`
+	Name        string                 `json:"name"`
+	Description string                 `json:"description"`
 }

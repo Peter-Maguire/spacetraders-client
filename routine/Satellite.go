@@ -64,7 +64,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	goodUnvisitedWaypoints := false
 	for _, uw := range unvisitedWaypoints {
 		data := uw.GetData()
-		if data.HasTrait("MARKETPLACE") || data.HasTrait("SHIPYARD") {
+		if data.HasTrait(constant.TraitMarketplace) || data.HasTrait(constant.TraitShipyard) {
 			goodUnvisitedWaypoints = true
 			break
 		}
@@ -84,7 +84,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 
 		goodWps := make([]*entity.WaypointData, 0)
 		for _, wpData := range wpDatas {
-			if wpData.HasTrait("MARKETPLACE") || wpData.HasTrait("SHIPYARD") {
+			if wpData.HasTrait(constant.TraitMarketplace) || wpData.HasTrait(constant.TraitShipyard) {
 				goodWps = append(goodWps, wpData)
 			}
 		}
@@ -118,7 +118,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 
 			for _, w := range *waypoints {
-				if w.HasTrait("SHIPYARD") {
+				if w.HasTrait(constant.TraitShipyard) {
 					shipyard, _ := w.Symbol.GetShipyard(state.Context)
 					if shipyard.SellsShipType(shipToBuy) {
 						state.Log("Found shipyard selling the desired ship")
@@ -197,7 +197,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 }
 
 func (s Satellite) onShipyard(state *State, wpd *entity.WaypointData, targetShip string) bool {
-	if !wpd.HasTrait("SHIPYARD") {
+	if !wpd.HasTrait(constant.TraitShipyard) {
 		return false
 	}
 

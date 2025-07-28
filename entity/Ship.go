@@ -97,8 +97,8 @@ func (s *Ship) Orbit(ctx context.Context) error {
 	return err
 }
 
-func (s *Ship) SetFlightMode(ctx context.Context, mode string) *http.HttpError {
-	shipNavUpdate, err := http.Request[Ship](ctx, "PATCH", fmt.Sprintf("my/ships/%s/nav", s.Symbol), map[string]string{
+func (s *Ship) SetFlightMode(ctx context.Context, mode constant.FlightMode) *http.HttpError {
+	shipNavUpdate, err := http.Request[Ship](ctx, "PATCH", fmt.Sprintf("my/ships/%s/nav", s.Symbol), map[string]any{
 		"flightMode": mode,
 	})
 	if shipNavUpdate != nil {
@@ -107,7 +107,7 @@ func (s *Ship) SetFlightMode(ctx context.Context, mode string) *http.HttpError {
 	return err
 }
 
-func (s *Ship) EnsureFlightMode(ctx context.Context, mode string) *http.HttpError {
+func (s *Ship) EnsureFlightMode(ctx context.Context, mode constant.FlightMode) *http.HttpError {
 	if s.Nav.FlightMode != mode {
 		return s.SetFlightMode(ctx, mode)
 	}
@@ -275,12 +275,14 @@ func (s *Ship) IsAtWaypoint(wp Waypoint) bool {
 }
 
 type ShipNav struct {
-	SystemSymbol   string   `json:"systemSymbol"`
-	WaypointSymbol Waypoint `json:"waypointSymbol"`
-	Route          NavRoute `json:"route"`
-	Status         NavState `json:"status"`
-	FlightMode     string   `json:"flightMode"`
+	SystemSymbol   string              `json:"systemSymbol"`
+	WaypointSymbol Waypoint            `json:"waypointSymbol"`
+	Route          NavRoute            `json:"route"`
+	Status         NavState            `json:"status"`
+	FlightMode     constant.FlightMode `json:"flightMode"`
 }
+
+// TODO: move to constants
 
 type NavState string
 

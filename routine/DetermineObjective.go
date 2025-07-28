@@ -31,10 +31,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Nav.FlightMode != "CRUISE" {
-		state.Log("Changing flight mode to CRUISE")
-		_ = state.Ship.SetFlightMode(state.Context, "CRUISE")
-	}
+	state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
 
 	// TODO: satellite should explore until it's explored the entire system next go to Refresh Markets (rotate through all the markets refreshing each)
 	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
@@ -42,13 +39,13 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	goodUnvisitedWaypoints := false
 	for _, uw := range unvisitedWaypoints {
 		data := uw.GetData()
-		if data.HasTrait("MARKETPLACE") || data.HasTrait("SHIPYARD") {
+		if data.HasTrait(constant.TraitMarketplace) || data.HasTrait(constant.TraitShipyard) {
 			goodUnvisitedWaypoints = true
 			break
 		}
 	}
 
-	if (state.Ship.Registration.Role == "COMMAND" && goodUnvisitedWaypoints) || state.Ship.Registration.Role == constant.ShipRoleSatellite {
+	if (state.Ship.Registration.Role == constant.ShipRoleCommand && goodUnvisitedWaypoints) || state.Ship.Registration.Role == constant.ShipRoleSatellite {
 		return RoutineResult{
 			SetRoutine: Satellite{},
 		}

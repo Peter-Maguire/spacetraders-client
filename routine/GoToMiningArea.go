@@ -80,7 +80,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 				}
 			}
 			state.Log("Trying again in drift mode")
-			state.Ship.SetFlightMode(state.Context, "DRIFT")
+			state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 			return RoutineResult{}
 		}
 
@@ -118,19 +118,19 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 
 func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []*database.Waypoint) (bool, int) {
 	score := 0
-	if waypoint.HasTrait("PRECIOUS_METAL_DEPOSITS") {
+	if waypoint.HasTrait(constant.TraitPreciousMetalDeposits) {
 		score += 15
 	}
 
-	if waypoint.HasTrait("RARE_METAL_DEPOSITS") {
+	if waypoint.HasTrait(constant.TraitRareMetalDeposits) {
 		score += 10
 	}
 
-	if waypoint.HasTrait("COMMON_METAL_DEPOSITS") {
+	if waypoint.HasTrait(constant.TraitCommonMetalDeposits) {
 		score += 5
 	}
 
-	if waypoint.HasTrait("MINERAL_DEPOSITS") {
+	if waypoint.HasTrait(constant.TraitMineralDeposits) {
 		score += 1
 	}
 
@@ -138,27 +138,23 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 		return false, score
 	}
 
-	if waypoint.HasTrait("MARKETPLACE") {
+	if waypoint.HasTrait(constant.TraitMarketplace) {
 		score += 1
 	}
 
-	if waypoint.HasTrait("OVERCROWDED") {
+	if waypoint.HasTrait(constant.TraitOvercrowded) {
 		return false, 0
 	}
 
-	if waypoint.HasTrait("BARREN") {
+	if waypoint.HasTrait(constant.TraitBarren) {
 		return false, 0
 	}
 
-	if waypoint.HasTrait("STRIPPED") {
+	if waypoint.HasTrait(constant.TraitStripped) {
 		return false, 0
 	}
 
-	if waypoint.HasTrait("UNSTABLE") {
-		return false, 0
-	}
-
-	if waypoint.HasTrait("CRITICAL_LIMIT") {
+	if waypoint.HasTrait(constant.TraitUnstableComposition) {
 		return false, 0
 	}
 

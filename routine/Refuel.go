@@ -3,6 +3,7 @@ package routine
 import (
 	"fmt"
 	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -18,7 +19,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 	if state.Ship.Fuel.IsFull() {
 		state.Log("Fuel is already full")
-		_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
+		_ = state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 		return RoutineResult{SetRoutine: r.next}
 	}
 
@@ -103,7 +104,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 					}
 				}
 				state.Log("Nowhere we can go without drifting")
-				_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
+				_ = state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 				return RoutineResult{}
 			}
 
@@ -125,10 +126,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 		refuelErr := state.Ship.Refuel(state.Context)
 
 		if refuelErr == nil {
-			if state.Ship.Nav.FlightMode == "DRIFT" {
-				state.Log("Exiting drift mode")
-				_ = state.Ship.SetFlightMode(state.Context, "CRUISE")
-			}
+			state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
 
 			return RoutineResult{
 				SetRoutine: r.next,
@@ -157,7 +155,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 	}
 
 	state.Log("Setting flight mode to drift")
-	_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
+	_ = state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 
 	return RoutineResult{
 		SetRoutine: r.next,

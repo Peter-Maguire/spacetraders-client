@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/metrics"
@@ -41,7 +42,7 @@ func (e Explore) Run(state *State) RoutineResult {
 		database.VisitWaypoint(waypointData, marketData, shipyardData)
 	}()
 
-	if waypointData.HasTrait("UNCHARTED") {
+	if waypointData.HasTrait(constant.TraitUncharted) {
 		data, err := state.Ship.Chart(state.Context)
 		if err == nil {
 			state.Log("Charted waypoint")
@@ -49,7 +50,7 @@ func (e Explore) Run(state *State) RoutineResult {
 		}
 	}
 
-	if waypointData.HasTrait("SHIPYARD") {
+	if waypointData.HasTrait(constant.TraitShipyard) {
 		state.Log("There's a shipyard here")
 		var err error
 		shipyardData, err = waypointData.Symbol.GetShipyard(state.Context)
@@ -63,7 +64,7 @@ func (e Explore) Run(state *State) RoutineResult {
 
 	}
 
-	if waypointData.HasTrait("MARKETPLACE") {
+	if waypointData.HasTrait(constant.TraitMarketplace) {
 		state.Log("There's a marketplace here")
 		marketData, _ = waypointData.Symbol.GetMarket(state.Context)
 		// TODO: Market rates should include IMPORT, EXPORT and EXCHANGE, not just whatever is going on here

@@ -150,8 +150,8 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				Stop:       true,
 				StopReason: "Not at jump gate or no antimatter",
 			}
-		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), "DRIFT") < state.Ship.Fuel.Current && state.Ship.CanWarp() {
-			_ = state.Ship.SetFlightMode(state.Context, "DRIFT")
+		} else if util.GetFuelCost(system.GetDistanceFrom(currentSystem), constant.FlightModeDrift) < state.Ship.Fuel.Current && state.Ship.CanWarp() {
+			_ = state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
 			jumpGate := system.GetJumpGate(state.Context)
 			if jumpGate == nil {
 				state.Log("No jump gate in this system")
