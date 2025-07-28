@@ -147,6 +147,11 @@ func (s Satellite) Run(state *State) RoutineResult {
 				StopReason: "ship cost fuck",
 			}
 		}
+
+		if shipCost.PurchasePrice > state.Agent.Credits {
+			continue
+		}
+
 		if shipCost.Waypoint != string(state.Ship.Nav.WaypointSymbol) {
 			state.Log("Going to where this ship is cheapest")
 			return RoutineResult{
