@@ -26,6 +26,13 @@ func (s Satellite) Run(state *State) RoutineResult {
 	syd, _ := waypointData.Symbol.GetShipyard(state.Context)
 
 	database.VisitWaypoint(waypointData, mkt, syd)
+	if mkt != nil {
+		database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, mkt.TradeGoods)
+	}
+
+	if syd != nil {
+		database.StoreShipCosts(syd)
+	}
 
 	if state.Contract == nil {
 		return RoutineResult{
