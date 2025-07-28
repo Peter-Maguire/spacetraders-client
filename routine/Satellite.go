@@ -27,7 +27,11 @@ func (s Satellite) Run(state *State) RoutineResult {
 
 	database.VisitWaypoint(waypointData, mkt, syd)
 	if mkt != nil {
-		database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, mkt.TradeGoods)
+		system := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+		database.StoreMarketRates(system, waypointData, mkt.TradeGoods)
+		database.StoreMarketExchange(system, waypointData, "export", mkt.Exports)
+		database.StoreMarketExchange(system, waypointData, "import", mkt.Imports)
+		database.StoreMarketExchange(system, waypointData, "exchange", mkt.Exchange)
 	}
 
 	if syd != nil {
@@ -52,14 +56,24 @@ func (s Satellite) Run(state *State) RoutineResult {
 	}
 
 	sats := state.GetShipsWithRole(constant.ShipRoleSatellite)
-	isSatZero := len(sats) > 1 && sats[0].Symbol == state.Ship.Symbol
+	fmt.Println(len(sats))
+	isSatZero := sats[0].Symbol == state.Ship.Symbol
 
-	if !isSatZero {
+	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
+
+	goodUnvisitedWaypoints := false
+	for _, uw := range unvisitedWaypoints {
+		data := uw.GetData()
+		if data.HasTrait("MARKETPLACE") || data.HasTrait("SHIPYARD") {
+			goodUnvisitedWaypoints = true
+			break
+		}
+	}
+
+	if goodUnvisitedWaypoints || !isSatZero {
 		dbWaypoint := database.GetWaypoint(waypointData.Symbol)
-		fmt.Printf("Looking for waypoitns visited less than %d times\n", dbWaypoint.TimesVisited)
 		wps := database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol, dbWaypoint.TimesVisited)
 		if len(wps) == 0 {
-			fmt.Printf("Looking for waypoitns visited less than %d times\n", dbWaypoint.TimesVisited+1)
 			wps = database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol, dbWaypoint.TimesVisited+1)
 		}
 		wpDatas := make([]*entity.WaypointData, len(wps))
@@ -82,89 +96,90 @@ func (s Satellite) Run(state *State) RoutineResult {
 			}
 		}
 
-		fmt.Println(wpDatas, waypointData)
 		util.SortWaypointsClosestTo(wpDatas, waypointData.LimitedWaypointData)
 		for _, wp := range wpDatas {
 			shipsAtWaypoint := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleSatellite, wp.Symbol)
 			if len(shipsAtWaypoint) == 0 {
 				return RoutineResult{SetRoutine: NavigateTo{waypoint: wp.Symbol, next: s}}
 			}
-			fmt.Println("Ship already going to ", wp.Symbol)
 		}
 		state.Log("!!! Found no waypoints to go to")
 	}
 
-	shipToBuy := s.GetShipToBuy(state)
+	shipsToBuy := s.GetShipToBuy(state)
 
-	state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
+	for _, shipToBuy := range shipsToBuy {
+		state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
 
-	shipCost := database.GetShipCost(shipToBuy, state.Ship.Nav.SystemSymbol)
+		shipCost := database.GetShipCost(shipToBuy, state.Ship.Nav.SystemSymbol)
 
-	if shipCost == nil {
-		state.Log("We aren't aware of any shipyards selling this ship type yet")
-		waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+		if shipCost == nil {
+			state.Log("We aren't aware of any shipyards selling this ship type yet")
+			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
 
-		for _, w := range *waypoints {
-			if w.HasTrait("SHIPYARD") {
-				shipyard, _ := w.Symbol.GetShipyard(state.Context)
-				if shipyard.SellsShipType(shipToBuy) {
-					state.Log("Found shipyard selling the desired ship")
-					return RoutineResult{
-						SetRoutine: NavigateTo{
-							waypoint: w.Symbol,
-							next:     s,
-						},
+			for _, w := range *waypoints {
+				if w.HasTrait("SHIPYARD") {
+					shipyard, _ := w.Symbol.GetShipyard(state.Context)
+					if shipyard.SellsShipType(shipToBuy) {
+						state.Log("Found shipyard selling the desired ship")
+						return RoutineResult{
+							SetRoutine: NavigateTo{
+								waypoint: w.Symbol,
+								next:     s,
+							},
+						}
 					}
 				}
 			}
+			return RoutineResult{
+				SetRoutine: Explore{
+					oneShot:      true,
+					desiredTrait: "SHIPYARD",
+					next:         s,
+				},
+			}
 		}
-		return RoutineResult{
-			SetRoutine: Explore{
-				oneShot:      true,
-				desiredTrait: "SHIPYARD",
-				next:         s,
-			},
+
+		if shipCost.Waypoint == "" {
+			fmt.Println(shipCost)
+			return RoutineResult{
+				Stop:       true,
+				StopReason: "ship cost fuck",
+			}
 		}
-	}
-
-	if shipCost.Waypoint == "" {
-		fmt.Println(shipCost)
-		return RoutineResult{
-			Stop:       true,
-			StopReason: "ship cost fuck",
+		if shipCost.Waypoint != string(state.Ship.Nav.WaypointSymbol) {
+			state.Log("Going to where this ship is cheapest")
+			return RoutineResult{
+				SetRoutine: NavigateTo{waypoint: entity.Waypoint(shipCost.Waypoint), next: s},
+			}
 		}
-	}
-	if shipCost.Waypoint != string(state.Ship.Nav.WaypointSymbol) {
-		state.Log("Going to where this ship is cheapest")
-		return RoutineResult{
-			SetRoutine: NavigateTo{waypoint: entity.Waypoint(shipCost.Waypoint), next: s},
-		}
-	}
 
-	shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
-	database.StoreShipCosts(shipyard)
-
-	shipStock := shipyard.GetStockOf(shipToBuy)
-
-	if shipStock == nil {
-		state.Log("Somehow the ship isn't in stock here?")
-		return RoutineResult{WaitSeconds: 30}
-	}
-
-	state.Log(fmt.Sprintf("We need %d credits, we currently have %d credits", shipStock.PurchasePrice, state.Agent.Credits))
-
-	if state.Agent.Credits >= shipStock.PurchasePrice {
-		state.Log("We can buy a ship")
 		shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
 		database.StoreShipCosts(shipyard)
-		result, err := state.Agent.BuyShip(state.Context, state.Ship.Nav.WaypointSymbol, shipToBuy)
 
-		if err != nil {
-			state.Log(fmt.Sprintf("Error buying ship: %s", err.Error()))
-			return RoutineResult{WaitSeconds: 30}
+		shipStock := shipyard.GetStockOf(shipToBuy)
+
+		if shipStock == nil {
+			state.Log("Somehow the ship isn't in stock here?")
+			continue
 		}
 
-		state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
+		state.Log(fmt.Sprintf("We need %d credits, we currently have %d credits", shipStock.PurchasePrice, state.Agent.Credits))
+
+		if state.Agent.Credits >= shipStock.PurchasePrice {
+			state.Log("We can buy a ship")
+			shipyard, _ := state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
+			database.StoreShipCosts(shipyard)
+			result, err := state.Agent.BuyShip(state.Context, state.Ship.Nav.WaypointSymbol, shipToBuy)
+
+			if err != nil {
+				state.Log(fmt.Sprintf("Error buying ship: %s", err.Error()))
+				continue
+			}
+
+			state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
+			break
+		}
 	}
 
 	// At this point we should be on the shipyard and waiting, so let's get the next sellComplete event and check there
@@ -195,7 +210,7 @@ func (s Satellite) Name() string {
 	return "Satellite"
 }
 
-func (s Satellite) GetShipToBuy(state *State) string {
+func (s Satellite) GetShipToBuy(state *State) []string {
 	shipsOfEachType := make(map[constant.ShipRole]int)
 
 	for _, st := range *state.States {
@@ -207,17 +222,21 @@ func (s Satellite) GetShipToBuy(state *State) string {
 		state.Log(fmt.Sprintf("%dx of type %s", a, t))
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] < 5 {
-		return "SHIP_MINING_DRONE"
+	if shipsOfEachType[constant.ShipRoleExcavator] < 3 {
+		return []string{"SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
 	}
 
 	if shipsOfEachType[constant.ShipRoleHauler] == 0 {
-		return "SHIP_LIGHT_HAULER"
+		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE"}
 	}
 
 	if shipsOfEachType[constant.ShipRoleSurveyor] == 0 {
-		return "SHIP_SURVEYOR"
+		return []string{"SHIP_SURVEYOR"}
 	}
 
-	return "SHIP_MINING_DRONE"
+	if shipsOfEachType[constant.ShipRoleSatellite] == 1 {
+		return []string{"SHIP_PROBE"}
+	}
+
+	return []string{"SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
 }

@@ -41,7 +41,6 @@ func GetSystem(system string) *System {
 		System: system,
 	}
 	tx := db.Take(&visitedSystem)
-	fmt.Println("getSystem", tx.Error)
 	if tx.Error == gorm.ErrRecordNotFound {
 		return nil
 	}

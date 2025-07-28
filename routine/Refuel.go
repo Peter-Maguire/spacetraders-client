@@ -22,6 +22,43 @@ func (r Refuel) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: r.next}
 	}
 
+	// TODO: rescue
+	if state.Ship.Fuel.Current == 0 {
+
+		rescueShips := make([]*State, 0)
+		for _, st := range *state.States {
+			if st.Ship.Cargo.Capacity == 0 ||
+				st.Ship.Fuel.Current == 0 ||
+				st.Ship.Nav.Status == "IN_TRANSIT" {
+				continue
+			}
+			rescueShips = append(rescueShips, st)
+		}
+
+		if len(rescueShips) == 0 {
+			state.Log("No ships are currently available to rescue me :'(")
+			return RoutineResult{WaitSeconds: 120}
+		}
+
+		ourWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
+		ourWaypointData := ourWaypoint.GetData()
+
+		sort.Slice(rescueShips, func(i, j int) bool {
+			shipIWaypoint := database.GetWaypoint(rescueShips[i].Ship.Nav.WaypointSymbol)
+			shipIWaypointData := shipIWaypoint.GetData()
+			shipJWaypoint := database.GetWaypoint(rescueShips[j].Ship.Nav.WaypointSymbol)
+			shipJWaypointData := shipJWaypoint.GetData()
+			return shipIWaypointData.GetDistanceFrom(ourWaypointData.LimitedWaypointData) < shipJWaypointData.GetDistanceFrom(ourWaypointData.LimitedWaypointData)
+		})
+
+		closestShip := rescueShips[0]
+		state.Log(fmt.Sprintf("Closest ship that can rescue us is %s", closestShip.Ship.Symbol))
+
+		closestShip.ForceRoutine = Rescue{shipSymbol: state.Ship.Symbol}
+
+		return RoutineResult{SetRoutine: AwaitRescue{next: r}}
+	}
+
 	// TODO: this would not be necessary if we properly handled refreshing the ship data
 	ship, _ := state.Agent.GetShip(state.Context, state.Ship.Symbol)
 	if ship != nil {

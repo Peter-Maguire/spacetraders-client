@@ -79,6 +79,16 @@ func (s *Ship) Refuel(ctx context.Context) *http.HttpError {
 	return err
 }
 
+func (s *Ship) RefuelFromCargo(ctx context.Context) *http.HttpError {
+	shipRefuelUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), map[string]any{
+		"fromCargo": true,
+	})
+	if shipRefuelUpdate != nil {
+		s.Fuel = shipRefuelUpdate.Fuel
+	}
+	return err
+}
+
 func (s *Ship) Orbit(ctx context.Context) error {
 	shipNavUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/orbit", s.Symbol), nil)
 	if shipNavUpdate != nil {
