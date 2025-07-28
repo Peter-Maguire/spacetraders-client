@@ -107,6 +107,13 @@ func (s *Ship) SetFlightMode(ctx context.Context, mode string) *http.HttpError {
 	return err
 }
 
+func (s *Ship) EnsureFlightMode(ctx context.Context, mode string) *http.HttpError {
+	if s.Nav.FlightMode != mode {
+		return s.SetFlightMode(ctx, mode)
+	}
+	return nil
+}
+
 func (s *Ship) EnsureNavState(ctx context.Context, state NavState) error {
 	if s.Nav.Status == state {
 		return nil

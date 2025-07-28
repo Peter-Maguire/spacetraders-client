@@ -200,7 +200,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	}
 
 	if purchaseAmount >= unitsRemaining || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {
-		state.Log("going to a random waypoint after delivery")
+		state.Log("going to a random waypoint to negotiate after delivery")
 		return RoutineResult{
 			SetRoutine: NavigateTo{
 				waypoint: p.deliverable.DestinationSymbol,

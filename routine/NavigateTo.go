@@ -148,6 +148,8 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			WaitSeconds: 10,
 		}
 	}
+
+	state.Ship.EnsureFlightMode(state.Context, "CRUISE")
 	state.Log(fmt.Sprintf("Navigating until %s", &state.Ship.Nav.Route.Arrival))
 	return RoutineResult{
 		WaitUntil:  &state.Ship.Nav.Route.Arrival,
