@@ -74,17 +74,17 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			for _, fuelMarket := range fuelMarkets {
 				// We can't go here because it's in a different system
 				if fuelMarket.Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol {
-					fmt.Printf("NAV: Discounting %s because it's not in our system (%s)\n", fuelMarket.Waypoint, state.Ship.Nav.SystemSymbol)
+					//fmt.Printf("NAV: Discounting %s because it's not in our system (%s)\n", fuelMarket.Waypoint, state.Ship.Nav.SystemSymbol)
 					continue
 				}
 
 				if fuelMarket.Waypoint == state.Ship.Nav.WaypointSymbol {
-					fmt.Printf("NAV: Discounting %s as it's the waypoint we are currently at\n", fuelMarket.Waypoint)
+					//fmt.Printf("NAV: Discounting %s as it's the waypoint we are currently at\n", fuelMarket.Waypoint)
 					continue
 				}
 
 				if fuelMarket.Waypoint == n.waypoint {
-					fmt.Printf("NAV: Discounting %s as it's the waypoint we are currently going to\n", fuelMarket.Waypoint)
+					//fmt.Printf("NAV: Discounting %s as it's the waypoint we are currently going to\n", fuelMarket.Waypoint)
 					continue
 				}
 
@@ -93,32 +93,32 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 				fuelToFuelMarket := util.GetFuelCost(distanceToFuelMarket, state.Ship.Nav.FlightMode)
 
 				if distanceToFuelMarket > distanceToTarget {
-					fmt.Printf("NAV: Discounting %s because it's further away (%d) then the target waypoint (%d)\n", fuelMarket.Waypoint, distanceToFuelMarket, distanceToTarget)
+					//fmt.Printf("NAV: Discounting %s because it's further away (%d) then the target waypoint (%d)\n", fuelMarket.Waypoint, distanceToFuelMarket, distanceToTarget)
 					continue
 				}
 
 				// We can't go here because it'll take more fuel than we have
 				if fuelToFuelMarket > state.Ship.Fuel.Current {
-					fmt.Printf("NAV: Discounting %s because the fuel cost to get to there (%d) is higher than our current fuel (%d)\n", fuelMarket.Waypoint, fuelToFuelMarket, state.Ship.Fuel.Current)
+					//fmt.Printf("NAV: Discounting %s because the fuel cost to get to there (%d) is higher than our current fuel (%d)\n", fuelMarket.Waypoint, fuelToFuelMarket, state.Ship.Fuel.Current)
 					continue
 				}
 
 				if state.Ship.Nav.FlightMode == constant.FlightModeCruise && fuelToFuelMarket <= 2 {
-					fmt.Printf("NAV: Discounting %s because it is %d fuel away from our current waypoint\n", fuelMarket.Waypoint, fuelToFuelMarket)
+					//fmt.Printf("NAV: Discounting %s because it is %d fuel away from our current waypoint\n", fuelMarket.Waypoint, fuelToFuelMarket)
 				}
 
 				distanceFromFuelMarketToTarget := fuelMarketWaypoint.GetDistanceFrom(targetData.LimitedWaypointData)
 
 				// We can't go here because the market is further away then we currently are
 				if distanceFromFuelMarketToTarget >= distanceToTarget {
-					fmt.Printf("NAV: Discounting %s because the distance from the fuel market to the target (%d) is higher than our current distance from the target (%d)\n", fuelMarket.Waypoint, distanceFromFuelMarketToTarget, distanceToTarget)
+					//fmt.Printf("NAV: Discounting %s because the distance from the fuel market to the target (%d) is higher than our current distance from the target (%d)\n", fuelMarket.Waypoint, distanceFromFuelMarketToTarget, distanceToTarget)
 					continue
 				}
 
 				fuelToTarget := util.GetFuelCost(distanceFromFuelMarketToTarget, state.Ship.Nav.FlightMode)
 				// We can't go here because going from here to the target would take more fuel than available
 				if fuelToTarget > state.Ship.Fuel.Capacity {
-					fmt.Printf("NAV: Discounting %s because the fuel from the market to the target (%d) is higher than our capacity (%d)\n", fuelMarket.Waypoint, fuelToTarget, state.Ship.Fuel.Capacity)
+					//fmt.Printf("NAV: Discounting %s because the fuel from the market to the target (%d) is higher than our capacity (%d)\n", fuelMarket.Waypoint, fuelToTarget, state.Ship.Fuel.Capacity)
 					continue
 				}
 				fmt.Printf("NAV: Market %s is eligible with distance %d+%d", fuelMarket.Waypoint, distanceToFuelMarket, distanceFromFuelMarketToTarget)
@@ -128,25 +128,23 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			}
 
 			if len(eligibleMarkets) == 0 {
-				if state.Ship.Nav.FlightMode == "DRIFT" {
-					return RoutineResult{
-						SetRoutine: Refuel{next: n},
-					}
+				state.Log("No eligible markets found")
+				if state.Ship.Nav.FlightMode != "DRIFT" {
+					state.Log("Trying again in drift mode")
+					state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
+					return RoutineResult{}
 				}
-				state.Log("Trying again in drift mode")
-				state.Ship.SetFlightMode(state.Context, constant.FlightModeDrift)
-				return RoutineResult{}
-			}
+			} else {
+				// TODO: shouldn't we go to the *furthest* away we can get on the first leg?
+				sort.Slice(eligibleMarkets, func(i, j int) bool {
+					return combinedDistances[eligibleMarkets[i].Waypoint] < combinedDistances[eligibleMarkets[j].Waypoint]
+				})
 
-			// TODO: shouldn't we go to the *furthest* away we can get on the first leg?
-			sort.Slice(eligibleMarkets, func(i, j int) bool {
-				return combinedDistances[eligibleMarkets[i].Waypoint] < combinedDistances[eligibleMarkets[j].Waypoint]
-			})
+				state.Log(fmt.Sprintf("Taking a detour via market %s (distance %d)", eligibleMarkets[0].Waypoint, combinedDistances[eligibleMarkets[0].Waypoint]))
 
-			state.Log(fmt.Sprintf("Taking a detour via market %s (distance %d)", eligibleMarkets[0].Waypoint, combinedDistances[eligibleMarkets[0].Waypoint]))
-
-			return RoutineResult{
-				SetRoutine: NavigateTo{isDetour: true, waypoint: eligibleMarkets[0].Waypoint, next: Refuel{next: n}},
+				return RoutineResult{
+					SetRoutine: NavigateTo{isDetour: true, waypoint: eligibleMarkets[0].Waypoint, next: Refuel{next: n}},
+				}
 			}
 		}
 		// TODO: this shouldn't be duplicated, try and figure out the logic here

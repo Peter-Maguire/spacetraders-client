@@ -296,7 +296,13 @@ func (o *Orchestrator) runEvents() {
 func (o *Orchestrator) routineLoop(state *routine.State) {
 	state.CurrentRoutine = routine.DetermineObjective{}
 	for {
-		shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(1)
+		routineName := state.CurrentRoutine.Name()
+		if len(routineName) > 200 {
+			state.StoppedReason = "Loop Detected"
+			state.Log("Stopping Routine")
+			break
+		}
+		shipStates.WithLabelValues(state.Ship.Symbol, routineName).Set(1)
 		routineResult := state.CurrentRoutine.Run(state)
 		if routineResult.WaitSeconds > 0 {
 			//state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))

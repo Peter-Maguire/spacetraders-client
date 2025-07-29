@@ -10,6 +10,16 @@ type NegotiateContract struct {
 }
 
 func (n NegotiateContract) Run(state *State) RoutineResult {
+
+	contracts, _ := state.Agent.Contracts(state.Context)
+
+	for _, c := range *contracts {
+		if !c.Fulfilled {
+			state.Log("We haven't finished this contract yet")
+			return RoutineResult{SetRoutine: DetermineObjective{}}
+		}
+	}
+
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 	newContract, err := state.Ship.NegotiateContract(state.Context)
 
