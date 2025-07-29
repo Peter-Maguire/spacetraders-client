@@ -72,3 +72,15 @@ func (s *State) GetShipsWithRoleAtOrGoingToWaypoint(t constant.ShipRole, waypoin
 	}
 	return ships
 }
+
+func (s *State) GetTotalOfItemAcrossAllShips(symbol string) int {
+	amount := 0
+	for _, state := range *s.States {
+		slot := state.Ship.Cargo.GetSlotWithItem(symbol)
+		if slot == nil {
+			continue
+		}
+		amount += slot.Units
+	}
+	return amount
+}

@@ -210,24 +210,25 @@ async function updateHeader(){
         .then(res => res.json())
         .catch(()=>null);
 
-    let agent = agents[currentAgent];
+    if(agents) {
+        let agent = agents[currentAgent];
+        document.getElementById("tabList").textContent = "";
+        Object.keys(agents).forEach((a) => {
+            let d = document.createElement("span");
+            d.classList.add("tab");
+            d.innerText = a;
+            if (a === currentAgent) {
+                d.classList.add("active");
+            }
+            d.onclick = () => {
+                currentAgent = a;
+                updateHeader();
+            }
+            document.getElementById("tabList").appendChild(d);
+        })
 
-    document.getElementById("tabList").textContent = "";
-    Object.keys(agents).forEach((a)=>{
-        let d = document.createElement("span");
-        d.classList.add("tab");
-        d.innerText = a;
-        if(a === currentAgent){
-            d.classList.add("active");
-        }
-        d.onclick = ()=>{
-            currentAgent = a;
-            updateHeader();
-        }
-        document.getElementById("tabList").appendChild(d);
-    })
-
-    document.getElementById("credits").innerText = agent.credits.toLocaleString()+" credits"
+        document.getElementById("credits").innerText = agent.credits.toLocaleString() + " credits"
+    }
 
      if(contracts){
          let contract = contracts[currentAgent];
@@ -241,8 +242,6 @@ async function updateHeader(){
         let timeLeft = shortParseTime(new Date(serverStatus.end)-now)
         document.getElementById("status").innerText = `Day ${timeSinceStart} (${timeLeft} left)`;
      }
-
-
 }
 
 

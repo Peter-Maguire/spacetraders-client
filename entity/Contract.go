@@ -76,6 +76,10 @@ func (cd *ContractDeliverable) IsFulfilled() bool {
 	return cd.UnitsFulfilled >= cd.UnitsRequired
 }
 
+func (cd *ContractDeliverable) GetRemaining() int {
+	return cd.UnitsRequired - cd.UnitsFulfilled
+}
+
 type ContractDeliveryRequest struct {
 	ShipSymbol  string `json:"shipSymbol"`
 	TradeSymbol string `json:"tradeSymbol"`

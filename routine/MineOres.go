@@ -86,6 +86,38 @@ func (m MineOres) Run(state *State) RoutineResult {
 
 	state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
 
+	if state.ConstructionSite != nil {
+		for _, material := range state.ConstructionSite.Materials {
+			materialItemSlot := state.Ship.Cargo.GetSlotWithItem(material.TradeSymbol)
+			if materialItemSlot != nil && materialItemSlot.Units >= material.GetRemaining() {
+				return RoutineResult{
+					SetRoutine: DeliverConstructionSiteItem{next: GoToMiningArea{next: m}},
+				}
+			}
+		}
+	}
+
+	if state.Contract != nil {
+		for _, deliverable := range state.Contract.Terms.Deliver {
+			contractItemSlot := state.Ship.Cargo.GetSlotWithItem(deliverable.TradeSymbol)
+			if contractItemSlot != nil {
+				if contractItemSlot.Units >= deliverable.GetRemaining() {
+					state.Log("We have a contract item to deliver")
+					return RoutineResult{
+						SetRoutine: DeliverContractItem{item: deliverable.TradeSymbol, next: GoToMiningArea{next: m}},
+					}
+				}
+
+				// TODO: Pre-emptively deliver if all ships combined have enough to finish the procurement
+				//total := state.GetTotalOfItemAcrossAllShips(deliverable.TradeSymbol)
+				//if total >= deliverable.GetRemaining() && state.GetShipsWithRoleAtOrGoingToWaypoint() {
+				//
+				//}
+			}
+		}
+
+	}
+
 	if state.Ship.Cargo.IsFull() {
 		return RoutineResult{
 			SetRoutine: Jettison{

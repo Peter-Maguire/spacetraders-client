@@ -18,6 +18,7 @@ func (w *Waypoint) GetSystem(ctx context.Context) (*System, *http.HttpError) {
 	return http.Request[System](ctx, "GET", fmt.Sprintf("systems/%s", w.GetSystemName()), nil)
 }
 
+// TODO: put this on SystemSymbol
 func (w *Waypoint) GetSystemWaypoints(ctx context.Context) (*[]WaypointData, *http.HttpError) {
 	return http.PaginatedRequest[WaypointData](ctx, fmt.Sprintf("systems/%s/waypoints", w.GetSystemName()), 1, 0)
 }

@@ -75,6 +75,9 @@ func Init(token string) *Orchestrator {
 		}
 		fmt.Println(systemData)
 		database.StoreSystem(systemData)
+
+		waypointData, _ := systemData.GetWaypoints(ctx)
+		database.LogWaypoints(waypointData)
 	}
 
 	metrics.NumCredits.Set(float64(agent.Credits))
@@ -305,6 +308,8 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
 		if routineResult.WaitUntil != nil {
 			waitTime := routineResult.WaitUntil.Sub(time.Now())
+			// TODO: solve the clock issue instead of this
+			waitTime += 5
 			//state.Log(fmt.Sprintf("Waiting until %s (%.f seconds)", routineResult.WaitUntil, waitTime.Seconds()))
 			state.AsleepUntil = routineResult.WaitUntil
 			time.Sleep(waitTime)

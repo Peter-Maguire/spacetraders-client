@@ -20,18 +20,34 @@ func (s Satellite) Run(state *State) RoutineResult {
 	*    less visits than the one they're currently on. It's also worth checking if there's any point to me going to waypoints that have no market or shipyard.
 	 */
 
+	state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 
 	mkt, _ := waypointData.Symbol.GetMarket(state.Context)
 	syd, _ := waypointData.Symbol.GetShipyard(state.Context)
 
 	database.VisitWaypoint(waypointData, mkt, syd)
+
 	if mkt != nil {
 		system := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+
+		if len(mkt.TradeGoods) == 0 {
+			state.Log("No trade goods... time desync?")
+			return RoutineResult{
+				WaitSeconds: 5,
+			}
+		}
 		database.StoreMarketRates(system, waypointData, mkt.TradeGoods)
-		database.StoreMarketExchange(system, waypointData, "export", mkt.Exports)
-		database.StoreMarketExchange(system, waypointData, "import", mkt.Imports)
-		database.StoreMarketExchange(system, waypointData, "exchange", mkt.Exchange)
+		if len(mkt.Exports) > 0 {
+			database.StoreMarketExchange(system, waypointData, "export", mkt.Exports)
+		}
+		if len(mkt.Imports) > 0 {
+			database.StoreMarketExchange(system, waypointData, "import", mkt.Imports)
+		}
+		if len(mkt.Exchange) > 0 {
+			database.StoreMarketExchange(system, waypointData, "exchange", mkt.Exchange)
+		}
 	}
 
 	if syd != nil {

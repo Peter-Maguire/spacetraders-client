@@ -130,6 +130,9 @@ func VisitWaypoint(data *entity.WaypointData, market *entity.Market, shipyard *e
 	waypointData, _ := json.Marshal(data)
 	shipyardData, _ := json.Marshal(shipyard)
 	marketData, _ := json.Marshal(market)
+	if currentWaypoint == nil {
+		currentWaypoint = &Waypoint{}
+	}
 	currentWaypoint.TimesVisited++
 	currentWaypoint.Waypoint = string(data.Symbol)
 	currentWaypoint.System = data.SystemSymbol

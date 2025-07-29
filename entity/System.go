@@ -24,7 +24,7 @@ func GetSystem(ctx context.Context, system string) (*System, *http.HttpError) {
 }
 
 func (s *System) GetWaypoints(ctx context.Context) (*[]WaypointData, *http.HttpError) {
-	return http.Request[[]WaypointData](ctx, "GET", fmt.Sprintf("systems/%s/waypoints", s.Symbol), nil)
+	return http.PaginatedRequest[WaypointData](ctx, fmt.Sprintf("systems/%s/waypoints", s.Symbol), 1, 0)
 }
 
 func (s *System) GetLimitedWaypoint(ctx context.Context, name Waypoint) *LimitedWaypointData {
