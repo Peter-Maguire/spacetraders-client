@@ -9,9 +9,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"io"
 	"net/http"
+	"path"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -213,29 +213,35 @@ func requestLoop() {
 	}()
 }
 
-func getRequestPriority(path string) int {
+var priorities = map[string]int{
 	// Navigation is top priority as it takes the longest
-	if strings.HasSuffix(path, "/jump") || strings.HasSuffix(path, "/warp") {
-		return 16
-	}
-	if strings.HasSuffix(path, "/navigate") {
-		return 15
-	}
-	// Survey should happen before mining
-	if strings.HasSuffix(path, "/survey") {
-		return 11
-	}
+	"jump":     16,
+	"warp":     16,
+	"navigate": 15,
+	"nav":      15,
+	"refuel":   14,
+	"orbit":    14,
+	"survey":   11,
 	// Mining should happen before other things
-	if strings.HasSuffix(path, "/extract") || strings.HasSuffix(path, "/jettison") || strings.HasSuffix(path, "/refine") || strings.HasSuffix(path, "/transfer") {
-		return 10
-	}
+	"extract":  10,
+	"jettison": 10,
+	"refine":   10,
+	"transfer": 10,
+	// Fulfilling contracts or construction sites
+	"supply":  9,
+	"fulfill": 9,
+	"deliver": 9,
 	// Selling has to have priority over transfers for haulers
-	if strings.HasSuffix(path, "/sell") || strings.HasSuffix(path, "/cargo") {
-		return 2
-	}
+	"sell":  2,
+	"cargo": 2,
 	// Scan has priority over most things
-	if strings.HasSuffix(path, "/scan") {
-		return 2
+	"scan": 2,
+}
+
+func getRequestPriority(requestPath string) int {
+	priority, ok := priorities[path.Base(requestPath)]
+	if ok {
+		return priority
 	}
 	return 1
 }
