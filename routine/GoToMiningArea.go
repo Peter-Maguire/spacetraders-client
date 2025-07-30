@@ -92,6 +92,27 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 		}
 	}
 
+	isAtBlacklistedWaypoint := false
+	for _, blacklistedWaypoint := range g.blacklist {
+		if blacklistedWaypoint == state.Ship.Nav.WaypointSymbol {
+			isAtBlacklistedWaypoint = true
+			break
+		}
+	}
+	if !isAtBlacklistedWaypoint {
+		for i, eligibleWaypoint := range eligibleWaypoints {
+			if i > 5 {
+				break
+			}
+			if eligibleWaypoint.Symbol == state.Ship.Nav.WaypointSymbol {
+				state.Log(fmt.Sprintf("We are at good enough waypoint #%d", i))
+				return RoutineResult{
+					SetRoutine: g.next,
+				}
+			}
+		}
+	}
+
 	bestWaypoint := eligibleWaypoints[0]
 
 	state.Log(fmt.Sprintf("Choosing waypoint %s which has score of %d", bestWaypoint.Symbol, waypointScores[bestWaypoint.Symbol]))
