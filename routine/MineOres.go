@@ -18,9 +18,17 @@ var (
 
 type MineOres struct {
 	latentCooldown *time.Time
+	next           Routine
 }
 
 func (m MineOres) Run(state *State) RoutineResult {
+
+	if !state.Ship.IsSiphonShip() {
+		state.Log("We shouldnt've got here")
+		return RoutineResult{
+			SetRoutine: DetermineObjective{},
+		}
+	}
 
 	if m.latentCooldown != nil && m.latentCooldown.After(time.Now()) {
 		state.Log("Waiting for Cooldown")
@@ -82,6 +90,10 @@ func (m MineOres) Run(state *State) RoutineResult {
 		}
 	}
 
+	for _, event := range result.Events {
+		state.Log(fmt.Sprintf("!!! Mining Event - %s: %s", event.Name, event.Description))
+	}
+
 	mined.WithLabelValues(result.Extraction.Yield.Symbol).Add(float64(result.Extraction.Yield.Units))
 
 	state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
@@ -129,12 +141,19 @@ func (m MineOres) Run(state *State) RoutineResult {
 		}
 	}
 
+	if m.next != nil {
+		return RoutineResult{
+			SetRoutine: m.next,
+		}
+	}
+
 	return RoutineResult{
 		WaitUntil: &result.Cooldown.Expiration,
 	}
 }
 
-var uselessItems = []string{"QUARTZ_SAND", "ICE_WATER", "AMMONIA_ICE", "PRECIOUS_STONES"}
+// TODO: replace this with a better system
+var uselessItems = []string{}
 
 func (m MineOres) IsUseless(item string) bool {
 	for _, uselessItem := range uselessItems {

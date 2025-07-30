@@ -6,7 +6,6 @@ import (
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/util"
-	"strings"
 )
 
 type Satellite struct{}
@@ -250,8 +249,11 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 
 	if shipsOfEachType[constant.ShipRoleExcavator] > 4 && state.Contract != nil && !state.Contract.Fulfilled {
 		for _, deliverable := range state.Contract.Terms.Deliver {
-			if !deliverable.IsFulfilled() && !strings.HasSuffix(deliverable.TradeSymbol, "_ORE") {
-				state.Log("We don't want to buy a ship right now as we're doing a contract")
+			if !util.IsMineable(deliverable.TradeSymbol) {
+				state.Log(fmt.Sprintf("We don't want to buy a ship right now as we're doing a contract for unmineable %s", deliverable.TradeSymbol))
+				if shipsOfEachType[constant.ShipRoleHauler] == 0 {
+					return []string{"SHIP_LIGHT_HAULER"}
+				}
 				return []string{}
 			}
 		}

@@ -51,12 +51,12 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Registration.Role == constant.ShipRoleCommand && len(state.Haulers) < 1 {
+	if state.Ship.Registration.Role == constant.ShipRoleCommand {
 		if state.Contract == nil || state.Contract.Fulfilled {
 			return RoutineResult{SetRoutine: GoToRandomFactionWaypoint{next: NegotiateContract{}}}
 		}
 		for _, deliverable := range state.Contract.Terms.Deliver {
-			if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
+			if !deliverable.IsFulfilled() {
 				state.Log(fmt.Sprintf("We have to find some %s to deliver", deliverable.TradeSymbol))
 				return RoutineResult{SetRoutine: ProcureContractItem{deliverable: &deliverable}}
 			}
@@ -112,7 +112,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.IsMiningShip() {
+	if state.Ship.Registration.Role == constant.ShipRoleExcavator {
 		if state.Ship.Cargo.Units >= state.Ship.Cargo.Capacity {
 			state.Log("We're full up here")
 			return RoutineResult{
@@ -120,12 +120,19 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 					nextIfSuccessful: d,
 					nextIfFailed:     FullWait{},
 				},
-				//SetRoutine: SellExcessInventory{MineOres{}},
 			}
 		}
+	}
 
+	if state.Ship.IsMiningShip() {
 		return RoutineResult{
 			SetRoutine: GoToMiningArea{},
+		}
+	}
+
+	if state.Ship.IsSiphonShip() {
+		return RoutineResult{
+			SetRoutine: GoToGasGiant{},
 		}
 	}
 

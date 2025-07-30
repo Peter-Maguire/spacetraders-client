@@ -25,7 +25,7 @@ func (f FullWait) Run(state *State) RoutineResult {
 	}
 
 	return RoutineResult{
-		SetRoutine: MineOres{},
+		SetRoutine: DetermineObjective{},
 	}
 }
 

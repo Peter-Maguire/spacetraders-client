@@ -42,6 +42,15 @@ func (s *Ship) IsMiningShip() bool {
 	return false
 }
 
+func (s *Ship) IsSiphonShip() bool {
+	for _, mount := range s.Mounts {
+		if strings.HasPrefix(mount.Symbol, "MOUNT_GAS_SIPHON") {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Ship) CanWarp() bool {
 	for _, module := range s.Modules {
 		if strings.Contains(module.Symbol, "WARP") {
@@ -140,6 +149,14 @@ func (s *Ship) SellCargo(ctx context.Context, cargoSymbol string, units int) (*S
 		s.Cargo = &sellResult.Cargo
 	}
 	return sellResult, err
+}
+
+func (s *Ship) Siphon(ctx context.Context) (*SiphonResult, *http.HttpError) {
+	extractionResult, err := http.Request[SiphonResult](ctx, "POST", fmt.Sprintf("my/ships/%s/siphon", s.Symbol), nil)
+	if extractionResult != nil {
+		s.Cargo = &extractionResult.Cargo
+	}
+	return extractionResult, err
 }
 
 func (s *Ship) Extract(ctx context.Context) (*ExtractionResult, *http.HttpError) {

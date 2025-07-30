@@ -120,6 +120,11 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Cost of retrieving %dx %s at cheapest market (%s) is %d", unitsRemaining, p.deliverable.TradeSymbol, markets[0].Waypoint, marketCosts[markets[0].Waypoint]))
 
 		if marketCosts[markets[0].Waypoint] > state.Contract.Terms.Payment.GetTotalPayment() {
+			if util.IsMineable(p.deliverable.TradeSymbol) {
+				return RoutineResult{
+					SetRoutine: GoToMiningArea{next: MineOres{next: p}},
+				}
+			}
 			state.Log("Having a look for more markets")
 			return RoutineResult{
 				SetRoutine: Explore{
