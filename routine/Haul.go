@@ -180,7 +180,7 @@ func (h Haul) Run(state *State) RoutineResult {
 	}
 
 	return RoutineResult{
-		WaitSeconds: 1,
+		WaitSeconds: 10,
 	}
 }
 
