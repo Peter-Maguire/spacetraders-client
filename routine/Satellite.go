@@ -250,7 +250,7 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 
 	if shipsOfEachType[constant.ShipRoleExcavator] > 4 && state.Contract != nil && !state.Contract.Fulfilled {
 		for _, deliverable := range state.Contract.Terms.Deliver {
-			if !strings.HasSuffix(deliverable.TradeSymbol, "_ORE") {
+			if !deliverable.IsFulfilled() && !strings.HasSuffix(deliverable.TradeSymbol, "_ORE") {
 				state.Log("We don't want to buy a ship right now as we're doing a contract")
 				return []string{}
 			}
@@ -265,8 +265,13 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		return []string{"SHIP_SURVEYOR"}
 	}
 
-	if shipsOfEachType[constant.ShipRoleSatellite] == 1 {
+	if shipsOfEachType[constant.ShipRoleSatellite] < 3 {
 		return []string{"SHIP_PROBE"}
+	}
+
+	// Ratio of 1 hauler for every 9 excavators
+	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < 1/9 {
+		return []string{"SHIP_LIGHT_HAULER"}
 	}
 
 	return []string{"SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
