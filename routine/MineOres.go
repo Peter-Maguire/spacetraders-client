@@ -23,7 +23,7 @@ type MineOres struct {
 
 func (m MineOres) Run(state *State) RoutineResult {
 
-	if !state.Ship.IsSiphonShip() {
+	if !state.Ship.IsMiningShip() {
 		state.Log("We shouldnt've got here")
 		return RoutineResult{
 			SetRoutine: DetermineObjective{},
