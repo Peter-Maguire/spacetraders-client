@@ -105,6 +105,7 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 				break
 			}
 			if eligibleWaypoint.Symbol == state.Ship.Nav.WaypointSymbol {
+				state.Log(fmt.Sprintf("Choosing waypoint #%d %s which has score of %d", i, eligibleWaypoint.Symbol, waypointScores[eligibleWaypoint.Symbol]))
 				state.Log(fmt.Sprintf("We are at good enough waypoint #%d", i))
 				return RoutineResult{
 					SetRoutine: g.next,
@@ -114,27 +115,11 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}
 
 	bestWaypoint := eligibleWaypoints[0]
-
 	state.Log(fmt.Sprintf("Choosing waypoint %s which has score of %d", bestWaypoint.Symbol, waypointScores[bestWaypoint.Symbol]))
-
 	return RoutineResult{SetRoutine: NavigateTo{
 		waypoint: bestWaypoint.Symbol,
 		next:     g.next,
 	}}
-
-	//if state.Ship.Nav.SystemSymbol != state.Agent.Headquarters.GetSystemName() {
-	//	return RoutineResult{
-	//		SetRoutine: GoToJumpGate{next: GoToSystem{
-	//			system: state.Agent.Headquarters.GetSystemName(),
-	//			next:   g,
-	//		}},
-	//	}
-	//}
-	//
-	//state.Log("Couldn't find a waypoint pointing to an asteroid field")
-	//return RoutineResult{
-	//	WaitSeconds: 60,
-	//}
 }
 
 func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []*database.Waypoint) (bool, int) {

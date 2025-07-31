@@ -16,6 +16,15 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 	fuelSlot := cargo.GetSlotWithItem("FUEL")
 	if fuelSlot == nil {
 		if state.Ship.Cargo.IsFull() {
+			leastUnits := 1000
+			leastUnitsSymbol := ""
+			for _, i := range state.Ship.Cargo.Inventory {
+				if i.Units < leastUnits {
+					leastUnits = i.Units
+					leastUnitsSymbol = i.Symbol
+				}
+			}
+			state.Ship.JettisonCargo(state.Context, leastUnitsSymbol, 1)
 			return RoutineResult{
 				SetRoutine: Jettison{
 					nextIfSuccessful: a,

@@ -19,6 +19,12 @@ func (h Haul) Run(state *State) RoutineResult {
 
 	cargo, _ := state.Ship.GetCargo(state.Context)
 
+	if state.Ship.Cargo.IsFull() {
+		return RoutineResult{
+			SetRoutine: SellExcessInventory{next: h},
+		}
+	}
+
 	cargoCount := cargo.Units
 
 	sellables := cargo.Inventory

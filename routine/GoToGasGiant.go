@@ -24,9 +24,7 @@ func (f GoToGasGiant) Run(state *State) RoutineResult {
 		if f.isBlacklisted(waypoint.Waypoint) {
 			continue
 		}
-		if waypoint.WaypointData.Type == constant.WaypointTypeGasGiant &&
-			!waypoint.WaypointData.HasTrait(constant.TraitToxicAtmosphere) &&
-			!waypoint.WaypointData.HasTrait(constant.TraitCorrosiveAtmosphere) {
+		if waypoint.WaypointData.Type == constant.WaypointTypeGasGiant {
 			gasGiants = append(gasGiants, waypoint)
 		}
 	}
@@ -34,8 +32,9 @@ func (f GoToGasGiant) Run(state *State) RoutineResult {
 	if len(gasGiants) > 0 {
 		// TODO: find other systems with gas giants
 		return RoutineResult{
-			Stop:       true,
-			StopReason: "No gas giants available",
+			SetRoutine: BuildJumpGate{next: f},
+			//Stop:       true,
+			//StopReason: "No gas giants available",
 		}
 	}
 

@@ -35,13 +35,6 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
-	if state.Ship.Fuel.Current == 1 {
-		state.Log("Refuelling so we don't run out of fuel")
-		return RoutineResult{
-			SetRoutine: Refuel{next: n},
-		}
-	}
-
 	if state.Ship.Nav.SystemSymbol != n.waypoint.GetSystemName() {
 		fmt.Println(state.Ship.Nav.SystemSymbol, n.waypoint.GetSystemName())
 		state.Log("Jumping to system first")
@@ -121,7 +114,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 					//fmt.Printf("NAV: Discounting %s because the fuel from the market to the target (%d) is higher than our capacity (%d)\n", fuelMarket.Waypoint, fuelToTarget, state.Ship.Fuel.Capacity)
 					continue
 				}
-				fmt.Printf("NAV: Market %s is eligible with distance %d+%d", fuelMarket.Waypoint, distanceToFuelMarket, distanceFromFuelMarketToTarget)
+				fmt.Printf("NAV: Market %s is eligible with distance %d+%d\n", fuelMarket.Waypoint, distanceToFuelMarket, distanceFromFuelMarketToTarget)
 				eligibleMarkets = append(eligibleMarkets, fuelMarket)
 				// TODO: should we take into account fuel cost here?
 				combinedDistances[fuelMarket.Waypoint] = distanceToFuelMarket + distanceFromFuelMarketToTarget

@@ -265,9 +265,13 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	// Dock and sell items sellable here
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 	updatedMarketData, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
-
+	var shipyard *entity.ShipyardStock
+	if currentWaypoint.HasTrait(constant.TraitShipyard) {
+		shipyard, _ = state.Ship.Nav.WaypointSymbol.GetShipyard(state.Context)
+	}
+	database.VisitWaypoint(currentWaypoint, updatedMarketData, shipyard)
 	go database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, updatedMarketData.TradeGoods)
-
+	soldSuccessfully := false
 	for _, item := range sensibleOpportunities[0].SellableHere {
 		sellableSlot := state.Ship.Cargo.GetSlotWithItem(item)
 		if sellableSlot == nil {
@@ -284,6 +288,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
+			soldSuccessfully = true
 			state.Agent = &sellResult.Agent
 			soldFor.WithLabelValues(sellResult.Transaction.TradeSymbol).Set(float64(sellResult.Transaction.PricePerUnit))
 			totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol).Add(float64(sellResult.Transaction.Units))
@@ -295,6 +300,13 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	if marketFuel != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity {
 		state.Log("Refuelling whilst I have the opportunity")
 		_ = state.Ship.Refuel(state.Context)
+	}
+
+	if !soldSuccessfully {
+		state.Log("We were unable to sell successfully?")
+		return RoutineResult{
+			WaitSeconds: 10,
+		}
 	}
 
 	state.FireEvent("sellComplete", state.Agent)
