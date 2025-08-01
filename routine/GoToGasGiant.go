@@ -32,7 +32,7 @@ func (f GoToGasGiant) Run(state *State) RoutineResult {
 	if len(gasGiants) > 0 {
 		// TODO: find other systems with gas giants
 		return RoutineResult{
-			SetRoutine: BuildJumpGate{next: f},
+			SetRoutine: Explore{},
 			//Stop:       true,
 			//StopReason: "No gas giants available",
 		}
