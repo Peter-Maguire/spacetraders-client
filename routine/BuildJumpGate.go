@@ -20,6 +20,7 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 	for _, waypoint := range *waypoints {
 		if waypoint.SystemSymbol == state.Ship.Nav.SystemSymbol && waypoint.Type == constant.WaypointTypeJumpGate {
 			fullWp, _ := waypoint.GetFullWaypoint(state.Context)
+			fmt.Println(fullWp)
 			if fullWp.IsUnderConstruction {
 				jumpGatesUnderConstruction = append(jumpGatesUnderConstruction, fullWp)
 			}

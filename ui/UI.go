@@ -100,12 +100,14 @@ type HttpRequestList struct {
 	Path      string `json:"path"`
 }
 
-func WriteShipState(shipStates []ShipData, httpState HttpData) {
+func WriteShipState(shipStates []ShipData, httpState HttpData, contracts map[string]*entity.Contract, agents map[string]*entity.Agent) {
 	broadcasts <- BroadcastMessage{
 		Type: "state",
 		Data: map[string]any{
-			"ship": shipStates,
-			"http": httpState,
+			"contracts": contracts,
+			"agents":    agents,
+			"ship":      shipStates,
+			"http":      httpState,
 		},
 	}
 }

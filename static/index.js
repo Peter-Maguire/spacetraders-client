@@ -50,7 +50,6 @@ let shipStates = [];
 let waypoints = [];
 let mapSystem = "";
 let viewingMap = true;
-let agents = [];
 let currentAgent = "AGENT1";
 
 function connect() {
@@ -90,11 +89,15 @@ function connect() {
 
 connect();
 
-function updateState({ship, http}){
+function updateState(data){
+    let {ship, http} = data;
     const ships = document.getElementById("shipState");
     const requests = document.getElementById("httpCalls");
 
     const shipTemplate = document.getElementById("shipTemplate")
+
+    agents = data.agents;
+    contracts = data.contracts;
 
     shipStates = ship;
     drawMap();
@@ -240,17 +243,10 @@ function getCanvasCoords(x, y){
     return [(x* mapScale - mapXOffset), (y* mapScale - mapYOffset)];
 }
 
+let agents, contracts;
 async function updateHeader(){
-    agents = await fetch("/agent")
-        .then(res => res.json())
-        .catch(()=>null);
-
     let serverStatus = await fetch("/status")
         .then(res=>res.json())
-        .catch(()=>null);
-
-    let contracts = await fetch("/contracts")
-        .then(res => res.json())
         .catch(()=>null);
 
     if(agents) {

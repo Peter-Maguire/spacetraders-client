@@ -96,11 +96,15 @@ func updateShipStates() {
 	for {
 		<-ticker.C
 		shipData := make([]ui.ShipData, 0)
+		agents := make(map[string]*entity.Agent)
+		contracts := make(map[string]*entity.Contract)
 		numWaiting := 0
 		numSleeping := 0
 		numStopped := 0
 		routinesActive.Reset()
 		for _, orc := range orcs {
+			agents[orc.Agent.Symbol] = orc.Agent
+			contracts[orc.Agent.Symbol] = orc.Contract
 			for _, state := range orc.States {
 				if state != nil && state.Ship != nil {
 
@@ -157,6 +161,6 @@ func updateShipStates() {
 		routineStopped.Set(float64(numStopped))
 		httpBacklog.Set(float64(numBacklog))
 
-		ui.WriteShipState(shipData, httpData)
+		ui.WriteShipState(shipData, httpData, contracts, agents)
 	}
 }

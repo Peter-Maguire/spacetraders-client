@@ -288,7 +288,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
 			soldSuccessfully = true
-			state.Agent = &sellResult.Agent
+			state.Agent.Credits = sellResult.Agent.Credits
 			soldFor.WithLabelValues(sellResult.Transaction.TradeSymbol).Set(float64(sellResult.Transaction.PricePerUnit))
 			totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol).Add(float64(sellResult.Transaction.Units))
 		}

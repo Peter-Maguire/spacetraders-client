@@ -349,16 +349,9 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 }
 
 func (o *Orchestrator) GetAgent() *entity.Agent {
-	a, _ := entity.GetAgent(o.Context)
-	return a
+	return o.Agent
 }
 
 func (o *Orchestrator) GetContract() *entity.Contract {
-	contracts, _ := o.Agent.Contracts(o.Context)
-	for _, c := range *contracts {
-		if c.Accepted && !c.Fulfilled {
-			return &c
-		}
-	}
-	return nil
+	return o.Contract
 }

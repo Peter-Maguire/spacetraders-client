@@ -11,10 +11,11 @@ type GoToJumpGate struct {
 
 func (g GoToJumpGate) Run(state *State) RoutineResult {
 
-	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeJumpGate)
 	for _, waypoint := range *waypoints {
 		if waypoint.Type == constant.WaypointTypeJumpGate {
 			fullWp, _ := waypoint.GetFullWaypoint(state.Context)
+			fmt.Println(fullWp)
 			if fullWp.IsUnderConstruction {
 				continue
 			}

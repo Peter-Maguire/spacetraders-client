@@ -12,6 +12,7 @@ import (
 	"path"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -133,7 +134,16 @@ func PaginatedRequest[T any](ctx context.Context, path string, startPage int, ma
 	var currentPage = startPage
 	output := make([]T, 0)
 	for {
-		resp, err := makeRequest[[]T](ctx, "GET", fmt.Sprintf("%s?limit=20&page=%d", path, currentPage), nil)
+		fixedPath := path
+		hasQueryString := strings.Contains(path, "?")
+		if hasQueryString {
+			fixedPath += "&"
+		} else {
+			fixedPath += "?"
+		}
+		fixedPath += fmt.Sprintf("limit=20&page=%d", currentPage)
+
+		resp, err := makeRequest[[]T](ctx, "GET", fixedPath, nil)
 		if err != nil {
 			return &output, err
 		}

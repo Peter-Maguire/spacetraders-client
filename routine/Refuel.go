@@ -148,7 +148,10 @@ func (r Refuel) Run(state *State) RoutineResult {
 			}
 		}
 		state.Log(refuelErr.Error())
-
+		return RoutineResult{
+			Stop:       true,
+			StopReason: fmt.Sprintf("Failed to refuel - %s", refuelErr.Message),
+		}
 	}
 
 	state.Log("Cannot refuel")

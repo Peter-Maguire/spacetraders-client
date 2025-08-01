@@ -28,6 +28,8 @@ func (r Rescue) Run(state *State) RoutineResult {
 		}
 	}
 
+	state.Ship.GetCargo(state.Context)
+
 	fuelCargo := state.Ship.Cargo.GetSlotWithItem("FUEL")
 	if fuelCargo == nil {
 		wp := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
@@ -50,6 +52,7 @@ func (r Rescue) Run(state *State) RoutineResult {
 		}
 
 		if state.Ship.Nav.WaypointSymbol != *market {
+			state.Log("Going to market that sells Fuel")
 			return RoutineResult{
 				SetRoutine: NavigateTo{waypoint: *market, next: r},
 			}
