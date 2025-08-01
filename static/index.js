@@ -20,6 +20,29 @@ const mapIcons = {
     "FUEL_STATION": "⛽",
 }
 
+const shortShipTypes = {
+    "FABRICATOR": "FB",
+    "HARVESTER": "HV",
+    "HAULER": "HL",
+    "INTERCEPTOR": "IT",
+    "EXCAVATOR": "EX",
+    "TRANSPORT": "TR",
+    "REPAIR": "RP",
+    "SURVEYOR": "SV",
+    "COMMAND": "CM",
+    "CARRIER": "CR",
+    "PATROL": "PT",
+    "SATELLITE": "ST",
+    "EXPLORER": "XP",
+    "REFINERY": "RF"
+}
+
+const shortTransitModes = {
+    "DOCKED": "DK",
+    "IN_ORBIT": "OB",
+    "IN_TRANSIT": "IT",
+}
+
 let headerUpdateTimeout;
 const logMessages = [];
 
@@ -48,7 +71,7 @@ function connect() {
     }
 
     clearTimeout(headerUpdateTimeout);
-    headerUpdateTimeout = setInterval(updateHeader, 10000)
+    headerUpdateTimeout = setInterval(updateHeader, 60000)
     updateHeader();
 
     ws.onerror = function (error) {
@@ -105,6 +128,26 @@ function updateState({ship, http}){
                 return `${cargo.symbol} x${cargo.units}`
             }).join("</br>");
         }
+
+
+        // TODO: make this a function
+        let shipType = document.createElement("li")
+        shipType.innerText = shortShipTypes[sh.type];
+        shipType.classList.add(sh.type);
+        shipType.title = sh.type;
+        clone.querySelector(".status").appendChild(shipType)
+
+        let orbit = document.createElement("li")
+        orbit.innerText = shortTransitModes[sh.nav.status];
+        orbit.classList.add(sh.nav.status);
+        orbit.title = sh.nav.status;
+        clone.querySelector(".status").appendChild(orbit)
+
+        let flightMode = document.createElement("li")
+        flightMode.innerText = sh.nav.flightMode === "DRIFT" ? "DR" : "CR";
+        flightMode.classList.add(sh.nav.flightMode);
+        flightMode.title = sh.nav.flightMode;
+        clone.querySelector(".status").appendChild(flightMode)
 
         container.appendChild(clone);
         ships.appendChild(container);
@@ -179,7 +222,7 @@ async function populateMap(){
     let systemDropdown = document.getElementById("selectSystem");
     systemDropdown.innerText = "";
     systemDropdown.value = mapSystem;
-    systemDropdown.onchange = (e)=>{console.log(e.target.value); mapSystem = e.target.value; drawMap();}
+    systemDropdown.onchange = (e)=>{mapSystem = e.target.value; drawMap();}
 
     systems.forEach(system => {
         let option = document.createElement("option");
@@ -222,6 +265,8 @@ async function updateHeader(){
             }
             d.onclick = () => {
                 currentAgent = a;
+                if(viewingMap)
+                    viewSystemOfCurrentAgent();
                 updateHeader();
             }
             document.getElementById("tabList").appendChild(d);
@@ -380,8 +425,17 @@ function interpolatePoint(x1, y1, x2, y2, t) {
     return [ x, y ];
 }
 
+function viewSystemOfCurrentAgent(){
+    let selectSystem =  document.getElementById("selectSystem");
+    let map = shipStates.find((sh)=>sh.name.startsWith(currentAgent))
+    if(!map)return;
+    selectSystem.value = map.nav.systemSymbol;
+    selectSystem.dispatchEvent(new Event("change"));
+}
+
 
 function toggleViewMap() {
+    viewSystemOfCurrentAgent();
     viewingMap = !viewingMap;
     document.getElementById("shipState").style.display = viewingMap ? "none" : null;
     document.getElementById("map").style.display = !viewingMap ? "none" : null;

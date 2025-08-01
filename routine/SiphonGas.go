@@ -68,7 +68,7 @@ func (f SiphonGas) Run(state *State) RoutineResult {
 		}
 	}
 	for _, event := range result.Events {
-		state.Log(fmt.Sprintf("!!! Siphon Event - %s: %s", event.Name, event.Description))
+		state.Log(fmt.Sprintf("Siphon Event - %s", event.Name))
 	}
 
 	if state.Ship.Cargo.IsFull() {

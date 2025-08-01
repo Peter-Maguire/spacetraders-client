@@ -43,7 +43,7 @@ func (p ProcureConstructionSiteItem) Run(state *State) RoutineResult {
 		materialStrings = append(materialStrings, material.TradeSymbol)
 	}
 
-	targetMarkets := database.GetMarketsSellingInSystem(materialStrings, state.Ship.Nav.SystemSymbol)
+	targetMarkets := database.GetMarketsSellingInSystem(materialStrings, string(state.Ship.Nav.SystemSymbol))
 
 	if len(targetMarkets) == 0 {
 		return RoutineResult{

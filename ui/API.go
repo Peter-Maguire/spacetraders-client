@@ -17,7 +17,9 @@ func (wu *WebUI) initApi() {
 
 	http.HandleFunc("/agent", func(writer http.ResponseWriter, request *http.Request) {
 		encoder := json.NewEncoder(writer)
-
+		if wu.st == nil {
+			encoder.Encode(map[string]any{})
+		}
 		agents := make(map[string]*entity.Agent)
 		for _, orc := range wu.st.Orchestrators {
 			agent := orc.GetAgent()
@@ -28,7 +30,9 @@ func (wu *WebUI) initApi() {
 
 	http.HandleFunc("/contracts", func(writer http.ResponseWriter, request *http.Request) {
 		encoder := json.NewEncoder(writer)
-
+		if wu.st == nil {
+			encoder.Encode(map[string]any{})
+		}
 		contracts := make(map[string]*entity.Contract)
 		for _, orc := range wu.st.Orchestrators {
 			agent := orc.GetAgent()

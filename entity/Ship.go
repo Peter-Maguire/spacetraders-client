@@ -293,7 +293,7 @@ func (s *Ship) IsAtWaypoint(wp Waypoint) bool {
 }
 
 type ShipNav struct {
-	SystemSymbol   string              `json:"systemSymbol"`
+	SystemSymbol   SystemSymbol        `json:"systemSymbol"`
 	WaypointSymbol Waypoint            `json:"waypointSymbol"`
 	Route          NavRoute            `json:"route"`
 	Status         NavState            `json:"status"`

@@ -20,7 +20,7 @@ type FindNewSystem struct {
 }
 
 func (f FindNewSystem) Run(state *State) RoutineResult {
-	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+	currentSystem := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
 
 	if currentSystem == nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)

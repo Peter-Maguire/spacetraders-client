@@ -30,7 +30,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	database.VisitWaypoint(waypointData, mkt, syd)
 
 	if mkt != nil {
-		system := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+		system := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
 
 		if len(mkt.TradeGoods) == 0 {
 			state.Log("No trade goods... time desync?")
@@ -54,12 +54,6 @@ func (s Satellite) Run(state *State) RoutineResult {
 		database.StoreShipCosts(syd)
 	}
 
-	if state.Contract == nil {
-		return RoutineResult{
-			SetRoutine: NegotiateContract{},
-		}
-	}
-
 	marketRates := database.GetMarkets()
 	if len(marketRates) == 0 {
 		return RoutineResult{
@@ -75,7 +69,13 @@ func (s Satellite) Run(state *State) RoutineResult {
 	fmt.Println(len(sats))
 	isSatZero := sats[0].Symbol == state.Ship.Symbol
 
-	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
+	if state.Contract == nil && isSatZero {
+		return RoutineResult{
+			SetRoutine: NegotiateContract{},
+		}
+	}
+
+	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(string(state.Ship.Nav.SystemSymbol))
 
 	goodUnvisitedWaypoints := false
 	for _, uw := range unvisitedWaypoints {
@@ -88,9 +88,9 @@ func (s Satellite) Run(state *State) RoutineResult {
 
 	if goodUnvisitedWaypoints || !isSatZero {
 		dbWaypoint := database.GetWaypoint(waypointData.Symbol)
-		wps := database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol, dbWaypoint.TimesVisited)
+		wps := database.GetLeastVisitedWaypointsInSystem(string(state.Ship.Nav.SystemSymbol), dbWaypoint.TimesVisited)
 		if len(wps) == 0 {
-			wps = database.GetLeastVisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol, dbWaypoint.TimesVisited+1)
+			wps = database.GetLeastVisitedWaypointsInSystem(string(state.Ship.Nav.SystemSymbol), dbWaypoint.TimesVisited+1)
 		}
 		wpDatas := make([]*entity.WaypointData, len(wps))
 		for i, wp := range wps {
@@ -127,7 +127,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	for _, shipToBuy := range shipsToBuy {
 		state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
 
-		shipCost := database.GetShipCost(shipToBuy, state.Ship.Nav.SystemSymbol)
+		shipCost := database.GetShipCost(shipToBuy, string(state.Ship.Nav.SystemSymbol))
 
 		if shipCost == nil {
 			state.Log("We aren't aware of any shipyards selling this ship type yet")

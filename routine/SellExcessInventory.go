@@ -44,7 +44,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	cargo, _ := state.Ship.GetCargo(state.Context)
 	inventory := cargo.Inventory
 
-	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+	currentSystem := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
 
 	if currentSystem == nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
@@ -245,8 +245,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	if sensibleOpportunities[0].Waypoint != state.Ship.Nav.WaypointSymbol {
 		state.Log(fmt.Sprintf("Going to available market at %s", sensibleOpportunities[0].Waypoint))
 		system, _ := entity.GetSystem(state.Context, state.Ship.Nav.SystemSymbol)
-		// TODO: add GetWaypoints filtering
-		waypoints, _ := system.GetWaypoints(state.Context)
+		waypoints, _ := system.GetWaypointsWithTrait(state.Context, constant.TraitMarketplace)
 		if sensibleOpportunities[0].Waypoint.GetSystemName() != state.Ship.Nav.SystemSymbol && !util.SystemHasBuiltJumpGate(waypoints) {
 			state.Log("No built jump gates")
 			s.skipOtherSystems = true

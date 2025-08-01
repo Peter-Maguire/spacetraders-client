@@ -43,9 +43,8 @@ func (m MineOres) Run(state *State) RoutineResult {
 	if state.Survey != nil {
 		if state.Survey.Expiration.Before(time.Now()) {
 			state.Log("Survey has expired")
-			return RoutineResult{
-				SetRoutine: GetSurvey{},
-			}
+			state.Survey = nil
+			return RoutineResult{}
 		}
 		result, err = state.Ship.ExtractSurvey(state.Context, state.Survey)
 	} else {
@@ -91,7 +90,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 	}
 
 	for _, event := range result.Events {
-		state.Log(fmt.Sprintf("!!! Mining Event - %s: %s", event.Name, event.Description))
+		state.Log(fmt.Sprintf("Mining Event - %s", event.Name))
 	}
 
 	mined.WithLabelValues(result.Extraction.Yield.Symbol).Add(float64(result.Extraction.Yield.Units))

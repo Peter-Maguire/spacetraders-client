@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/entity"
 )
 
 type DeliverConstructionSiteItem struct {
@@ -19,6 +20,8 @@ func (r DeliverConstructionSiteItem) Run(state *State) RoutineResult {
 			},
 		}
 	}
+
+	state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
 	state.Ship.GetCargo(state.Context)
 

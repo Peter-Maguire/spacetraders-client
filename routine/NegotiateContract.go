@@ -15,6 +15,7 @@ func (n NegotiateContract) Run(state *State) RoutineResult {
 
 	for _, c := range *contracts {
 		if !c.Fulfilled {
+			state.Contract = &c
 			state.Log("We haven't finished this contract yet")
 			return RoutineResult{SetRoutine: DetermineObjective{}}
 		}

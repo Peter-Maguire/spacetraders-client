@@ -66,7 +66,7 @@ func Init(token string) *Orchestrator {
 	}
 
 	hqSystem := agent.Headquarters.GetSystemName()
-	if database.GetSystem(hqSystem) == nil {
+	if database.GetSystem(string(hqSystem)) == nil {
 		ui.MainLog("We haven't stored our main system yet")
 		systemData, err := entity.GetSystem(ctx, hqSystem)
 		if err != nil {
@@ -158,7 +158,7 @@ func Init(token string) *Orchestrator {
 	shipCount := len(*ships)
 	ui.MainLog(fmt.Sprintf("We have %d ships:", shipCount))
 	for _, ship := range *ships {
-		agentShips.WithLabelValues(string(ship.Registration.Role), ship.Nav.SystemSymbol, string(ship.Nav.WaypointSymbol)).Add(1)
+		agentShips.WithLabelValues(string(ship.Registration.Role), string(ship.Nav.SystemSymbol), string(ship.Nav.WaypointSymbol)).Add(1)
 		ui.MainLog(fmt.Sprintf("%s: %s type", ship.Registration.Name, ship.Registration.Role))
 		if ship.Registration.Role == "HAULER" {
 			ui.MainLog(fmt.Sprintf("%s is HAULER", ship.Registration))
@@ -297,8 +297,8 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 	state.CurrentRoutine = routine.DetermineObjective{}
 	for {
 		routineName := state.CurrentRoutine.Name()
-		if len(routineName) > 200 {
-			state.StoppedReason = "Loop Detected"
+		if len(routineName) > 500 {
+			state.StoppedReason = "Loop Detected - " + routineName
 			state.Log("Stopping Routine")
 			break
 		}
@@ -349,9 +349,16 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 }
 
 func (o *Orchestrator) GetAgent() *entity.Agent {
-	return o.Agent
+	a, _ := entity.GetAgent(o.Context)
+	return a
 }
 
 func (o *Orchestrator) GetContract() *entity.Contract {
-	return o.Contract
+	contracts, _ := o.Agent.Contracts(o.Context)
+	for _, c := range *contracts {
+		if c.Accepted && !c.Fulfilled {
+			return &c
+		}
+	}
+	return nil
 }

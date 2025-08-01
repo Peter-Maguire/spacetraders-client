@@ -13,9 +13,9 @@ type Jettison struct {
 func (j Jettison) Run(state *State) RoutineResult {
 	hasJettisoned := false
 	state.Log("Cargo is full")
-	hasUnvisited := len(database.GetUnvisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)) > 0
+	hasUnvisited := len(database.GetUnvisitedWaypointsInSystem(string(state.Ship.Nav.SystemSymbol))) > 0
 	for _, slot := range state.Ship.Cargo.Inventory {
-		marketsSelling := database.GetMarketsSellingInSystem([]string{slot.Symbol}, state.Ship.Nav.SystemSymbol)
+		marketsSelling := database.GetMarketsSellingInSystem([]string{slot.Symbol}, string(state.Ship.Nav.SystemSymbol))
 
 		if j.IsUseless(slot.Symbol) || (state.Contract != nil && state.Contract.Terms.GetDeliverable(slot.Symbol) != nil && !hasUnvisited && len(marketsSelling) == 0) {
 			state.Log(fmt.Sprintf("Jettison %dx %s", slot.Units, slot.Symbol))

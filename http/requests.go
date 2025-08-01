@@ -81,7 +81,7 @@ func makeRequest[T any](ctx context.Context, method string, path string, body an
 	if method == "GET" {
 		RBufferLock.Lock()
 		for _, bufferedRequest := range RequestBuffer {
-			if bufferedRequest.Req.Method == "GET" && bufferedRequest.OriginalPath == path {
+			if bufferedRequest.Req.Method == "GET" && bufferedRequest.OriginalPath == path && bufferedRequest.Req.Header.Get("Authorization") == req.Header.Get("Authorization") {
 				bufferedRequest.Mutex.Lock()
 				bufferedRequest.ReturnChannels = append(bufferedRequest.ReturnChannels, returnChan)
 				bufferedRequest.Mutex.Unlock()

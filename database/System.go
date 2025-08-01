@@ -25,7 +25,7 @@ func StoreSystem(system *entity.System) {
 	rawWaypoints, _ := json.Marshal(system.Waypoints)
 
 	storedSystem := System{
-		System:        system.Symbol,
+		System:        string(system.Symbol),
 		Data:          rawSystem,
 		WaypointsData: rawWaypoints,
 		X:             system.X,
@@ -52,7 +52,7 @@ func AddUnvisitedSystems(data []entity.System, page int) {
 	for i, sys := range data {
 		systemData, _ := json.Marshal(sys)
 		systems[i] = System{
-			System:  sys.Symbol,
+			System:  string(sys.Symbol),
 			Data:    systemData,
 			X:       sys.X,
 			Y:       sys.Y,
@@ -67,7 +67,7 @@ func VisitSystem(data *entity.System, waypoints *[]entity.WaypointData) {
 	systemData, _ := json.Marshal(data)
 	waypointsData, _ := json.Marshal(waypoints)
 	sys := System{
-		System:        data.Symbol,
+		System:        string(data.Symbol),
 		Data:          systemData,
 		WaypointsData: waypointsData,
 		FirstVisited:  time.Now(),

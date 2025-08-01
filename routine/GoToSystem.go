@@ -11,7 +11,7 @@ import (
 )
 
 type GoToSystem struct {
-	system string
+	system entity.SystemSymbol
 	next   Routine
 }
 
@@ -22,18 +22,18 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: g.next}
 	}
 
-	currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+	currentSystem := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
 	if currentSystem != nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 		database.StoreSystem(currentSystem)
 	}
 
-	targetSystem := database.GetSystemData(g.system)
+	targetSystem := database.GetSystemData(string(g.system))
 
 	if targetSystem == nil {
 		//state.Log("TODO targetSystem isn't stored in the database!")
 		//return RoutineResult{SetRoutine: FindNewSystem{}}
-		targetSystem, _ = state.Agent.GetSystem(state.Context, g.system)
+		targetSystem, _ = state.Agent.GetSystem(state.Context, string(g.system))
 		database.StoreSystem(targetSystem)
 		//database.AddUnvisitedSystems([]entity.System{*targetSystem}, 0)
 	}
@@ -56,7 +56,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		intermediaries := database.GetVisitedSystems()
 		jumpableIntermediaries := make([]database.System, 0)
 		for _, intermediary := range intermediaries {
-			if intermediary.System == g.system || intermediary.System == state.Ship.Nav.SystemSymbol {
+			if intermediary.System == string(g.system) || intermediary.System == string(state.Ship.Nav.SystemSymbol) {
 				continue
 			}
 			if util.CalcDistance(currentSystem.X, currentSystem.Y, intermediary.X, intermediary.Y) < 2000 {
@@ -80,7 +80,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Jumping to intermediary system %s with distance %d", jumpableIntermediaries[0].System, util.CalcDistance(jumpableIntermediaries[0].X, jumpableIntermediaries[0].Y, targetSystem.X, targetSystem.Y)))
 		return RoutineResult{
 			SetRoutine: GoToSystem{
-				system: jumpableIntermediaries[0].System,
+				system: entity.SystemSymbol(jumpableIntermediaries[0].System),
 				next:   g,
 			},
 		}

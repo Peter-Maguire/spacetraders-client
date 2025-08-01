@@ -9,7 +9,7 @@ import (
 )
 
 type System struct {
-	Symbol       string                `json:"symbol"`
+	Symbol       SystemSymbol          `json:"symbol"`
 	SectorSymbol string                `json:"sectorSymbol"`
 	Type         string                `json:"type"`
 	X            int                   `json:"x"`
@@ -19,12 +19,20 @@ type System struct {
 	Factions     []interface{}         `json:"factions"`
 }
 
-func GetSystem(ctx context.Context, system string) (*System, *http.HttpError) {
-	return http.Request[System](ctx, "GET", fmt.Sprintf("systems/%s", system), nil)
+func GetSystem(ctx context.Context, system SystemSymbol) (*System, *http.HttpError) {
+	return system.GetSystem(ctx)
 }
 
 func (s *System) GetWaypoints(ctx context.Context) (*[]WaypointData, *http.HttpError) {
-	return http.PaginatedRequest[WaypointData](ctx, fmt.Sprintf("systems/%s/waypoints", s.Symbol), 1, 0)
+	return s.Symbol.GetWaypoints(ctx)
+}
+
+func (s *System) GetWaypointsWithTrait(ctx context.Context, trait constant.WaypointTrait) (*[]WaypointData, *http.HttpError) {
+	return s.Symbol.GetWaypointsWithTrait(ctx, trait)
+}
+
+func (s *System) GetWaypointsOfType(ctx context.Context, waypointType constant.WaypointType) (*[]WaypointData, *http.HttpError) {
+	return s.Symbol.GetWaypointsOfType(ctx, waypointType)
 }
 
 func (s *System) GetLimitedWaypoint(ctx context.Context, name Waypoint) *LimitedWaypointData {

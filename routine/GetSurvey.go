@@ -6,6 +6,7 @@ import (
 	"spacetraders/entity"
 	"spacetraders/http"
 	"spacetraders/ui"
+	"spacetraders/util"
 )
 
 type GetSurvey struct {
@@ -13,10 +14,6 @@ type GetSurvey struct {
 }
 
 func (g GetSurvey) Run(state *State) RoutineResult {
-	if g.next == nil {
-		g.next = MineOres{}
-	}
-
 	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") || state.Survey != nil || state.Contract == nil {
 		state.Log("No surveyor mount or survey exists")
 		return RoutineResult{
@@ -66,9 +63,14 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 
 	ui.MainLog(fmt.Sprintf("Waiting %d seconds", surveyResult.Cooldown.RemainingSeconds))
 
+	if g.next != nil {
+		return RoutineResult{
+			SetRoutine: g.next,
+		}
+	}
 	return RoutineResult{
-		SetRoutine: g.next,
 		WaitUntil:  &surveyResult.Cooldown.Expiration,
+		SetRoutine: GoToMiningArea{next: g},
 	}
 }
 
@@ -77,6 +79,17 @@ func (g GetSurvey) Name() string {
 }
 
 func findBestSurvey(surveys []entity.Survey, deliverables []entity.ContractDeliverable) *entity.Survey {
+	hasMineable := false
+	for _, deliverable := range deliverables {
+		if util.IsMineable(deliverable.TradeSymbol) {
+			hasMineable = true
+			break
+		}
+	}
+	// TODO find the most expensive survey
+	if !hasMineable {
+		return &surveys[0]
+	}
 	for _, survey := range surveys {
 		for _, deposit := range survey.Deposits {
 			//fmt.Printf("Survey %s has deposit of %s\n", survey.Signature, deposit.Symbol)

@@ -114,7 +114,7 @@ func LogWaypoints(data *[]entity.WaypointData) {
 		waypointData, _ := json.Marshal(wp)
 		dbWaypoints[i] = Waypoint{
 			Waypoint:     string(wp.Symbol),
-			System:       wp.SystemSymbol,
+			System:       string(wp.SystemSymbol),
 			Data:         waypointData,
 			MarketData:   nil,
 			ShipyardData: nil,
@@ -135,7 +135,7 @@ func VisitWaypoint(data *entity.WaypointData, market *entity.Market, shipyard *e
 	}
 	currentWaypoint.TimesVisited++
 	currentWaypoint.Waypoint = string(data.Symbol)
-	currentWaypoint.System = data.SystemSymbol
+	currentWaypoint.System = string(data.SystemSymbol)
 	currentWaypoint.Data = waypointData
 	currentWaypoint.MarketData = marketData
 	currentWaypoint.ShipyardData = shipyardData

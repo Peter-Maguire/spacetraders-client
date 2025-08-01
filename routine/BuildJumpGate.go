@@ -16,7 +16,7 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 
 	jumpGatesUnderConstruction := make([]*entity.WaypointData, 0)
 
-	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeJumpGate)
 	for _, waypoint := range *waypoints {
 		if waypoint.SystemSymbol == state.Ship.Nav.SystemSymbol && waypoint.Type == constant.WaypointTypeJumpGate {
 			fullWp, _ := waypoint.GetFullWaypoint(state.Context)
@@ -32,7 +32,7 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 			SetRoutine: b.next,
 		}
 	}
-	
+
 	wpData := database.GetWaypoint(state.Ship.Nav.WaypointSymbol).GetData()
 
 	util.SortWaypointsClosestTo(jumpGatesUnderConstruction, wpData.LimitedWaypointData)

@@ -147,6 +147,14 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
+	_, ok := n.next.(Refuel)
+	if !ok && state.Ship.Fuel.Current == 1 {
+		state.Log("We should really refuel")
+		return RoutineResult{
+			SetRoutine: Refuel{next: n},
+		}
+	}
+
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
 	_, err := state.Ship.Navigate(state.Context, n.waypoint)

@@ -9,18 +9,17 @@ import (
 
 type Waypoint string
 
-func (w *Waypoint) GetSystemName() string {
+func (w *Waypoint) GetSystemName() SystemSymbol {
 	strw := string(*w)
-	return strw[:strings.LastIndex(strw, "-")]
+	return SystemSymbol(strw[:strings.LastIndex(strw, "-")])
 }
 
 func (w *Waypoint) GetSystem(ctx context.Context) (*System, *http.HttpError) {
-	return http.Request[System](ctx, "GET", fmt.Sprintf("systems/%s", w.GetSystemName()), nil)
+	return w.GetSystemName().GetSystem(ctx)
 }
 
-// TODO: put this on SystemSymbol
 func (w *Waypoint) GetSystemWaypoints(ctx context.Context) (*[]WaypointData, *http.HttpError) {
-	return http.PaginatedRequest[WaypointData](ctx, fmt.Sprintf("systems/%s/waypoints", w.GetSystemName()), 1, 0)
+	return w.GetSystemName().GetWaypoints(ctx)
 }
 
 func (w *Waypoint) GetMarket(ctx context.Context) (*Market, *http.HttpError) {

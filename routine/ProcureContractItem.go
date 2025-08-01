@@ -89,7 +89,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 	if !isCurrentlyAtMarket {
 		state.Log("Going to closest market selling this item")
-		currentSystem := database.GetSystemData(state.Ship.Nav.SystemSymbol)
+		currentSystem := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
 
 		if currentSystem == nil {
 			currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)

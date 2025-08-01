@@ -31,10 +31,16 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
+	if state.Ship.Fuel.Current == 1 {
+		return RoutineResult{
+			SetRoutine: Refuel{next: d},
+		}
+	}
+
 	state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
 
 	// TODO: satellite should explore until it's explored the entire system next go to Refresh Markets (rotate through all the markets refreshing each)
-	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(state.Ship.Nav.SystemSymbol)
+	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(string(state.Ship.Nav.SystemSymbol))
 
 	goodUnvisitedWaypoints := false
 	for _, uw := range unvisitedWaypoints {
