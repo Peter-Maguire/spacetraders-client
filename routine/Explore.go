@@ -127,5 +127,10 @@ func (e Explore) Name() string {
 	if e.marketTargets != nil {
 		name += " (Find Market)"
 	}
-	return fmt.Sprintf("%s -> %s", name, e.next.Name())
+
+	if e.next != nil {
+		return fmt.Sprintf("%s -> %s", name, e.next.Name())
+	}
+
+	return name
 }
