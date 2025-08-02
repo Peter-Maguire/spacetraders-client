@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
 	"time"
@@ -40,8 +41,15 @@ func (m MineOres) Run(state *State) RoutineResult {
 	var result *entity.ExtractionResult
 	var err *http.HttpError
 
-	if state.Survey != nil {
-		if state.Survey.Expiration.Before(time.Now()) {
+	hasSurvey := database.GetUnexpiredSurveysForWaypoint(state.Ship.Nav.WaypointSymbol)
+	var survey *entity.Survey
+	if len(hasSurvey) > 0 {
+		surveyData := hasSurvey[0].GetData()
+		survey = &surveyData
+	}
+
+	if survey != nil {
+		if survey.Expiration.Before(time.Now()) {
 			state.Log("Survey has expired")
 			state.Survey = nil
 			return RoutineResult{}
@@ -152,7 +160,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 }
 
 // TODO: replace this with a better system
-var uselessItems = []string{}
+var uselessItems = []string{"ICE_WATER"}
 
 func (m MineOres) IsUseless(item string) bool {
 	for _, uselessItem := range uselessItems {

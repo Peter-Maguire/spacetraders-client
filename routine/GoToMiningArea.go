@@ -20,9 +20,11 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
-	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeAsteroid)
+	engineeredAstroid, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeEngineeredAsteroid)
 	database.LogWaypoints(waypointsPtr)
-	waypoints := *waypointsPtr
+	database.LogWaypoints(engineeredAstroid)
+	waypoints := append(*waypointsPtr, *engineeredAstroid...)
 	waypointScores := make(map[entity.Waypoint]int)
 
 	//currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
@@ -162,6 +164,10 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 
 	if waypoint.HasTrait(constant.TraitUnstableComposition) {
 		return false, 0
+	}
+
+	if len(database.GetUnexpiredSurveysForWaypoint(waypoint.Symbol)) > 0 {
+		score += 10
 	}
 
 	closestDistance := 5000000
