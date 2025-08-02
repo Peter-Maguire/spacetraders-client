@@ -3,9 +3,11 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"os"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/metrics"
@@ -17,16 +19,15 @@ import (
 )
 
 type Orchestrator struct {
-	States       []*routine.State
-	StatesMutex  sync.Mutex
-	Agent        *entity.Agent
-	Contract     *entity.Contract
-	Haulers      []*entity.Ship
-	Channel      chan routine.OrchestratorEvent
-	CreditTarget int
-	ShipToBuy    string
-	Shipyard     entity.Waypoint
-	Context      context.Context
+	States      []*routine.State
+	StatesMutex sync.Mutex
+	Agent       *entity.Agent
+	Contract    *entity.Contract
+	Haulers     []*entity.Ship
+	Channel     chan routine.OrchestratorEvent
+	Shipyard    entity.Waypoint
+	Context     context.Context
+	Cache       *cache.Cache
 }
 
 var (
@@ -116,11 +117,11 @@ func Init(token string) *Orchestrator {
 	}
 
 	orc := Orchestrator{
-		Agent:        agent,
-		Contract:     contract,
-		Channel:      make(chan routine.OrchestratorEvent),
-		CreditTarget: 80000,
-		Context:      ctx,
+		Agent:    agent,
+		Contract: contract,
+		Channel:  make(chan routine.OrchestratorEvent),
+		Context:  ctx,
+		Cache:    cache.New(5*time.Minute, 10*time.Minute),
 	}
 
 	go orc.start()
@@ -166,27 +167,12 @@ func (o *Orchestrator) start() {
 			StatesMutex: &o.StatesMutex,
 			Haulers:     o.Haulers,
 			EventBus:    o.Channel,
+			Phase:       o,
 		}
 		state.Context = context.WithValue(o.Context, "state", &state)
 		o.States[i] = &state
 
 		go o.routineLoop(&state)
-	}
-}
-
-func (o *Orchestrator) startNewContract() {
-	contracts, _ := o.Agent.Contracts(o.Context)
-	for _, c := range *contracts {
-		if !c.Fulfilled {
-			ui.MainLog("Accepted contract")
-			err := c.Accept(o.Context)
-			if err == nil {
-				o.Contract = &c
-			} else {
-				ui.MainLog(err.Error())
-			}
-			break
-		}
 	}
 }
 
@@ -247,6 +233,12 @@ func (o *Orchestrator) runEvents() {
 }
 
 func (o *Orchestrator) routineLoop(state *routine.State) {
+	defer func() {
+		if r := recover(); r != nil {
+			ui.MainLog(fmt.Sprintf("Recovered from panic: %v", r))
+			state.StoppedReason = fmt.Sprint(r)
+		}
+	}()
 	state.CurrentRoutine = routine.DetermineObjective{}
 	for {
 		routineName := state.CurrentRoutine.Name()
@@ -307,4 +299,45 @@ func (o *Orchestrator) GetAgent() *entity.Agent {
 
 func (o *Orchestrator) GetContract() *entity.Contract {
 	return o.Contract
+}
+
+func (o *Orchestrator) internalGetPhase() constant.Phase {
+	systemName := o.Agent.Headquarters.GetSystemName()
+	unvisitedWaypoints := database.GetUnvisitedWaypointsInSystem(string(systemName))
+
+	for _, uw := range unvisitedWaypoints {
+		data := uw.GetData()
+		if data.HasTrait(constant.TraitMarketplace) || data.HasTrait(constant.TraitShipyard) {
+			return constant.PhaseExplore
+		}
+	}
+
+	// TODO: this is the kind of number I'd want tob e able to change
+	if len(o.States) < 20 {
+		return constant.PhaseExpandFleet
+	}
+
+	waypoints, _ := systemName.GetWaypointsOfType(o.Context, constant.WaypointTypeJumpGate)
+	for _, waypoint := range *waypoints {
+		if waypoint.Type == constant.WaypointTypeJumpGate {
+			fullWp, _ := waypoint.GetFullWaypoint(o.Context)
+			if fullWp.IsUnderConstruction {
+				return constant.PhaseBuildJumpGate
+			}
+		}
+	}
+
+	// TODO: how do we determine this phase is over?
+	return constant.PhaseExplore
+}
+
+func (o *Orchestrator) GetPhase() constant.Phase {
+	if cachedPhase, found := o.Cache.Get("phase"); found {
+		return cachedPhase.(constant.Phase)
+	}
+
+	phase := o.internalGetPhase()
+	o.Cache.Set("phase", phase, cache.DefaultExpiration)
+	return phase
+
 }
