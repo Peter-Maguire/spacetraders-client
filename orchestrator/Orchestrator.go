@@ -229,10 +229,10 @@ func (o *Orchestrator) runEvents() {
 			//o.StatesMutex.Unlock()
 		case "contractComplete":
 			ui.MainLog("Contract completed")
-			o.startNewContract()
+			o.Contract = nil
 			for _, state := range o.States {
-				//state.Contract = o.Contract
-				state.ForceRoutine = routine.DetermineObjective{}
+				state.Contract = nil
+				//state.ForceRoutine = routine.DetermineObjective{}
 			}
 		case "newContract":
 			ui.MainLog("New contract")
