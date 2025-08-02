@@ -39,6 +39,11 @@ func (r Refuel) Run(state *State) RoutineResult {
 				st.Ship.Fuel.Current == 0 {
 				continue
 			}
+			// Ship is probably already rescuing someone else
+			if st.ForceRoutine != nil {
+				continue
+			}
+
 			rescueShips = append(rescueShips, st)
 		}
 
