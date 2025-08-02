@@ -36,8 +36,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 		rescueShips := make([]*State, 0)
 		for _, st := range *state.States {
 			if st.Ship.Cargo.Capacity == 0 ||
-				st.Ship.Fuel.Current == 0 ||
-				st.Ship.Nav.Status == "IN_TRANSIT" {
+				st.Ship.Fuel.Current == 0 {
 				continue
 			}
 			rescueShips = append(rescueShips, st)
