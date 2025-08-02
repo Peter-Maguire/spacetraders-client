@@ -36,7 +36,7 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Unknown error: %s", err))
 		// No idea
 		return RoutineResult{
-			WaitSeconds: 10,
+			SetRoutine: GoToMiningArea{next: g},
 		}
 	}
 

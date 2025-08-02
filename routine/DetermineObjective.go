@@ -112,7 +112,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
 	if state.Ship.Registration.Role == constant.ShipRoleSurveyor {
 		return RoutineResult{
-			SetRoutine: GetSurvey{},
+			SetRoutine: GoToMiningArea{next: GetSurvey{}},
 		}
 	}
 
