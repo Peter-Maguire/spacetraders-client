@@ -111,10 +111,8 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleSurveyor {
-		rout := GoToMiningArea{}
-		rout.next = GetSurvey{next: Explore{next: GoToRandomFactionWaypoint{next: rout}}}
 		return RoutineResult{
-			SetRoutine: rout,
+			SetRoutine: GetSurvey{},
 		}
 	}
 
