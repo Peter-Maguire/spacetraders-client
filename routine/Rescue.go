@@ -74,6 +74,7 @@ func (r Rescue) Run(state *State) RoutineResult {
 			return RoutineResult{}
 		}
 
+		// TODO: should there be a common error handling system?
 		_, err := state.Ship.Purchase(state.Context, "FUEL", 1)
 		if err != nil {
 			state.Log(err.Message)
