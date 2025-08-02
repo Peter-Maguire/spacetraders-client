@@ -7,6 +7,7 @@ import (
 	"spacetraders/http"
 	"spacetraders/ui"
 	"spacetraders/util"
+	"time"
 )
 
 type GetSurvey struct {
@@ -14,10 +15,20 @@ type GetSurvey struct {
 }
 
 func (g GetSurvey) Run(state *State) RoutineResult {
-	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") || state.Survey != nil || state.Contract == nil {
-		state.Log("No surveyor mount or survey exists")
+	if !state.Ship.HasMount("MOUNT_SURVEYOR_I") {
 		return RoutineResult{
-			SetRoutine: g.next,
+			Stop:       true,
+			StopReason: "This ship is a not a surveyor",
+		}
+	}
+
+	if state.Survey != nil {
+		now := time.Now()
+		if state.Survey.Expiration.After(now) {
+			state.Survey = nil
+		} else {
+			state.Log("Waiting for survey to expire")
+			return RoutineResult{WaitUntil: &state.Survey.Expiration}
 		}
 	}
 
