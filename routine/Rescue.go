@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/util"
@@ -9,6 +10,7 @@ import (
 
 type Rescue struct {
 	shipSymbol string
+	noFuelHere bool
 }
 
 func (r Rescue) Run(state *State) RoutineResult {
@@ -35,35 +37,38 @@ func (r Rescue) Run(state *State) RoutineResult {
 		wp := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
 		wpData := wp.GetData()
 
-		market := util.GetClosestMarketSelling([]string{"FUEL"}, wpData.LimitedWaypointData)
+		if !wpData.HasTrait(constant.TraitMarketplace) && !r.noFuelHere {
+			market := util.GetClosestMarketSelling([]string{"FUEL"}, wpData.LimitedWaypointData)
 
-		if market.GetSystemName() != state.Ship.Nav.SystemSymbol {
-			return RoutineResult{
-				Stop:       true,
-				StopReason: "You done messed it up again",
+			if market.GetSystemName() != state.Ship.Nav.SystemSymbol {
+				return RoutineResult{
+					Stop:       true,
+					StopReason: "You done messed it up again",
+				}
+			}
+
+			if market == nil {
+				return RoutineResult{
+					Stop:       true,
+					StopReason: "Unable to find market selling fuel",
+				}
+			}
+
+			if state.Ship.Nav.WaypointSymbol != *market {
+				state.Log("Going to market that sells Fuel")
+				return RoutineResult{
+					SetRoutine: NavigateTo{waypoint: *market, next: r},
+				}
 			}
 		}
 
-		if market == nil {
-			return RoutineResult{
-				Stop:       true,
-				StopReason: "Unable to find market selling fuel",
-			}
-		}
-
-		if state.Ship.Nav.WaypointSymbol != *market {
-			state.Log("Going to market that sells Fuel")
-			return RoutineResult{
-				SetRoutine: NavigateTo{waypoint: *market, next: r},
-			}
-		}
-
-		marketData, _ := market.GetMarket(state.Context)
-		database.UpdateMarketRates(*market, marketData.TradeGoods)
-
+		marketData, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
+		database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, marketData.TradeGoods)
 		fuelGood := marketData.GetTradeGood("FUEL")
 		if fuelGood == nil {
 			state.Log("Fuel isn't being sold here")
+			// TODO: this is bad
+			r.noFuelHere = true
 			return RoutineResult{}
 		}
 

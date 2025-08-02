@@ -16,7 +16,6 @@ func GetClosestMarketSelling(selling []string, waypoint entity.LimitedWaypointDa
 	// TODO: other system markets
 	systemMarkets := make([]database.MarketRates, 0)
 	for _, market := range markets {
-
 		if market.Waypoint.GetSystemName() == waypoint.Symbol.GetSystemName() {
 			systemMarkets = append(systemMarkets, market)
 		}
