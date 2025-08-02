@@ -92,7 +92,7 @@ func main() {
 }
 
 func updateShipStates() {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	for {
 		<-ticker.C
 		shipData := make([]ui.ShipData, 0)
