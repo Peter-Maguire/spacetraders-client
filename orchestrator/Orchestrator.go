@@ -42,7 +42,6 @@ var (
 )
 
 func Init(token string) *Orchestrator {
-
 	//TODO:
 	// There should be an overall goal for stages of development which determines the actions of each type
 	// In no particular order, these are the various stages I see
@@ -55,8 +54,6 @@ func Init(token string) *Orchestrator {
 	//   between different agents, and compare the outcomes for each agent per reset
 
 	ctx := context.WithValue(context.Background(), "token", token)
-
-	shipFilter := os.Getenv("SHIP_FILTER")
 
 	agent, err := entity.GetAgent(ctx)
 
@@ -126,32 +123,14 @@ func Init(token string) *Orchestrator {
 		Context:      ctx,
 	}
 
-	//waypoints, _ := agent.Headquarters.GetSystemWaypoints(ctx)
-	//database.LogWaypoints(waypoints)
+	go orc.start()
 
-	//// TODO: fix shipyard logic
-	//orc.Shipyard = ""
-	//
-	//for _, w := range *waypoints {
-	//	if w.HasTrait("SHIPYARD") {
-	//		shipyard, _ := w.Symbol.GetShipyard(ctx)
-	//		if shipyard.SellsShipType(orc.ShipToBuy) {
-	//			orc.Shipyard = w.Symbol
-	//			break
-	//		}
-	//		// TODO: find the closest
-	//	}
-	//}
+	//orc.StatesMutex.Unlock()
+	return &orc
+}
 
-	//for _, waypoint := range *waypoints {
-	//	if waypoint.HasTrait("SHIPYARD") {
-	//		ui.MainLog(fmt.Sprintf("Found Shipyard at %s", waypoint.Symbol))
-	//		orc.Shipyard = waypoint.Symbol
-	//		break
-	//	}
-	//}
-
-	ships, err2 := orc.Agent.Ships(ctx)
+func (o *Orchestrator) start() {
+	ships, err2 := o.Agent.Ships(o.Context)
 	if err2 != nil {
 		fmt.Println(err2)
 	}
@@ -163,38 +142,14 @@ func Init(token string) *Orchestrator {
 		if ship.Registration.Role == "HAULER" {
 			ui.MainLog(fmt.Sprintf("%s is HAULER", ship.Registration))
 			shipCopy := ship
-			orc.Haulers = append(orc.Haulers, &shipCopy)
+			o.Haulers = append(o.Haulers, &shipCopy)
 		}
 	}
 
-	// TODO: this logic should be more nuanced
-	if shipCount < 30 {
-		orc.ShipToBuy = "SHIP_MINING_DRONE"
-	} else {
-		orc.ShipToBuy = "SHIP_LIGHT_HAULER"
-	}
+	go o.runEvents()
 
-	// TODO: This should be merged into the explore logic
-	// TODO: Does this even work when we're not actually there?
-	//shipyardStock, err := orc.Shipyard.GetShipyard(ctx)
-	//if err == nil {
-	//	ui.MainLog(fmt.Sprintf("Shipyard at %s has %d types, %d available", shipyardStock.Symbol, len(shipyardStock.ShipTypes), len(shipyardStock.Ships)))
-	//	if len(shipyardStock.Ships) > 0 {
-	//		// TODO: This should maybe store the available ship types here even if we don't know the price
-	//		go database.StoreShipCosts(shipyardStock)
-	//	}
-	//	for _, stock := range shipyardStock.Ships {
-	//		if stock.Name == orc.ShipToBuy {
-	//			ui.MainLog(fmt.Sprintf("Ship %s is available to buy at %s for %d credits", orc.ShipToBuy, orc.Shipyard, stock.PurchasePrice))
-	//			orc.CreditTarget = stock.PurchasePrice
-	//		}
-	//	}
-	//}
-
-	go orc.runEvents()
-
-	orc.States = make([]*routine.State, len(*ships))
-
+	o.States = make([]*routine.State, len(*ships))
+	shipFilter := os.Getenv("SHIP_FILTER")
 	ui.MainLog(fmt.Sprint("Starting Routines"))
 	//orc.StatesMutex.Lock()
 	for i, ship := range *ships {
@@ -204,21 +159,19 @@ func Init(token string) *Orchestrator {
 		}
 		shipPtr := ship
 		state := routine.State{
-			Agent:       agent,
-			Contract:    contract,
+			Agent:       o.Agent,
+			Contract:    o.Contract,
 			Ship:        &shipPtr,
-			States:      &orc.States,
-			StatesMutex: &orc.StatesMutex,
-			Haulers:     orc.Haulers,
-			EventBus:    orc.Channel,
+			States:      &o.States,
+			StatesMutex: &o.StatesMutex,
+			Haulers:     o.Haulers,
+			EventBus:    o.Channel,
 		}
-		state.Context = context.WithValue(ctx, "state", &state)
-		orc.States[i] = &state
+		state.Context = context.WithValue(o.Context, "state", &state)
+		o.States[i] = &state
 
-		go orc.routineLoop(&state)
+		go o.routineLoop(&state)
 	}
-	//orc.StatesMutex.Unlock()
-	return &orc
 }
 
 func (o *Orchestrator) startNewContract() {
