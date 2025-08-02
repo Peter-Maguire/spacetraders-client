@@ -62,6 +62,8 @@ func (r Rescue) Run(state *State) RoutineResult {
 			}
 		}
 
+		state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+
 		marketData, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
 		database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, marketData.TradeGoods)
 		fuelGood := marketData.GetTradeGood("FUEL")
