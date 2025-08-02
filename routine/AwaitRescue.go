@@ -2,13 +2,19 @@ package routine
 
 import (
 	"fmt"
+	"time"
 )
 
 type AwaitRescue struct {
-	next Routine
+	next           Routine
+	startedWaiting *time.Time
 }
 
 func (a AwaitRescue) Run(state *State) RoutineResult {
+	if a.startedWaiting == nil {
+		now := time.Now()
+		a.startedWaiting = &now
+	}
 	state.Ship.EnsureNavState(state.Context, "ORBIT")
 
 	cargo, _ := state.Ship.GetCargo(state.Context)
@@ -43,6 +49,13 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 		state.Log("Refuel failed: " + err.Message)
 		return RoutineResult{
 			WaitSeconds: 60,
+		}
+	}
+
+	if a.startedWaiting.Sub(time.Now()) > time.Hour {
+		state.Log("We've been waiting for over an hour...")
+		return RoutineResult{
+			SetRoutine: DetermineObjective{},
 		}
 	}
 
