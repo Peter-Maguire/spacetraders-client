@@ -22,8 +22,12 @@ func (f FindNewWaypoint) Run(state *State) RoutineResult {
 		}
 	}
 	// find new place
-	// TODO: GetSystemWaypointsWithTraits
-	waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+	var waypoints *[]entity.WaypointData
+	if f.desiredTrait != "" {
+		waypoints, _ = state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsWithTrait(state.Context, f.desiredTrait)
+	} else {
+		waypoints, _ = state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+	}
 	database.LogWaypoints(waypoints)
 	goodWaypoints := make([]entity.WaypointData, 0)
 	for _, waypoint := range *waypoints {

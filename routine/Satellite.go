@@ -131,7 +131,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 
 		if shipCost == nil {
 			state.Log("We aren't aware of any shipyards selling this ship type yet")
-			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemWaypoints(state.Context)
+			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsWithTrait(state.Context, constant.TraitShipyard)
 
 			for _, w := range *waypoints {
 				if w.HasTrait(constant.TraitShipyard) {
@@ -148,6 +148,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 				}
 			}
 			return RoutineResult{
+				WaitSeconds: 60,
 				SetRoutine: Explore{
 					oneShot:      true,
 					desiredTrait: "SHIPYARD",

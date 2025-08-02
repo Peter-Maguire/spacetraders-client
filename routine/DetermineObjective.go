@@ -37,6 +37,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
+	//phase := state.
 	state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
 
 	// TODO: satellite should explore until it's explored the entire system next go to Refresh Markets (rotate through all the markets refreshing each)

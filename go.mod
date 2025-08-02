@@ -4,13 +4,11 @@ go 1.24
 
 require (
 	github.com/gorilla/websocket v1.5.0
-	github.com/jellydator/ttlcache/v3 v3.0.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.15.1
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.25.1
 )
-
-require golang.org/x/sync v0.1.0 // indirect
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

@@ -43,6 +43,10 @@ func (r Refuel) Run(state *State) RoutineResult {
 			if st.ForceRoutine != nil {
 				continue
 			}
+			if st.Ship.Cargo.GetSlotWithItem("FUEL") != nil {
+				rescueShips = []*State{st}
+				break
+			}
 
 			rescueShips = append(rescueShips, st)
 		}
@@ -165,6 +169,13 @@ func (r Refuel) Run(state *State) RoutineResult {
 		return RoutineResult{
 			Stop:       true,
 			StopReason: "Unable to refuel",
+		}
+	}
+
+	if state.Ship.Fuel.Current == 1 {
+		return RoutineResult{
+			Stop:       true,
+			StopReason: "Fuel = 1 and refuel failed",
 		}
 	}
 

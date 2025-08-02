@@ -10,6 +10,10 @@ import (
 	"time"
 )
 
+type Phaser interface {
+	GetPhase() constant.Phase
+}
+
 type State struct {
 	Agent            *entity.Agent            `json:"-"`
 	Contract         *entity.Contract         `json:"-"`
@@ -25,6 +29,8 @@ type State struct {
 	ForceRoutine   Routine
 
 	States *[]*State
+
+	Phase Phaser
 
 	StatesMutex *sync.Mutex
 

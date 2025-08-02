@@ -42,9 +42,12 @@ var (
 )
 
 func main() {
-
+	
 	st := entity.SpaceTraders{}
-	serverStatus, _ := entity.GetServerStatus()
+	serverStatus, err := entity.GetServerStatus()
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("SpaceTraders version %s\n", serverStatus.Version)
 	fmt.Printf("%s\n", serverStatus.Status)
 	fmt.Printf("Next Reset: %s\n", serverStatus.ServerResets.Next)
