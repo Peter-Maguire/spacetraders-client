@@ -34,6 +34,15 @@ func (r Rescue) Run(state *State) RoutineResult {
 
 	fuelCargo := state.Ship.Cargo.GetSlotWithItem("FUEL")
 	if fuelCargo == nil {
+		if state.Ship.Cargo.IsFull() {
+			return RoutineResult{
+				SetRoutine: Jettison{
+					nextIfSuccessful: r,
+					nextIfFailed:     SellExcessInventory{next: r},
+				},
+			}
+		}
+
 		wp := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
 		wpData := wp.GetData()
 
