@@ -8,7 +8,16 @@ type FullWait struct {
 func (f FullWait) Run(state *State) RoutineResult {
 
 	// TODO: wait for hauler to come back if going to the market and back would take longer than the hauler is going to take to come back
-	hasHauler := len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleHauler, state.Ship.Nav.WaypointSymbol)) > 0
+	haulers := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleHauler, state.Ship.Nav.WaypointSymbol)
+
+	hasHauler := false
+
+	for _, h := range haulers {
+		if h.Fuel.Current > 0 {
+			hasHauler = true
+			break
+		}
+	}
 
 	if !hasHauler {
 		state.Log("We have no hauler here")
