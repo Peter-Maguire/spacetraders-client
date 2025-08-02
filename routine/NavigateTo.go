@@ -59,7 +59,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			state.Log("Setting to drift as we can't get there with our max fuel level")
 			state.Ship.EnsureFlightMode(state.Context, constant.FlightModeDrift)
 		}
-		if !n.isDetour && (fuelToWaypoint > state.Ship.Fuel.Current || state.Ship.Nav.FlightMode == constant.FlightModeDrift) {
+		if !n.isDetour && (fuelToWaypoint >= state.Ship.Fuel.Current || state.Ship.Nav.FlightMode == constant.FlightModeDrift) {
 			fuelMarkets := database.GetMarketsSelling([]string{"FUEL"})
 
 			combinedDistances := make(map[entity.Waypoint]int)
