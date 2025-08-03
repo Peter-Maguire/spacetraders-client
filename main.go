@@ -10,7 +10,6 @@ import (
 	"spacetraders/http"
 	"spacetraders/orchestrator"
 	"spacetraders/ui"
-	"strings"
 	"time"
 )
 
@@ -42,7 +41,7 @@ var (
 )
 
 func main() {
-	
+
 	st := entity.SpaceTraders{}
 	serverStatus, err := entity.GetServerStatus()
 	if err != nil {
@@ -55,7 +54,7 @@ func main() {
 	st.ServerStart, _ = time.Parse(time.DateOnly, serverStatus.ResetDate)
 	st.ServerEnd, _ = time.Parse(time.RFC3339, serverStatus.ServerResets.Next)
 
-	if os.Getenv("TOKEN") == "" {
+	if os.Getenv("TOKEN_0") == "" {
 		fmt.Println("Resetting...")
 		time.Sleep(10 * time.Second)
 		database.Init()
@@ -76,7 +75,18 @@ func main() {
 	http.Init()
 
 	fmt.Println("Starting Orchestrators...")
-	tokens := strings.Split(os.Getenv("TOKEN"), ",")
+	i := 0
+	tokens := make([]string, 0)
+	for {
+		token := os.Getenv(fmt.Sprintf("TOKEN_%d", i))
+		if token == "" {
+			break
+		}
+
+		tokens = append(tokens, token)
+		i++
+	}
+
 	orcs = make([]*orchestrator.Orchestrator, len(tokens))
 	st.Orchestrators = make([]entity.Orchestrator, len(tokens))
 	for i, token := range tokens {

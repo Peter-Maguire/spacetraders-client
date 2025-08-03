@@ -96,9 +96,15 @@ function updateState(data){
 
     const shipTemplate = document.getElementById("shipTemplate")
 
-    agents = data.agents;
-    contracts = data.contracts;
-
+    if(data.agents && !agents) {
+        agents = data.agents;
+        contracts = data.contracts;
+        updateHeader();
+    } else {
+        agents = data.agents;
+        contracts = data.contracts;
+    }
+    
     shipStates = ship;
     drawMap();
     ships.innerText = "";
