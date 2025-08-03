@@ -79,7 +79,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	for _, slot := range inventory {
 		// Don't sell antimatter or contract target
-		if slot.Symbol == "ANTIMATTER" || slot.Symbol == targetItem {
+		if /*slot.Symbol == "ANTIMATTER" || */ slot.Symbol == targetItem {
 			continue
 		}
 

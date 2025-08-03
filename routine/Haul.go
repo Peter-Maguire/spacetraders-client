@@ -104,9 +104,9 @@ func (h Haul) Run(state *State) RoutineResult {
 		//state.Log(fmt.Sprintf("Biggest %d / Smallest %d", ship.Cargo.Inventory[0].Units, ship.Cargo.Inventory[len(ship.Cargo.Inventory)-1].Units))
 
 		for _, slot := range ship.Cargo.Inventory {
-			if slot.Symbol == "ANTIMATTER" {
-				continue
-			}
+			//if slot.Symbol == "ANTIMATTER" {
+			//	continue
+			//}
 			remainingCapacity := state.Ship.Cargo.Capacity - cargoCount
 			if remainingCapacity <= 0 {
 				state.Log("Cargo is now full")

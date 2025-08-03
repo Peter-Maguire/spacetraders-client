@@ -37,7 +37,7 @@ func (n NegotiateContract) Run(state *State) RoutineResult {
 	} else {
 
 		switch err.Code {
-		case http.ErrNoFactionPresence:
+		case http.ErrWaypointNoFaction:
 			return RoutineResult{SetRoutine: GoToRandomFactionWaypoint{next: n}}
 		}
 		state.Log(err.Error())

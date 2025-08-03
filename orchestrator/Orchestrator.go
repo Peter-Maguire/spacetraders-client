@@ -34,12 +34,12 @@ var (
 	agentShips = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_agent_ships",
 		Help: "Current Ship Count",
-	}, []string{"role", "system", "waypoint"})
+	}, []string{"agent", "role", "system", "waypoint"})
 
 	shipStates = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_ship_state",
 		Help: "Ship States",
-	}, []string{"name", "state"})
+	}, []string{"agent", "name", "state"})
 )
 
 func Init(token string) *Orchestrator {
@@ -78,7 +78,7 @@ func Init(token string) *Orchestrator {
 		database.LogWaypoints(waypointData)
 	}
 
-	metrics.NumCredits.Set(float64(agent.Credits))
+	metrics.NumCredits.WithLabelValues(agent.Symbol).Set(float64(agent.Credits))
 
 	contracts, _ := agent.Contracts(ctx)
 
@@ -112,8 +112,8 @@ func Init(token string) *Orchestrator {
 	if contract == nil {
 		ui.MainLog("No current Contract")
 	} else {
-		metrics.ContractProgress.Set(float64(contract.Terms.Deliver[0].UnitsFulfilled))
-		metrics.ContractRequirement.Set(float64(contract.Terms.Deliver[0].UnitsRequired))
+		metrics.ContractProgress.WithLabelValues(agent.Symbol).Set(float64(contract.Terms.Deliver[0].UnitsFulfilled))
+		metrics.ContractRequirement.WithLabelValues(agent.Symbol).Set(float64(contract.Terms.Deliver[0].UnitsRequired))
 	}
 
 	orc := Orchestrator{
@@ -138,7 +138,7 @@ func (o *Orchestrator) start() {
 	shipCount := len(*ships)
 	ui.MainLog(fmt.Sprintf("We have %d ships:", shipCount))
 	for _, ship := range *ships {
-		agentShips.WithLabelValues(string(ship.Registration.Role), string(ship.Nav.SystemSymbol), string(ship.Nav.WaypointSymbol)).Add(1)
+		agentShips.WithLabelValues(o.Agent.Symbol, string(ship.Registration.Role), string(ship.Nav.SystemSymbol), string(ship.Nav.WaypointSymbol)).Add(1)
 		ui.MainLog(fmt.Sprintf("%s: %s type", ship.Registration.Name, ship.Registration.Role))
 		if ship.Registration.Role == "HAULER" {
 			ui.MainLog(fmt.Sprintf("%s is HAULER", ship.Registration))
@@ -247,7 +247,7 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 			state.Log("Stopping Routine")
 			break
 		}
-		shipStates.WithLabelValues(state.Ship.Symbol, routineName).Set(1)
+		shipStates.WithLabelValues(o.Agent.Symbol, state.Ship.Symbol, routineName).Set(1)
 		routineResult := state.CurrentRoutine.Run(state)
 		if routineResult.WaitSeconds > 0 {
 			//state.Log(fmt.Sprintf("Waiting for %d seconds", routineResult.WaitSeconds))
@@ -269,20 +269,20 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
 		if state.ForceRoutine != nil {
 			state.Log("Forced routine change")
-			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
+			shipStates.WithLabelValues(o.Agent.Symbol, state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
 			state.CurrentRoutine = state.ForceRoutine
 			state.ForceRoutine = nil
 			continue
 		}
 
 		if routineResult.SetRoutine != nil {
-			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
+			shipStates.WithLabelValues(o.Agent.Symbol, state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
 			state.Log(fmt.Sprintf("%s => %s", state.CurrentRoutine.Name(), routineResult.SetRoutine.Name()))
 			state.CurrentRoutine = routineResult.SetRoutine
 		}
 
 		if routineResult.Stop {
-			shipStates.WithLabelValues(state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
+			shipStates.WithLabelValues(o.Agent.Symbol, state.Ship.Symbol, state.CurrentRoutine.Name()).Set(0)
 			state.CurrentRoutine = nil
 			state.StoppedReason = routineResult.StopReason
 			state.Log("Stopping Routine")

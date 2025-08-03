@@ -5,6 +5,7 @@ import (
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/metrics"
 	"spacetraders/util"
 )
 
@@ -28,6 +29,9 @@ func (s Satellite) Run(state *State) RoutineResult {
 	syd, _ := waypointData.Symbol.GetShipyard(state.Context)
 
 	database.VisitWaypoint(waypointData, mkt, syd)
+
+	agent, _ := entity.GetAgent(state.Context)
+	metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(agent.Credits))
 
 	if mkt != nil {
 		system := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
@@ -83,6 +87,12 @@ func (s Satellite) Run(state *State) RoutineResult {
 		if data.HasTrait(constant.TraitMarketplace) || data.HasTrait(constant.TraitShipyard) {
 			goodUnvisitedWaypoints = true
 			break
+		}
+	}
+
+	if !goodUnvisitedWaypoints && state.Ship.Registration.Role != constant.ShipRoleSatellite {
+		return RoutineResult{
+			SetRoutine: DetermineObjective{},
 		}
 	}
 
@@ -275,6 +285,10 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 	// Ratio of 1 hauler for every 9 excavators
 	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < 1/9 {
 		return []string{"SHIP_LIGHT_HAULER"}
+	}
+
+	if len(*state.States) > 20 {
+		return []string{}
 	}
 
 	return []string{"SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}

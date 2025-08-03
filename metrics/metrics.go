@@ -6,17 +6,17 @@ import (
 )
 
 var (
-	ContractProgress = promauto.NewGauge(prometheus.GaugeOpts{
+	ContractProgress = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_contract_fulfilled",
 		Help: "Items fulfilled in contract",
-	})
+	}, []string{"agent"})
 
-	ContractRequirement = promauto.NewGauge(prometheus.GaugeOpts{
+	ContractRequirement = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_contract_requirement",
 		Help: "Items required in contract",
-	})
-	NumCredits = promauto.NewGauge(prometheus.GaugeOpts{
+	}, []string{"agent"})
+	NumCredits = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_agent_credits",
 		Help: "Number of credits",
-	})
+	}, []string{"agent"})
 )

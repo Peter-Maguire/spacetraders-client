@@ -38,7 +38,7 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 
 	if err != nil {
 		switch err.Code {
-		case http.ErrCooldown:
+		case http.ErrCooldownConflict:
 			state.Log("We are on cooldown from a previous running routine")
 			return RoutineResult{
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),

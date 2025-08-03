@@ -194,7 +194,7 @@ func (s *Ship) Jump(ctx context.Context, waypoint Waypoint) (*ShipJumpResult, *h
 
 func (s *Ship) Warp(ctx context.Context, waypoint Waypoint) (*ShipWarpResult, *http.HttpError) {
 	if !s.CanWarp() {
-		return nil, &http.HttpError{Code: http.ErrNoWarpDrive, Message: "No Warp drive"}
+		return nil, &http.HttpError{Code: http.ErrShipMissingWarpDrive, Message: "No Warp drive"}
 	}
 	warpResult, err := http.Request[ShipWarpResult](ctx, "POST", fmt.Sprintf("my/ships/%s/warp", s.Symbol), map[string]Waypoint{
 		"waypointSymbol": waypoint,

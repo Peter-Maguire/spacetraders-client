@@ -160,11 +160,11 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 	_, err := state.Ship.Navigate(state.Context, n.waypoint)
 	if err != nil {
 		switch err.Code {
-		case http.ErrCooldown:
+		case http.ErrCooldownConflict:
 			return RoutineResult{
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),
 			}
-		case http.ErrInsufficientFuelForNav:
+		case http.ErrNavigateInsufficientFuel:
 			state.Log(err.Message)
 			state.Log("Refuelling and trying again")
 			if n.nextIfNoFuel != nil {
@@ -180,7 +180,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			return RoutineResult{
 				WaitSeconds: 30,
 			}
-		case http.ErrShipAtDestination:
+		case http.ErrNavigateSameDestination:
 			state.Log("Oh we're already there")
 			return RoutineResult{
 				SetRoutine: n.next,

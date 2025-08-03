@@ -61,29 +61,29 @@ func (m MineOres) Run(state *State) RoutineResult {
 
 	if err != nil {
 		switch err.Code {
-		case http.ErrCooldown:
+		case http.ErrCooldownConflict:
 			state.Log("We are on cooldown from a previous running routine")
 			return RoutineResult{
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),
 			}
-		case http.ErrCargoFull:
+		case http.ErrShipCargoFull:
 			return RoutineResult{
 				SetRoutine: Jettison{
 					nextIfFailed:     FullWait{},
 					nextIfSuccessful: m,
 				},
 			}
-		case http.ErrCannotExtractHere:
+		case http.ErrShipExtractInvalidWaypoint:
 			state.Log("We're not at an asteroid field")
 			return RoutineResult{
 				SetRoutine: GoToMiningArea{},
 			}
-		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
+		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpiration:
 			state.Log("Something went wrong with the survey " + err.Error())
 			state.FireEvent("surveyExhausted", state.Survey)
 			state.Survey = nil
 			return RoutineResult{}
-		case http.ErrOverExtracted:
+		case http.ErrShipExtractDestabilized:
 			state.Log("Asteroid Over-extracted")
 			return RoutineResult{
 				SetRoutine: GoToMiningArea{blacklist: []entity.Waypoint{state.Ship.Nav.WaypointSymbol}},

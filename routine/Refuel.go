@@ -136,6 +136,15 @@ func (r Refuel) Run(state *State) RoutineResult {
 			}
 		}
 
+		fuelGood := market.GetTradeGood("FUEL")
+
+		if fuelGood.PurchasePrice > state.Agent.Credits {
+			state.Log("We don't have enough credits to purchase fuel.")
+			return RoutineResult{
+				WaitSeconds: 60,
+			}
+		}
+
 		state.Log("Trying to refuel here")
 		_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 		refuelErr := state.Ship.Refuel(state.Context)
@@ -153,6 +162,11 @@ func (r Refuel) Run(state *State) RoutineResult {
 			state.Log("Ship in transit")
 			return RoutineResult{
 				WaitSeconds: 30,
+			}
+		case http.ErrMarketTradeInsufficientCredits:
+			state.Log("Insufficient funds")
+			return RoutineResult{
+				WaitSeconds: 60,
 			}
 		}
 		state.Log(refuelErr.Error())

@@ -14,6 +14,20 @@ type DeliverContractItem struct {
 
 func (r DeliverContractItem) Run(state *State) RoutineResult {
 
+	if state.Contract == nil {
+		contracts, _ := state.Agent.Contracts(state.Context)
+		for _, contract := range *contracts {
+			if !contract.Fulfilled && contract.Accepted {
+				state.Contract = &contract
+				return RoutineResult{}
+			}
+		}
+		state.Log("No contract is currently available")
+		return RoutineResult{
+			SetRoutine: NegotiateContract{},
+		}
+	}
+
 	deliverable := state.Contract.Terms.GetDeliverable(r.item)
 	if deliverable == nil {
 		state.Log("Item specified is not in the contract as a deliverable")
@@ -45,7 +59,7 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 	_, _ = state.Ship.GetCargo(state.Context)
 
 	if err != nil {
-		if err.Code == http.ErrContractTermsMet {
+		if err.Code == http.ErrShipDeliverFulfilled {
 			err := state.Contract.Fulfill(state.Context)
 			if err == nil {
 				state.FireEvent("contractComplete", nil)
@@ -55,8 +69,8 @@ func (r DeliverContractItem) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Error delivering contract: %s", err))
 		return RoutineResult{SetRoutine: r.next}
 	} else {
-		metrics.ContractProgress.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsFulfilled))
-		metrics.ContractRequirement.Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsRequired))
+		metrics.ContractProgress.WithLabelValues(state.Agent.Symbol).Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsFulfilled))
+		metrics.ContractRequirement.WithLabelValues(state.Agent.Symbol).Set(float64(deliverResult.Contract.Terms.Deliver[0].UnitsRequired))
 	}
 
 	deliverable = &deliverResult.Contract.Terms.Deliver[0]

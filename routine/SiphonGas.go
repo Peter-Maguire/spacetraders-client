@@ -32,29 +32,29 @@ func (f SiphonGas) Run(state *State) RoutineResult {
 	result, err := state.Ship.Siphon(state.Context)
 	if err != nil {
 		switch err.Code {
-		case http.ErrCooldown:
+		case http.ErrCooldownConflict:
 			state.Log("We are on cooldown from a previous running routine")
 			return RoutineResult{
 				WaitSeconds: int(err.Data["cooldown"].(map[string]any)["remainingSeconds"].(float64)),
 			}
-		case http.ErrCargoFull:
+		case http.ErrShipCargoFull:
 			return RoutineResult{
 				SetRoutine: Jettison{
 					nextIfFailed:     FullWait{},
 					nextIfSuccessful: f,
 				},
 			}
-		case http.ErrCannotExtractHere:
+		case http.ErrShipExtractInvalidWaypoint:
 			state.Log("We're not at an asteroid field")
 			return RoutineResult{
 				SetRoutine: GoToGasGiant{},
 			}
-		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpired:
+		case http.ErrShipSurveyExhausted, http.ErrShipSurveyVerification, http.ErrShipSurveyExpiration:
 			state.Log("Something went wrong with the survey " + err.Error())
 			state.FireEvent("surveyExhausted", state.Survey)
 			state.Survey = nil
 			return RoutineResult{}
-		case http.ErrOverExtracted:
+		case http.ErrShipExtractDestabilized:
 			state.Log("Asteroid Over-extracted")
 			return RoutineResult{
 				SetRoutine: GoToGasGiant{blacklist: []entity.Waypoint{state.Ship.Nav.WaypointSymbol}},

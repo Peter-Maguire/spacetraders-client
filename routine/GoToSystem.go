@@ -23,7 +23,7 @@ func (g GoToSystem) Run(state *State) RoutineResult {
 	}
 
 	currentSystem := database.GetSystemData(string(state.Ship.Nav.SystemSymbol))
-	if currentSystem != nil {
+	if currentSystem == nil {
 		currentSystem, _ = state.Ship.Nav.WaypointSymbol.GetSystem(state.Context)
 		database.StoreSystem(currentSystem)
 	}

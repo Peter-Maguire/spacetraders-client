@@ -66,7 +66,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				if jumpGate != nil {
 					jumpResult, err := state.Ship.Jump(state.Context, systemEntity.Waypoints[0].Symbol)
 					if err != nil {
-						if err.Code == http.ErrJumpGateUnderConstruction {
+						if err.Code == http.ErrShipJumpDestinationUnderConstruction {
 							return RoutineResult{SetRoutine: BuildJumpGate{next: f}}
 						}
 						state.Log("Error jumping")
@@ -131,7 +131,7 @@ func (f FindNewSystem) Run(state *State) RoutineResult {
 				}
 				jumpResult, err := state.Ship.Jump(state.Context, jumpGate.Symbol)
 				if err != nil {
-					if err.Code == http.ErrJumpGateUnderConstruction {
+					if err.Code == http.ErrShipJumpDestinationUnderConstruction {
 						state.Log("Gate is under construction")
 						continue
 					}

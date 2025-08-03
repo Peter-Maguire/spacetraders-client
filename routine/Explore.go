@@ -5,7 +5,6 @@ import (
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
-	"spacetraders/metrics"
 )
 
 type Explore struct {
@@ -82,15 +81,15 @@ func (e Explore) Run(state *State) RoutineResult {
 		antiMatterTrader := marketData.GetTradeGood("ANTIMATTER")
 		antiMatterSlot := state.Ship.Cargo.GetSlotWithItem("ANTIMATTER")
 		fmt.Println("antimatter", antiMatterSlot, antiMatterTrader)
-		if antiMatterTrader != nil && (antiMatterSlot == nil || antiMatterSlot.Units < 2) {
-			state.Log("Buying some antimatter")
-			_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
-			res, _ := state.Ship.Purchase(state.Context, "ANTIMATTER", 5)
-			if res != nil {
-				state.Log("Success")
-				metrics.NumCredits.Set(float64(res.Agent.Credits))
-			}
-		}
+		//if antiMatterTrader != nil && (antiMatterSlot == nil || antiMatterSlot.Units < 2) {
+		//	state.Log("Buying some antimatter")
+		//	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+		//	res, _ := state.Ship.Purchase(state.Context, "ANTIMATTER", 5)
+		//	if res != nil {
+		//		state.Log("Success")
+		//		metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(res.Agent.Credits))
+		//	}
+		//}
 
 		if e.marketTargets != nil {
 			for _, good := range marketData.TradeGoods {

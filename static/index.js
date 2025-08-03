@@ -50,7 +50,7 @@ let shipStates = [];
 let waypoints = [];
 let mapSystem = "";
 let viewingMap = true;
-let currentAgent = "AGENT1";
+let currentAgent = "BIGP1";
 
 function connect() {
 

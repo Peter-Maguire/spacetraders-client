@@ -6,6 +6,7 @@ import (
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
+	"spacetraders/metrics"
 	"spacetraders/util"
 )
 
@@ -181,9 +182,10 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	if err != nil {
 
 		switch err.Code {
-		case http.ErrInsufficientFunds:
+		case http.ErrMarketTradeInsufficientCredits:
 			state.Log("Insufficient Funds")
 			agent, _ := entity.GetAgent(state.Context)
+			metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(agent.Credits))
 			state.Agent.Credits = agent.Credits
 			return RoutineResult{
 				WaitSeconds: 10,
