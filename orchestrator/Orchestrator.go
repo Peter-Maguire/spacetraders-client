@@ -233,12 +233,12 @@ func (o *Orchestrator) runEvents() {
 }
 
 func (o *Orchestrator) routineLoop(state *routine.State) {
-	defer func() {
-		if r := recover(); r != nil {
-			ui.MainLog(fmt.Sprintf("Recovered from panic: %v", r))
-			state.StoppedReason = fmt.Sprint(r)
-		}
-	}()
+	//defer func() {
+	//	if r := recover(); r != nil {
+	//		ui.MainLog(fmt.Sprintf("Recovered from panic: %v", r))
+	//		state.StoppedReason = fmt.Sprint(r)
+	//	}
+	//}()
 	state.CurrentRoutine = routine.DetermineObjective{}
 	for {
 		routineName := state.CurrentRoutine.Name()

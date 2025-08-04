@@ -255,10 +255,10 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 	}
 
 	if shipsOfEachType[constant.ShipRoleExcavator] < 3 {
-		return []string{"SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
+		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] > 4 && state.Contract != nil && !state.Contract.Fulfilled && state.Agent.Credits < min(state.Contract.Terms.Payment.OnAccepted, 200000) {
+	if shipsOfEachType[constant.ShipRoleExcavator] > 2 && state.Contract != nil && !state.Contract.Fulfilled && state.Agent.Credits < min(state.Contract.Terms.Payment.OnAccepted, 200000) {
 		for _, deliverable := range state.Contract.Terms.Deliver {
 			if !util.IsMineable(deliverable.TradeSymbol) {
 				state.Log(fmt.Sprintf("We don't want to buy a ship right now as we're doing a contract for unmineable %s", deliverable.TradeSymbol))

@@ -136,7 +136,7 @@ func updateShipStates() {
 					if state.CurrentRoutine == nil {
 						numStopped++
 					} else {
-						routinesActive.WithLabelValues(state.CurrentRoutine.Name()).Add(1)
+						routinesActive.WithLabelValues(fmt.Sprintf("%T", state.CurrentRoutine)).Add(1)
 						ship.Routine = state.CurrentRoutine.Name()
 					}
 					if state.WaitingForHttp {
