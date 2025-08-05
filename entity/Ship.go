@@ -146,6 +146,8 @@ func (s *Ship) SellCargo(ctx context.Context, cargoSymbol string, units int) (*S
 		Units:  units,
 	})
 	if sellResult != nil {
+		st := ctx.Value("state").(state)
+		st.GetAgent().Credits = sellResult.Agent.Credits
 		s.Cargo = &sellResult.Cargo
 	}
 	return sellResult, err

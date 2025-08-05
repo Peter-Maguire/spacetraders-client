@@ -15,6 +15,14 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 		now := time.Now()
 		a.startedWaiting = &now
 	}
+
+	if state.Ship.Fuel.Current > 0 {
+		state.Log("We have been rescued")
+		return RoutineResult{
+			SetRoutine: a.next,
+		}
+	}
+
 	state.Ship.EnsureNavState(state.Context, "ORBIT")
 
 	cargo, _ := state.Ship.GetCargo(state.Context)
@@ -50,6 +58,9 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 		return RoutineResult{
 			WaitSeconds: 60,
 		}
+	} else {
+		state.Log("rescued!")
+		return RoutineResult{SetRoutine: a.next}
 	}
 
 	if a.startedWaiting.Sub(time.Now()) > time.Hour {

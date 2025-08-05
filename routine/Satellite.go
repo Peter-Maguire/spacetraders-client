@@ -271,7 +271,7 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 	}
 
 	if shipsOfEachType[constant.ShipRoleHauler] == 0 {
-		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE"}
+		return []string{"SHIP_LIGHT_HAULER"}
 	}
 
 	if shipsOfEachType[constant.ShipRoleSurveyor] == 0 {

@@ -90,3 +90,11 @@ func (s *State) GetTotalOfItemAcrossAllShips(symbol string) int {
 	}
 	return amount
 }
+
+func (s *State) GetAgent() *entity.Agent {
+	return s.Agent
+}
+
+func (s *State) GetShip() *entity.Ship {
+	return s.Ship
+}

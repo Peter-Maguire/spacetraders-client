@@ -165,6 +165,10 @@ func (r Refuel) Run(state *State) RoutineResult {
 			}
 		case http.ErrMarketTradeInsufficientCredits:
 			state.Log("Insufficient funds")
+			if state.Ship.Fuel.Current > 1 {
+				state.Ship.EnsureFlightMode(state.Context, constant.FlightModeDrift)
+				return RoutineResult{SetRoutine: r.next}
+			}
 			return RoutineResult{
 				WaitSeconds: 60,
 			}

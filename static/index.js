@@ -104,7 +104,7 @@ function updateState(data){
         agents = data.agents;
         contracts = data.contracts;
     }
-    
+
     shipStates = ship;
     drawMap();
     ships.innerText = "";
@@ -361,7 +361,11 @@ function drawMap(){
         let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
         ctx.fillText(icon, x, y)//, 10 * mapScale, 10 * mapScale)
         ctx.font = `${mapScale*5}px serif`
-        ctx.fillText(waypoint.waypoint, x-5, y+10)
+        if(waypoint.waypointData.traits.find((m)=>m.symbol === "MARKETPLACE")) {
+            ctx.fillText(waypoint.waypoint+"(M)", x-5, y+10)
+        } else {
+            ctx.fillText(waypoint.waypoint, x-5, y+10)
+        }
         ctx.font = `${mapScale*10}px serif`
     })
 

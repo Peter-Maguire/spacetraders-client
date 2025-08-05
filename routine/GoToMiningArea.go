@@ -20,11 +20,9 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
-	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeAsteroid)
-	engineeredAstroid, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeEngineeredAsteroid)
+	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypoints(state.Context)
 	database.LogWaypoints(waypointsPtr)
-	database.LogWaypoints(engineeredAstroid)
-	waypoints := append(*waypointsPtr, *engineeredAstroid...)
+	waypoints := *waypointsPtr
 	waypointScores := make(map[entity.Waypoint]int)
 
 	//currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
@@ -57,6 +55,14 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	sort.Slice(eligibleWaypoints, func(i, j int) bool {
 		return waypointScores[eligibleWaypoints[i].Symbol] > waypointScores[eligibleWaypoints[j].Symbol]
 	})
+
+	fmt.Println("** TOP 5 **")
+	for i, waypoint := range eligibleWaypoints {
+		if i >= 5 {
+			break
+		}
+		fmt.Printf("%s with score of %d\n", waypoint.Symbol, waypointScores[waypoint.Symbol])
+	}
 
 	if len(waypointScores) == 0 {
 		state.Log("No good waypoints found within reach")
@@ -185,7 +191,8 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 		for _, tg := range marketData.TradeGoods {
 			if strings.HasSuffix(tg.Symbol, "_ORE") {
 				buysOres = true
-				score += tg.SellPrice
+				// TODO: figure out a way to incorporate price
+				score++
 			}
 		}
 
