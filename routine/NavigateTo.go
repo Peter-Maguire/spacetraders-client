@@ -2,6 +2,8 @@ package routine
 
 import (
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"sort"
 	"spacetraders/constant"
 	"spacetraders/database"
@@ -17,6 +19,13 @@ type NavigateTo struct {
 	nextIfNoFuel Routine
 	isDetour     bool
 }
+
+var (
+	fuelLevel = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "st_fuel_level",
+		Help: "Fuel Level",
+	}, []string{"ship", "agent"})
+)
 
 func (n NavigateTo) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprint("Navigating to ", n.waypoint))
@@ -42,6 +51,10 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			SetRoutine: GoToSystem{next: n, system: n.waypoint.GetSystemName()},
 		}
 	}
+
+	state.Ship.Update(state.Context)
+
+	fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(state.Ship.Fuel.Current))
 
 	dbTargetWaypoint := database.GetWaypoint(n.waypoint)
 	targetData := dbTargetWaypoint.GetData()

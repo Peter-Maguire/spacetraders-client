@@ -14,7 +14,7 @@ var (
 	mined = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "st_amount_mined",
 		Help: "Amount Mined",
-	}, []string{"symbol"})
+	}, []string{"symbol", "ship", "agent"})
 )
 
 type MineOres struct {
@@ -101,7 +101,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 		state.Log(fmt.Sprintf("Mining Event - %s", event.Name))
 	}
 
-	mined.WithLabelValues(result.Extraction.Yield.Symbol).Add(float64(result.Extraction.Yield.Units))
+	mined.WithLabelValues(result.Extraction.Yield.Symbol, state.Ship.Symbol, state.Agent.Symbol).Add(float64(result.Extraction.Yield.Units))
 
 	state.Log(fmt.Sprintf("Mined %d %s, cooldown for %d seconds", result.Extraction.Yield.Units, result.Extraction.Yield.Symbol, result.Cooldown.RemainingSeconds))
 
