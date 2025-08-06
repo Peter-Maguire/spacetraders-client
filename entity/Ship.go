@@ -80,6 +80,7 @@ func (s *Ship) Dock(ctx context.Context) error {
 	return err
 }
 
+// TODO: this doesn't respond with ship
 func (s *Ship) Refuel(ctx context.Context) *http.HttpError {
 	shipRefuelUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), nil)
 	if shipRefuelUpdate != nil {
@@ -95,6 +96,7 @@ func (s *Ship) RefuelFromCargo(ctx context.Context, amount int) *http.HttpError 
 	})
 	if shipRefuelUpdate != nil {
 		s.Fuel = shipRefuelUpdate.Fuel
+		s.Cargo = shipRefuelUpdate.Cargo
 	}
 	return err
 }
@@ -292,6 +294,20 @@ func (s *Ship) Refine(ctx context.Context, produce string) (*ShipRefineResult, *
 
 func (s *Ship) IsAtWaypoint(wp Waypoint) bool {
 	return s.Nav.WaypointSymbol == wp
+}
+
+func (s *Ship) Update(ctx context.Context) *http.HttpError {
+	result, err := http.Request[Ship](ctx, "GET", fmt.Sprintf("my/ships/%s", s.Symbol), nil)
+
+	// TODO: this better
+	if result != nil {
+		fmt.Println(result)
+		s.Cargo = result.Cargo
+		s.Nav = result.Nav
+		s.Fuel = result.Fuel
+	}
+
+	return err
 }
 
 type ShipNav struct {

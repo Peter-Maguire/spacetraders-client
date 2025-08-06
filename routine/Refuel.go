@@ -75,12 +75,6 @@ func (r Refuel) Run(state *State) RoutineResult {
 		return RoutineResult{SetRoutine: AwaitRescue{next: r}}
 	}
 
-	// TODO: this would not be necessary if we properly handled refreshing the ship data
-	ship, _ := state.Agent.GetShip(state.Context, state.Ship.Symbol)
-	if ship != nil {
-		state.Ship = ship
-	}
-
 	state.Log(fmt.Sprintf("Current fuel level: %d/%d", state.Ship.Fuel.Current, state.Ship.Fuel.Capacity))
 
 	if !r.hasTriedMarket {

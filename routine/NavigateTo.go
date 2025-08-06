@@ -2,6 +2,8 @@ package routine
 
 import (
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"sort"
 	"spacetraders/constant"
 	"spacetraders/database"
@@ -17,6 +19,13 @@ type NavigateTo struct {
 	nextIfNoFuel Routine
 	isDetour     bool
 }
+
+var (
+	fuelLevel = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "st_fuel_level",
+		Help: "Fuel Level",
+	}, []string{"ship", "agent"})
+)
 
 func (n NavigateTo) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprint("Navigating to ", n.waypoint))
@@ -43,6 +52,10 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
+	state.Ship.Update(state.Context)
+
+	fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(state.Ship.Fuel.Current))
+
 	dbTargetWaypoint := database.GetWaypoint(n.waypoint)
 	targetData := dbTargetWaypoint.GetData()
 	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
@@ -59,7 +72,7 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 			state.Log("Setting to drift as we can't get there with our max fuel level")
 			state.Ship.EnsureFlightMode(state.Context, constant.FlightModeDrift)
 		}
-		if !n.isDetour && (fuelToWaypoint >= state.Ship.Fuel.Current || state.Ship.Nav.FlightMode == constant.FlightModeDrift) {
+		if state.Ship.Fuel.Current > 1 && !n.isDetour && (fuelToWaypoint >= state.Ship.Fuel.Current || state.Ship.Nav.FlightMode == constant.FlightModeDrift) {
 			fuelMarkets := database.GetMarketsSelling([]string{"FUEL"})
 
 			combinedDistances := make(map[entity.Waypoint]int)

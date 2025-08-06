@@ -9,6 +9,7 @@ import (
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/metrics"
 	"spacetraders/util"
 )
 
@@ -16,11 +17,11 @@ var (
 	soldFor = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_sold_for",
 		Help: "Sold For",
-	}, []string{"symbol"})
+	}, []string{"symbol", "agent"})
 	totalSold = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "st_total_sold",
 		Help: "Total Sold",
-	}, []string{"symbol"})
+	}, []string{"symbol", "agent"})
 )
 
 type SellExcessInventory struct {
@@ -288,9 +289,11 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
 			soldSuccessfully = true
+			state.Log(fmt.Sprintf("We now have %d credits", sellResult.Agent.Credits))
+			metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(sellResult.Agent.Credits))
 			state.Agent.Credits = sellResult.Agent.Credits
-			soldFor.WithLabelValues(sellResult.Transaction.TradeSymbol).Set(float64(sellResult.Transaction.PricePerUnit))
-			totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol).Add(float64(sellResult.Transaction.Units))
+			soldFor.WithLabelValues(sellResult.Transaction.TradeSymbol, state.Agent.Symbol).Set(float64(sellResult.Transaction.PricePerUnit))
+			totalSold.WithLabelValues(sellResult.Transaction.TradeSymbol, state.Agent.Symbol).Add(float64(sellResult.Transaction.Units))
 		}
 	}
 

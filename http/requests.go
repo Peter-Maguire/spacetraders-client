@@ -116,9 +116,6 @@ func makeRequest[T any](ctx context.Context, method string, path string, body an
 	}
 	resp := <-returnChan
 	Waiting--
-	if err != nil {
-		return nil, InternalError(err)
-	}
 	if resp.Error != nil {
 		return nil, InternalError(resp.Error)
 	}
