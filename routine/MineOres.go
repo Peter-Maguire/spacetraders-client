@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"sort"
+	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/http"
@@ -41,10 +43,33 @@ func (m MineOres) Run(state *State) RoutineResult {
 	var result *entity.ExtractionResult
 	var err *http.HttpError
 
-	hasSurvey := database.GetUnexpiredSurveysForWaypoint(state.Ship.Nav.WaypointSymbol)
+	availableSurveys := database.GetUnexpiredSurveysForWaypoint(state.Ship.Nav.WaypointSymbol)
 	var survey *entity.Survey
-	if len(hasSurvey) > 0 {
-		surveyData := hasSurvey[0].GetData()
+	fmt.Println(fmt.Sprintf("%d surveys available", len(availableSurveys)))
+	// TODO: determine the best survey based on what we can sell best at this market
+	// TODO: maybe the whole system should be based on the best credits per second, taking into account mining + transport + sell cost?
+
+	sort.Slice(availableSurveys, func(i, j int) bool {
+		surveyDataI := availableSurveys[i].GetData()
+		surveyDataJ := availableSurveys[i].GetData()
+		numOresI := 0
+		for _, iDeposit := range surveyDataI.Deposits {
+			if constant.Item(iDeposit.Symbol).IsOre() {
+				numOresI++
+			}
+		}
+		numOresJ := 0
+		for _, jDeposit := range surveyDataJ.Deposits {
+			if constant.Item(jDeposit.Symbol).IsOre() {
+				numOresJ++
+			}
+		}
+		return numOresI < numOresJ
+	})
+
+	if len(availableSurveys) > 0 {
+		surveyData := availableSurveys[0].GetData()
+		state.Log(fmt.Sprintf("Using survey %s %s", surveyData.Symbol))
 		survey = &surveyData
 	}
 

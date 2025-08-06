@@ -85,7 +85,6 @@ func (s *Ship) Refuel(ctx context.Context) *http.HttpError {
 	shipRefuelUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), nil)
 	if shipRefuelUpdate != nil {
 		s.Fuel = shipRefuelUpdate.Fuel
-		s.Cargo = shipRefuelUpdate.Cargo
 	}
 	return err
 }
@@ -298,10 +297,11 @@ func (s *Ship) IsAtWaypoint(wp Waypoint) bool {
 }
 
 func (s *Ship) Update(ctx context.Context) *http.HttpError {
-	result, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s", s.Symbol), nil)
+	result, err := http.Request[Ship](ctx, "GET", fmt.Sprintf("my/ships/%s", s.Symbol), nil)
 
 	// TODO: this better
 	if result != nil {
+		fmt.Println(result)
 		s.Cargo = result.Cargo
 		s.Nav = result.Nav
 		s.Fuel = result.Fuel

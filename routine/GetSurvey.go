@@ -25,9 +25,11 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 	if state.Survey != nil {
 		now := time.Now()
 		if state.Survey.Expiration.After(now) {
+			state.Log("Survey has expired")
 			state.Survey = nil
 		} else {
 			state.Log("Waiting for survey to expire")
+			fmt.Println(state.Survey.Expiration)
 			return RoutineResult{WaitUntil: &state.Survey.Expiration}
 		}
 	}

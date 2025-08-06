@@ -191,8 +191,8 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 		for _, tg := range marketData.TradeGoods {
 			if strings.HasSuffix(tg.Symbol, "_ORE") {
 				buysOres = true
-				// TODO: figure out a way to incorporate price
-				score++
+				// TODO: figure out a better way to incorporate price
+				score += tg.PurchasePrice / 2
 			}
 		}
 
