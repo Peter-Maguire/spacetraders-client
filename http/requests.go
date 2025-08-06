@@ -46,6 +46,11 @@ var (
 		Help: "Number of HTTP responses by code",
 	}, []string{"path", "method", "code"})
 
+	apiErrors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "st_api_errors",
+		Help: "API Errors by code",
+	}, []string{"path", "code"})
+
 	httpRequestTime = promauto.NewHistogram(prometheus.HistogramOpts{
 		Name: "st_http_response_time",
 		Help: "HTTP response time",
@@ -122,6 +127,7 @@ func makeRequest[T any](ctx context.Context, method string, path string, body an
 	fmt.Println(string(resp.Data))
 	err = json.Unmarshal(resp.Data, output)
 	if output.Error != nil {
+		apiErrors.WithLabelValues(req.URL.Path, strconv.Itoa(int(output.Error.Code))).Inc()
 		return output, output.Error
 	}
 	if err != nil {
