@@ -33,6 +33,26 @@ func (r Refuel) Run(state *State) RoutineResult {
 	// TODO: rescue
 	if state.Ship.Fuel.Current == 0 {
 
+		market, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
+		if market != nil {
+			fuelTradeGood := market.GetTradeGood(string(constant.ItemFuel))
+			if fuelTradeGood != nil {
+				state.Ship.EnsureNavState(state.Context, entity.NavDocked)
+				refuelErr := state.Ship.Refuel(state.Context)
+				if refuelErr != nil {
+					if refuelErr.Code == http.ErrMarketTradeInsufficientCredits {
+						state.Log("Waiting for refuel")
+						return RoutineResult{
+							WaitSeconds: 60,
+						}
+					}
+					state.Log(refuelErr.Message)
+				} else {
+					return RoutineResult{SetRoutine: r.next}
+				}
+			}
+		}
+
 		rescueShips := make([]*State, 0)
 		for _, st := range *state.States {
 			if st.Ship.Cargo.Capacity == 0 ||

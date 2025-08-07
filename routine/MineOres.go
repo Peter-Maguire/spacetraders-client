@@ -69,7 +69,7 @@ func (m MineOres) Run(state *State) RoutineResult {
 
 	if len(availableSurveys) > 0 {
 		surveyData := availableSurveys[0].GetData()
-		state.Log(fmt.Sprintf("Using survey %s %s", surveyData.Symbol))
+		state.Log(fmt.Sprintf("Using survey %s", surveyData.Symbol))
 		survey = &surveyData
 	}
 

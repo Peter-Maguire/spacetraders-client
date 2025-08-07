@@ -76,12 +76,15 @@ func (p ProcureConstructionSiteItem) Run(state *State) RoutineResult {
 	database.StoreMarketExchange(system, waypointData, "import", marketData.Imports)
 	database.StoreMarketExchange(system, waypointData, "exchange", marketData.Exchange)
 
+	agent, _ := entity.GetAgent(state.Context)
+	state.Agent.Credits = agent.Credits
+
 	for _, material := range materialStrings {
 		tradeGood := marketData.GetTradeGood(material)
 		if tradeGood == nil {
 			continue
 		}
-		amountCanBuy := state.Agent.Credits / tradeGood.PurchasePrice
+		amountCanBuy := agent.Credits / tradeGood.PurchasePrice
 		constructionSite := state.ConstructionSite.GetMaterial(material)
 		amountNeeded := constructionSite.Required - constructionSite.Fulfilled
 		amountCanFit := state.Ship.Cargo.GetRemainingCapacity()
@@ -93,6 +96,9 @@ func (p ProcureConstructionSiteItem) Run(state *State) RoutineResult {
 		_, err := state.Ship.Purchase(state.Context, material, buyAmount)
 		if err != nil {
 			state.Log(fmt.Sprintf("Error purchasing item %s: %s", material, err.Error()))
+			return RoutineResult{
+				WaitSeconds: 60,
+			}
 		}
 	}
 

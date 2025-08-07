@@ -22,22 +22,22 @@ var (
 		Name: "st_http_backlog",
 		Help: "Backlog of HTTP Requests",
 	})
-	routineWaiting = promauto.NewGauge(prometheus.GaugeOpts{
+	routineWaiting = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_routine_num_waiting",
 		Help: "Number of routines waiting for HTTP requests",
-	})
-	routineStopped = promauto.NewGauge(prometheus.GaugeOpts{
+	}, []string{"agent"})
+	routineStopped = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_routine_num_stopped",
 		Help: "Number of routines stopped",
-	})
-	routineSleeping = promauto.NewGauge(prometheus.GaugeOpts{
+	}, []string{"agent"})
+	routineSleeping = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_routine_num_sleeping",
 		Help: "Number of routines sleeping",
-	})
+	}, []string{"agent"})
 	routinesActive = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "st_routine_count",
 		Help: "Number of routines per type",
-	}, []string{"name"})
+	}, []string{"name", "agent"})
 )
 
 func main() {
@@ -111,11 +111,11 @@ func updateShipStates() {
 		shipData := make([]ui.ShipData, 0)
 		agents := make(map[string]*entity.Agent)
 		contracts := make(map[string]*entity.Contract)
-		numWaiting := 0
-		numSleeping := 0
-		numStopped := 0
 		routinesActive.Reset()
 		for _, orc := range orcs {
+			numWaiting := 0
+			numSleeping := 0
+			numStopped := 0
 			agents[orc.Agent.Symbol] = orc.Agent
 			contracts[orc.Agent.Symbol] = orc.Contract
 			for _, state := range orc.States {
@@ -136,7 +136,7 @@ func updateShipStates() {
 					if state.CurrentRoutine == nil {
 						numStopped++
 					} else {
-						routinesActive.WithLabelValues(fmt.Sprintf("%T", state.CurrentRoutine)).Add(1)
+						routinesActive.WithLabelValues(fmt.Sprintf("%T", state.CurrentRoutine), orc.Agent.Symbol).Add(1)
 						ship.Routine = state.CurrentRoutine.Name()
 					}
 					if state.WaitingForHttp {
@@ -148,6 +148,10 @@ func updateShipStates() {
 					shipData = append(shipData, ship)
 				}
 			}
+
+			routineWaiting.WithLabelValues(orc.Agent.Symbol).Set(float64(numWaiting))
+			routineSleeping.WithLabelValues(orc.Agent.Symbol).Set(float64(numSleeping))
+			routineStopped.WithLabelValues(orc.Agent.Symbol).Set(float64(numStopped))
 
 		}
 		httpData := ui.HttpData{
@@ -167,13 +171,8 @@ func updateShipStates() {
 			}
 		}
 		http.RBufferLock.Unlock()
-
-		httpData.Requests = httpList
-		routineWaiting.Set(float64(numWaiting))
-		routineSleeping.Set(float64(numSleeping))
-		routineStopped.Set(float64(numStopped))
 		httpBacklog.Set(float64(numBacklog))
-
+		httpData.Requests = httpList
 		ui.WriteShipState(shipData, httpData, contracts, agents)
 	}
 }

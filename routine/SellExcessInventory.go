@@ -314,7 +314,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 	state.FireEvent("sellComplete", state.Agent)
 
 	targetItemSlot := cargo.GetSlotWithItem(targetItem)
-	if targetItemSlot != nil {
+	if targetItemSlot != nil && state.Contract != nil {
 		deliverable := state.Contract.Terms.GetDeliverable(targetItem)
 		if targetItemSlot.Units > cargo.Capacity/2 || targetItemSlot.Units > (deliverable.UnitsRequired-deliverable.UnitsFulfilled) {
 			state.Log("Time to offload contract item")

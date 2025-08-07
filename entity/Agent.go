@@ -52,7 +52,8 @@ func (a *Agent) BuyShip(ctx context.Context, shipyard Waypoint, shipType string)
 	})
 
 	if err != nil && err.Code == http.ErrPurchaseShipCredits {
-		a.Credits = err.Data["creditsAvailable"].(int)
+		fmt.Println(err.Data)
+		//a.Credits = err.Data["creditsAvailable"].(int)
 	}
 
 	if result != nil {
