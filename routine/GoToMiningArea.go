@@ -6,7 +6,6 @@ import (
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
-	"strings"
 )
 
 type GoToMiningArea struct {
@@ -23,46 +22,8 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	waypointsPtr, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypoints(state.Context)
 	database.LogWaypoints(waypointsPtr)
 	waypoints := *waypointsPtr
-	waypointScores := make(map[entity.Waypoint]int)
 
-	//currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
-
-	waypointData := make([]*database.Waypoint, len(waypoints))
-	for i, waypoint := range waypoints {
-		waypointData[i] = database.GetWaypoint(waypoint.Symbol)
-	}
-
-	eligibleWaypoints := make([]entity.WaypointData, 0)
-	for _, waypoint := range waypoints {
-		if g.IsWaypointBlacklisted(waypoint.Symbol) {
-			continue
-		}
-		eligible, score := g.ScoreWaypoint(waypoint, waypointData)
-		shipsCurrentlyThere := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleExcavator, waypoint.Symbol)
-
-		// More than 9 on an asteroid and bad things happen
-		if len(shipsCurrentlyThere) >= 9 {
-			continue
-		}
-
-		if !eligible {
-			continue
-		}
-		eligibleWaypoints = append(eligibleWaypoints, waypoint)
-		waypointScores[waypoint.Symbol] = score
-	}
-
-	sort.Slice(eligibleWaypoints, func(i, j int) bool {
-		return waypointScores[eligibleWaypoints[i].Symbol] > waypointScores[eligibleWaypoints[j].Symbol]
-	})
-
-	fmt.Println("** TOP 5 **")
-	for i, waypoint := range eligibleWaypoints {
-		if i >= 5 {
-			break
-		}
-		fmt.Printf("%s with score of %d\n", waypoint.Symbol, waypointScores[waypoint.Symbol])
-	}
+	eligibleWaypoints, waypointScores := g.GetBestWaypoints(state, waypoints)
 
 	if len(waypointScores) == 0 {
 		state.Log("No good waypoints found within reach")
@@ -130,7 +91,52 @@ func (g GoToMiningArea) Run(state *State) RoutineResult {
 	}}
 }
 
-func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []*database.Waypoint) (bool, int) {
+func (g GoToMiningArea) GetBestWaypoints(state *State, waypoints []entity.WaypointData) ([]entity.WaypointData, map[entity.Waypoint]int) {
+	waypointScores := make(map[entity.Waypoint]int)
+
+	//currentWaypoint, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
+
+	waypointData := make([]*database.Waypoint, len(waypoints))
+	for i, waypoint := range waypoints {
+		waypointData[i] = database.GetWaypoint(waypoint.Symbol)
+	}
+
+	hasHauler := len(state.GetShipsWithRole(constant.ShipRoleHauler)) > 0
+	eligibleWaypoints := make([]entity.WaypointData, 0)
+	for _, waypoint := range waypoints {
+		if g.IsWaypointBlacklisted(waypoint.Symbol) {
+			continue
+		}
+		eligible, score := g.ScoreWaypoint(state, hasHauler, waypoint, waypointData)
+		shipsCurrentlyThere := state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleExcavator, waypoint.Symbol)
+
+		// More than 9 on an asteroid and bad things happen
+		if len(shipsCurrentlyThere) >= 9 {
+			continue
+		}
+
+		if !eligible {
+			continue
+		}
+		eligibleWaypoints = append(eligibleWaypoints, waypoint)
+		waypointScores[waypoint.Symbol] = score
+	}
+
+	sort.Slice(eligibleWaypoints, func(i, j int) bool {
+		return waypointScores[eligibleWaypoints[i].Symbol] > waypointScores[eligibleWaypoints[j].Symbol]
+	})
+
+	fmt.Println("** TOP 5 **")
+	for i, waypoint := range eligibleWaypoints {
+		if i >= 5 {
+			break
+		}
+		fmt.Printf("%s with score of %d\n", waypoint.Symbol, waypointScores[waypoint.Symbol])
+	}
+	return eligibleWaypoints, waypointScores
+}
+
+func (g GoToMiningArea) ScoreWaypoint(state *State, hasHauler bool, waypoint entity.WaypointData, waypoints []*database.Waypoint) (bool, int) {
 	score := 0
 	if waypoint.HasTrait(constant.TraitPreciousMetalDeposits) {
 		score += 15
@@ -176,6 +182,10 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 		score += 10
 	}
 
+	if hasHauler {
+		score += len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleHauler, waypoint.Symbol))
+	}
+
 	closestDistance := 5000000
 	var closestWaypoint *database.Waypoint
 	for _, dbWaypoint := range waypoints {
@@ -189,10 +199,14 @@ func (g GoToMiningArea) ScoreWaypoint(waypoint entity.WaypointData, waypoints []
 		}
 		buysOres := false
 		for _, tg := range marketData.TradeGoods {
-			if strings.HasSuffix(tg.Symbol, "_ORE") {
+			if constant.Item(tg.Symbol).IsMineable() {
 				buysOres = true
 				// TODO: figure out a better way to incorporate price
-				score += tg.PurchasePrice / 2
+				if hasHauler {
+					score += tg.SellPrice * 20
+				} else {
+					score += tg.SellPrice
+				}
 			}
 		}
 

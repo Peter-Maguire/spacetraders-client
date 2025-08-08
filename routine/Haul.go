@@ -117,9 +117,13 @@ func (h Haul) Run(state *State) RoutineResult {
 			state.Log(fmt.Sprintf("Transferring %d/%d %s from %s to %s (%d/%d cargo)", transferAmount, slot.Units, slot.Symbol, ship.Symbol, state.Ship.Symbol, cargoCount, state.Ship.Cargo.Capacity))
 			err := ship.TransferCargo(state.Context, state.Ship.Symbol, slot.Symbol, transferAmount)
 			if err != nil {
-				if err.Code == http.ErrShipInTransit {
+				switch err.Code {
+				case http.ErrShipInTransit:
 					t, _ := time.Parse(time.RFC3339, err.Data["arrival"].(string))
 					return RoutineResult{WaitUntil: &t}
+				case http.ErrShipTransferDockedOrbitConflict:
+					state.Log("Ship is not docked (sync issue?)")
+					break
 				}
 				state.Log(err.Error())
 				full = true
@@ -191,7 +195,7 @@ func (h Haul) Run(state *State) RoutineResult {
 }
 
 func (h Haul) ShouldHaulFrom(state *State, ship *entity.Ship) bool {
-	return (ship.Registration.Role == "EXCAVATOR" || ship.Registration.Role == "COMMAND") && ship.Nav.Status != "IN_TRANSIT" && ship.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol
+	return (ship.Registration.Role == "EXCAVATOR" || ship.Registration.Role == "COMMAND") && ship.Nav.Status != "IN_TRANSIT" && ship.Nav.Status == state.Ship.Nav.Status && ship.Nav.WaypointSymbol == state.Ship.Nav.WaypointSymbol
 }
 
 func (h Haul) Name() string {

@@ -2,6 +2,7 @@ package routine
 
 import (
 	"fmt"
+	"math/rand"
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/util"
@@ -67,6 +68,13 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 				state.Log(fmt.Sprintf("We have to find some %s to deliver", deliverable.TradeSymbol))
 				return RoutineResult{SetRoutine: ProcureContractItem{deliverable: &deliverable}}
 			}
+		}
+	}
+
+	if state.Ship.Registration.Role == constant.ShipRoleTransport {
+		return RoutineResult{
+			WaitSeconds: rand.Intn(10),
+			SetRoutine:  Trade{},
 		}
 	}
 

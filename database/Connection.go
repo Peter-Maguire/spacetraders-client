@@ -33,20 +33,20 @@ func Init() {
 		os.Exit(1)
 	}
 
-	err = db.AutoMigrate(&MarketRates{}, &ShipCost{}, &MarketExchange{} /*&Waypoint{}, &System{}, &Survey{}*/)
-	if err != nil {
-
-		fmt.Println("automigrate error", err)
-		os.Exit(1)
-	}
 }
 
 func Reset() {
 	fmt.Println("Resetting database")
-	db.Where("1 = 1").Delete(&MarketRates{})
-	db.Where("1 = 1").Delete(&MarketExchange{})
-	db.Where("1 = 1").Delete(&ShipCost{})
-	db.Where("1 = 1").Delete(&Survey{})
-	db.Where("1 = 1").Delete(&System{})
-	db.Where("1 = 1").Delete(&Waypoint{})
+	db.Exec("DROP TABLE market_rates")
+	db.Exec("DROP TABLE market_exchanges")
+	db.Exec("DROP TABLE ship_costs")
+	db.Exec("DROP TABLE agents")
+	db.Exec("DROP TABLE surveys")
+	db.Exec("DROP TABLE systems")
+	db.Exec("DROP TABLE waypoints")
+	err := db.AutoMigrate(&MarketRates{}, &ShipCost{}, &MarketExchange{}, &Agent{}, &Waypoint{}, &System{}, &Survey{})
+	if err != nil {
+		fmt.Println("automigrate error", err)
+		os.Exit(1)
+	}
 }

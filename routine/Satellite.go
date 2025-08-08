@@ -7,9 +7,12 @@ import (
 	"spacetraders/entity"
 	"spacetraders/metrics"
 	"spacetraders/util"
+	"strings"
 )
 
-type Satellite struct{}
+type Satellite struct {
+	shipsToBuy []string
+}
 
 func (s Satellite) Run(state *State) RoutineResult {
 
@@ -133,7 +136,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	}
 
 	shipsToBuy := s.GetShipToBuy(state)
-
+	s.shipsToBuy = shipsToBuy
 	for _, shipToBuy := range shipsToBuy {
 		state.Log(fmt.Sprintf("We want to buy a %s", shipToBuy))
 
@@ -239,7 +242,13 @@ func (s Satellite) onShipyard(state *State, wpd *entity.WaypointData, targetShip
 }
 
 func (s Satellite) Name() string {
-	return "Satellite"
+	if s.shipsToBuy == nil {
+		return "Satellite"
+	}
+	if len(s.shipsToBuy) > 0 {
+		return fmt.Sprintf("Satellite (Buy %s)", strings.Join(s.shipsToBuy, ", "))
+	}
+	return "Satellite (Not buying)"
 }
 
 func (s Satellite) GetShipToBuy(state *State) []string {
@@ -255,7 +264,7 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 	}
 
 	if shipsOfEachType[constant.ShipRoleExcavator] < 3 {
-		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
+		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE"}
 	}
 
 	if shipsOfEachType[constant.ShipRoleExcavator] > 2 && state.Contract != nil && !state.Contract.Fulfilled && state.Agent.Credits < min(state.Contract.Terms.Payment.OnAccepted, 200000) {
@@ -283,13 +292,17 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 	}
 
 	// Ratio of 1 hauler for every 9 excavators
-	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < 1/9 {
+	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < 1/5 {
 		return []string{"SHIP_LIGHT_HAULER"}
+	}
+
+	if shipsOfEachType[constant.ShipRoleTransport] < 4 {
+		return []string{"SHIP_LIGHT_SHUTTLE"}
 	}
 
 	if len(*state.States) > 20 {
 		return []string{}
 	}
 
-	return []string{"SHIP_MINING_DRONE", "SHIP_SIPHON_DRONE"}
+	return []string{"SHIP_MINING_DRONE"}
 }
