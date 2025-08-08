@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"spacetraders/constant"
 	"spacetraders/database"
-	"spacetraders/util"
 	"time"
 )
 
@@ -79,29 +78,21 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleHauler {
-		haulerNumber := 0
-		for i, hauler := range state.Haulers {
-			if hauler.Symbol == state.Ship.Symbol {
-				haulerNumber = i
-				break
-			}
-		}
-
-		state.Log(fmt.Sprintf("Hauler number: %d", haulerNumber))
-		if haulerNumber == 0 && len(state.Haulers) > 1 {
-			if state.Contract != nil && state.Contract.Fulfilled == false {
-				for _, deliverable := range state.Contract.Terms.Deliver {
-					if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
-						state.Log(fmt.Sprintf("We have to find some %s to deliver", deliverable.TradeSymbol))
-						return RoutineResult{SetRoutine: ProcureContractItem{deliverable: &deliverable}}
-					}
-				}
-			} else {
-				return RoutineResult{
-					SetRoutine: NegotiateContract{},
-				}
-			}
-		}
+		//state.Log(fmt.Sprintf("Hauler number: %d", haulerNumber))
+		//if haulerNumber == 0 && len(state.Haulers) > 1 {
+		//	if state.Contract != nil && state.Contract.Fulfilled == false {
+		//		for _, deliverable := range state.Contract.Terms.Deliver {
+		//			if !deliverable.IsFulfilled() && !util.IsMineable(deliverable.TradeSymbol) {
+		//				state.Log(fmt.Sprintf("We have to find some %s to deliver", deliverable.TradeSymbol))
+		//				return RoutineResult{SetRoutine: ProcureContractItem{deliverable: &deliverable}}
+		//			}
+		//		}
+		//	} else {
+		//		return RoutineResult{
+		//			SetRoutine: NegotiateContract{},
+		//		}
+		//	}
+		//}
 
 		// TODO: Fix hauling
 		return RoutineResult{

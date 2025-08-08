@@ -98,26 +98,35 @@ func (t Trade) Run(state *State) RoutineResult {
 	}
 
 	sort.Slice(profitOpportunities, func(i, j int) bool {
-		return profitOpportunities[i].Profit < profitOpportunities[j].Profit
+		return profitOpportunities[i].Profit > profitOpportunities[j].Profit
 	})
 
 	opsPerWaypoint := make(map[entity.Waypoint]int)
 	for _, op := range profitOpportunities {
-		fmt.Println(op.Profit)
 		opsPerWaypoint[op.MarketFrom.Waypoint]++
 	}
 
 	var bestOpportunity *tradeProfitOpportunity
+
 	for _, op := range profitOpportunities {
-		if op.MarketFrom.Waypoint == state.Ship.Nav.WaypointSymbol || state.Ship.Cargo.GetSlotWithItem(op.MarketFrom.Good) != nil {
+		if state.Ship.Cargo.GetSlotWithItem(op.MarketFrom.Good) != nil {
 			bestOpportunity = &op
 			break
 		}
-		if len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint)) > opsPerWaypoint[op.MarketFrom.Waypoint] {
-			continue
+	}
+
+	if bestOpportunity == nil {
+		for _, op := range profitOpportunities {
+			if op.MarketFrom.Waypoint == state.Ship.Nav.WaypointSymbol {
+				bestOpportunity = &op
+				break
+			}
+			if len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint)) > opsPerWaypoint[op.MarketFrom.Waypoint] {
+				continue
+			}
+			bestOpportunity = &op
+			break
 		}
-		bestOpportunity = &op
-		break
 	}
 
 	if bestOpportunity == nil {
@@ -127,7 +136,7 @@ func (t Trade) Run(state *State) RoutineResult {
 		}
 	}
 
-	state.Log(fmt.Sprintf("Best opportunity is at %s with profit %d", bestOpportunity.MarketFrom.Waypoint, bestOpportunity.Profit))
+	state.Log(fmt.Sprintf("Best opportunity is trading %s at %s with profit %d", bestOpportunity.MarketFrom.Good, bestOpportunity.MarketFrom.Waypoint, bestOpportunity.Profit))
 
 	slot := state.Ship.Cargo.GetSlotWithItem(bestOpportunity.MarketFrom.Good)
 
@@ -136,7 +145,7 @@ func (t Trade) Run(state *State) RoutineResult {
 		if bestOpportunity.MarketTo.Waypoint != state.Ship.Nav.WaypointSymbol {
 			return RoutineResult{
 				SetRoutine: NavigateTo{
-					waypoint: bestOpportunity.MarketFrom.Waypoint,
+					waypoint: bestOpportunity.MarketTo.Waypoint,
 					next:     t,
 				},
 			}
@@ -147,14 +156,15 @@ func (t Trade) Run(state *State) RoutineResult {
 		market, _ := state.Ship.Nav.WaypointSymbol.GetMarket(state.Context)
 		database.UpdateMarketRates(state.Ship.Nav.WaypointSymbol, market.TradeGoods)
 
+		sellSuccess := false
 		for _, inv := range state.Ship.Cargo.Inventory {
 			tg := market.GetTradeGood(inv.Symbol)
-			if tg == nil || (state.Contract != nil && state.Contract.Terms.GetDeliverable(inv.Symbol) != nil) {
+			if tg == nil {
 				continue
 			}
 
-			numSells := inv.Units / tg.TradeVolume
-
+			numSells := max(inv.Units/tg.TradeVolume, 1)
+			fmt.Println("numSells", numSells)
 			for i := 0; i < numSells; i++ {
 				updatedSlot := state.Ship.Cargo.GetSlotWithItem(inv.Symbol)
 				sr, err := state.Ship.SellCargo(state.Context, inv.Symbol, min(updatedSlot.Units, tg.TradeVolume))
@@ -163,8 +173,19 @@ func (t Trade) Run(state *State) RoutineResult {
 					break
 				}
 				if sr != nil {
+					sellSuccess = true
 					state.Ship.Cargo.Inventory = sr.Cargo.Inventory
+					state.Agent.Credits = sr.Agent.Credits
+					state.Log(fmt.Sprintf("We now have %d credits", state.Agent.Credits))
 				}
+
+			}
+		}
+
+		if !sellSuccess {
+			return RoutineResult{
+				Stop:       true,
+				StopReason: "No sell completed successfully",
 			}
 		}
 
@@ -198,6 +219,12 @@ func (t Trade) Run(state *State) RoutineResult {
 
 	if buyAmount <= 0 {
 		state.Log("We can't currently buy anything...")
+		if state.Ship.Cargo.IsFull() {
+			return RoutineResult{
+				SetRoutine: SellExcessInventory{next: t},
+			}
+		}
+
 		return RoutineResult{
 			WaitSeconds: 90,
 		}
@@ -206,14 +233,22 @@ func (t Trade) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprintf("Trying to buy %dx %s", buyAmount, bestOpportunity.MarketFrom.Good))
 	state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
-	// TODO: trade volume
+	numBuys := buyAmount / tg.TradeVolume
 
-	_, err := state.Ship.Purchase(state.Context, tg.Symbol, buyAmount)
-	if err != nil {
-		state.Log(err.Message)
+	successfulBuy := false
+	for i := 0; i < numBuys; i++ {
+		_, err := state.Ship.Purchase(state.Context, tg.Symbol, min(buyAmount, tg.TradeVolume))
+		if err != nil {
+			state.Log(err.Message)
+			break
+		} else {
+			successfulBuy = true
+		}
+	}
+	if !successfulBuy {
 		return RoutineResult{
 			Stop:       true,
-			StopReason: err.Message,
+			StopReason: "failed to buy",
 		}
 	}
 

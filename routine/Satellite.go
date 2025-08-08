@@ -272,11 +272,18 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 			if !util.IsMineable(deliverable.TradeSymbol) {
 				state.Log(fmt.Sprintf("We don't want to buy a ship right now as we're doing a contract for unmineable %s", deliverable.TradeSymbol))
 				if shipsOfEachType[constant.ShipRoleHauler] == 0 {
-					return []string{"SHIP_LIGHT_HAULER"}
+					return []string{"SHIP_LIGHT_HAULER", "SHIP_LIGHT_SHUTTLE"}
+				}
+				if shipsOfEachType[constant.ShipRoleTransport] == 0 {
+					return []string{"SHIP_LIGHT_SHUTTLE"}
 				}
 				return []string{}
 			}
 		}
+	}
+
+	if shipsOfEachType[constant.ShipRoleTransport] < 4 {
+		return []string{"SHIP_LIGHT_SHUTTLE"}
 	}
 
 	if shipsOfEachType[constant.ShipRoleHauler] == 0 {
@@ -294,10 +301,6 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 	// Ratio of 1 hauler for every 9 excavators
 	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < 1/5 {
 		return []string{"SHIP_LIGHT_HAULER"}
-	}
-
-	if shipsOfEachType[constant.ShipRoleTransport] < 4 {
-		return []string{"SHIP_LIGHT_SHUTTLE"}
 	}
 
 	if len(*state.States) > 20 {
