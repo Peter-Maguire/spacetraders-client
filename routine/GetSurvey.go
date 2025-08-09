@@ -30,7 +30,11 @@ func (g GetSurvey) Run(state *State) RoutineResult {
 		} else {
 			state.Log("Waiting for survey to expire")
 			fmt.Println(state.Survey.Expiration)
-			return RoutineResult{WaitUntil: &state.Survey.Expiration}
+
+			// TODO: figure out why this stupid shit doesn't work
+			return RoutineResult{
+				WaitSeconds: 60,
+			}
 		}
 	}
 
