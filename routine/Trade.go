@@ -247,8 +247,7 @@ func (t Trade) Run(state *State) RoutineResult {
 	}
 	if !successfulBuy {
 		return RoutineResult{
-			Stop:       true,
-			StopReason: "failed to buy",
+			WaitSeconds:       90,
 		}
 	}
 
