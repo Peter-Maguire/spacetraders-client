@@ -28,6 +28,7 @@ type MarketTransaction struct {
 	TradeSymbol    string    `json:"tradeSymbol"`
 	Type           string    `json:"type"`
 	Units          int       `json:"units"`
+	Price          int       `json:"price"`
 	PricePerUnit   int       `json:"pricePerUnit"`
 	TotalPrice     int       `json:"totalPrice"`
 	Timestamp      time.Time `json:"timestamp"`

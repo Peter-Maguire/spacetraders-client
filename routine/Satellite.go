@@ -211,6 +211,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 				state.Log(fmt.Sprintf("Error buying ship: %s", err.Error()))
 				continue
 			}
+			database.LogTransaction(*result.Transaction)
 
 			state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
 			break
@@ -263,7 +264,7 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		state.Log(fmt.Sprintf("%dx of type %s", a, t))
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] < 3 {
+	if shipsOfEachType[constant.ShipRoleExcavator] < 4 {
 		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE"}
 	}
 
@@ -303,9 +304,9 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		return []string{"SHIP_LIGHT_HAULER"}
 	}
 
-	if len(*state.States) > 20 {
+	if len(*state.States) > 30 {
 		return []string{}
 	}
 
-	return []string{"SHIP_MINING_DRONE"}
+	return []string{"SHIP_LIGHT_SHUTTLE"}
 }

@@ -93,13 +93,14 @@ func (p ProcureConstructionSiteItem) Run(state *State) RoutineResult {
 			continue
 		}
 		state.Log(fmt.Sprintf("Buying %dx %s", buyAmount, material))
-		_, err := state.Ship.Purchase(state.Context, material, buyAmount)
+		pr, err := state.Ship.Purchase(state.Context, material, buyAmount)
 		if err != nil {
 			state.Log(fmt.Sprintf("Error purchasing item %s: %s", material, err.Error()))
 			return RoutineResult{
 				WaitSeconds: 60,
 			}
 		}
+		database.LogTransaction(*pr.Transaction)
 	}
 
 	state.Ship.GetCargo(state.Context)

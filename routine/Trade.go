@@ -174,8 +174,10 @@ func (t Trade) Run(state *State) RoutineResult {
 				}
 				if sr != nil {
 					sellSuccess = true
+					database.LogTransaction(sr.Transaction)
 					state.Ship.Cargo.Inventory = sr.Cargo.Inventory
 					state.Agent.Credits = sr.Agent.Credits
+					state.FireEvent("sellComplete", state.Agent)
 					state.Log(fmt.Sprintf("We now have %d credits", state.Agent.Credits))
 				}
 
@@ -237,17 +239,18 @@ func (t Trade) Run(state *State) RoutineResult {
 
 	successfulBuy := false
 	for i := 0; i < numBuys; i++ {
-		_, err := state.Ship.Purchase(state.Context, tg.Symbol, min(buyAmount, tg.TradeVolume))
+		pr, err := state.Ship.Purchase(state.Context, tg.Symbol, min(buyAmount, tg.TradeVolume))
 		if err != nil {
 			state.Log(err.Message)
 			break
 		} else {
+			database.LogTransaction(*pr.Transaction)
 			successfulBuy = true
 		}
 	}
 	if !successfulBuy {
 		return RoutineResult{
-			WaitSeconds:       90,
+			WaitSeconds: 90,
 		}
 	}
 

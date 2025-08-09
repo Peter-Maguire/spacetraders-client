@@ -288,6 +288,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
+			database.LogTransaction(sellResult.Transaction)
 			soldSuccessfully = true
 			state.Log(fmt.Sprintf("We now have %d credits", sellResult.Agent.Credits))
 			metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(sellResult.Agent.Credits))

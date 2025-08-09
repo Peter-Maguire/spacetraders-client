@@ -177,7 +177,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprintf("Attempting to purchase %dx %s", purchaseAmount, p.deliverable.TradeSymbol))
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
-	_, err := state.Ship.Purchase(state.Context, p.deliverable.TradeSymbol, purchaseAmount)
+	pr, err := state.Ship.Purchase(state.Context, p.deliverable.TradeSymbol, purchaseAmount)
 
 	if err != nil {
 
@@ -198,6 +198,8 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 			StopReason: err.Error(),
 		}
 	}
+
+	database.LogTransaction(*pr.Transaction)
 
 	sellFuel := market.GetTradeGood("FUEL")
 

@@ -84,7 +84,7 @@ func (r Rescue) Run(state *State) RoutineResult {
 		}
 
 		// TODO: should there be a common error handling system?
-		_, err := state.Ship.Purchase(state.Context, "FUEL", 1)
+		pr, err := state.Ship.Purchase(state.Context, "FUEL", 1)
 		if err != nil {
 			state.Log(err.Message)
 			return RoutineResult{
@@ -92,6 +92,8 @@ func (r Rescue) Run(state *State) RoutineResult {
 				StopReason: "Unable to purchase fuel " + err.Message,
 			}
 		}
+
+		database.LogTransaction(*pr.Transaction)
 
 		state.Ship.Refuel(state.Context)
 	}

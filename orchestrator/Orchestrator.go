@@ -288,6 +288,16 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 			state.Log("Stopping Routine")
 			break
 		}
+
+		if routineResult.WaitForEvent != "" {
+			for {
+				event := <-state.EventBus
+				switch event.Name {
+				case routineResult.WaitForEvent:
+					break
+				}
+			}
+		}
 	}
 	state.CurrentRoutine = nil
 	state.Log("!!!! Loop exited!")
