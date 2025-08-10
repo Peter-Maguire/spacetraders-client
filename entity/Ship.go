@@ -301,7 +301,6 @@ func (s *Ship) Update(ctx context.Context) *http.HttpError {
 
 	// TODO: this better
 	if result != nil {
-		fmt.Println(result)
 		s.Cargo = result.Cargo
 		s.Nav = result.Nav
 		s.Fuel = result.Fuel

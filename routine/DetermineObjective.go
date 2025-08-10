@@ -59,9 +59,17 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleCommand {
+		if state.Config.GetBool("commandShipTrades", false) {
+			return RoutineResult{
+				WaitSeconds: rand.Intn(10),
+				SetRoutine:  Trade{},
+			}
+		}
+
 		if state.Contract == nil || state.Contract.Fulfilled {
 			return RoutineResult{SetRoutine: GoToRandomFactionWaypoint{next: NegotiateContract{}}}
 		}
+
 		for _, deliverable := range state.Contract.Terms.Deliver {
 			if !deliverable.IsFulfilled() {
 				state.Log(fmt.Sprintf("We have to find some %s to deliver", deliverable.TradeSymbol))

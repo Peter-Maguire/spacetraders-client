@@ -170,7 +170,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		fmt.Println(state.Agent.Credits, tradeGood.PurchasePrice)
 		fmt.Println(amountPurchasable, tradeVolume, remainingCapacity, purchaseAmount)
 		return RoutineResult{
-			WaitSeconds: 120,
+			WaitForEvent: "sellComplete",
 		}
 	}
 

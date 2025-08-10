@@ -80,6 +80,7 @@ type ShipData struct {
 	StoppedReason    string                   `json:"stoppedReason,omitempty"`
 	WaitingForHttp   bool                     `json:"waitingForHttp"`
 	AsleepUntil      *time.Time               `json:"asleepUntil"`
+	WaitingForEvent  string                   `json:"waitingForEvent"`
 	ShipName         string                   `json:"name"`
 	ShipType         string                   `json:"type"`
 	Routine          string                   `json:"routine"`

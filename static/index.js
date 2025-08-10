@@ -118,10 +118,11 @@ function updateState(data){
         // clone.querySelector(".icon").src = `img/ships/${sh.type}.png`;
         if(sh.waitingForHttp){
             clone.querySelector(".state").innerText = "Waiting for HTTP";
-        }
-        if(sh.asleepUntil){
+        } else if(sh.asleepUntil){
             let asleepUntil = new Date(sh.asleepUntil);
             clone.querySelector(".state").innerText = `Waiting for ${parseTime(asleepUntil)}`;
+        } else if(sh.waitingForEvent){
+            clone.querySelector(".state").innerText = `Waiting for ${sh.waitingForEvent}`;
         }
 
         if(sh.stoppedReason){

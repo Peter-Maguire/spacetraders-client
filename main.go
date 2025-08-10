@@ -135,6 +135,7 @@ func updateShipStates() {
 						Cargo:            *state.Ship.Cargo,
 						Fuel:             *state.Ship.Fuel,
 						ConstructionSite: state.ConstructionSite,
+						WaitingForEvent:  state.WaitingForEvent,
 					}
 
 					if state.CurrentRoutine == nil {

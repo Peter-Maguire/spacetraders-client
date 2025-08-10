@@ -26,9 +26,10 @@ type State struct {
 	Haulers  []*entity.Ship
 	EventBus chan OrchestratorEvent
 
-	AsleepUntil    *time.Time
-	CurrentRoutine Routine
-	ForceRoutine   Routine
+	AsleepUntil     *time.Time
+	WaitingForEvent string
+	CurrentRoutine  Routine
+	ForceRoutine    Routine
 
 	States *[]*State
 
