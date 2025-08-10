@@ -170,6 +170,29 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 
 	_ = state.Ship.EnsureNavState(state.Context, entity.NavOrbit)
 
+	if fuelToWaypoint >= state.Ship.Fuel.Current {
+		if fuelToWaypoint <= state.Ship.Fuel.Capacity {
+			if n.nextIfNoFuel != nil {
+				return RoutineResult{
+					SetRoutine: Refuel{next: n.nextIfNoFuel},
+				}
+			}
+			return RoutineResult{
+				SetRoutine: Refuel{next: n},
+			}
+		}
+
+		state.Log("We can't make this journey")
+		if state.Ship.Nav.FlightMode == "DRIFT" {
+			return RoutineResult{
+				Stop:       true,
+				StopReason: "Unable to get to waypoint with any fuel level",
+			}
+		}
+		state.Ship.EnsureFlightMode(state.Context, constant.FlightModeDrift)
+		return RoutineResult{}
+	}
+
 	_, err := state.Ship.Navigate(state.Context, n.waypoint)
 	if err != nil {
 		switch err.Code {
@@ -180,6 +203,8 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		case http.ErrNavigateInsufficientFuel:
 			state.Log(err.Message)
 			state.Log("Refuelling and trying again")
+			state.Log(fmt.Sprintf("I thought we had %d fuel and would need %d, we actually had %d and needed %.f", state.Ship.Fuel.Current, fuelToWaypoint, err.Data["fuelAvailable"].(int), err.Data["fuelRequired"].(float64)))
+			state.Ship.Fuel.Current = err.Data["fuelAvailable"].(int)
 			if n.nextIfNoFuel != nil {
 				return RoutineResult{
 					SetRoutine: Refuel{next: n.nextIfNoFuel},
