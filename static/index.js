@@ -364,11 +364,17 @@ function drawMap(){
         let icon = mapIcons[waypoint.waypointData.type] || "?";
         let [x, y] = getCanvasCoords(waypoint.waypointData.x, waypoint.waypointData.y);
         ctx.fillText(icon, x, y)//, 10 * mapScale, 10 * mapScale)
+
+
+        let otherWaypoints = waypoints.filter((w)=>waypoint.waypointData.x === w.waypointData.x && waypoint.waypointData.y === w.waypointData.y);
+
+        let thisIndex = otherWaypoints.indexOf(waypoint);
+
         ctx.font = `${mapScale*5}px serif`
         if(waypoint.waypointData.traits.find((m)=>m.symbol === "MARKETPLACE")) {
-            ctx.fillText(waypoint.waypoint+"(M)", x-5, y+10)
+            ctx.fillText(waypoint.waypoint+"(M)", x-5, y+15 + (thisIndex * (mapScale*5)))
         } else {
-            ctx.fillText(waypoint.waypoint, x-5, y+10)
+            ctx.fillText(waypoint.waypoint, x-5, y+15 + (thisIndex * (mapScale*5)))
         }
         ctx.font = `${mapScale*10}px serif`
     })
