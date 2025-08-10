@@ -6,6 +6,7 @@ import (
 	"spacetraders/constant"
 	"spacetraders/database"
 	"spacetraders/entity"
+	"spacetraders/metrics"
 	"spacetraders/util"
 )
 
@@ -177,6 +178,7 @@ func (t Trade) Run(state *State) RoutineResult {
 					database.LogTransaction(sr.Transaction)
 					state.Ship.Cargo.Inventory = sr.Cargo.Inventory
 					state.Agent.Credits = sr.Agent.Credits
+					metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(sr.Agent.Credits))
 					state.FireEvent("sellComplete", state.Agent)
 					state.Log(fmt.Sprintf("We now have %d credits", state.Agent.Credits))
 				}
@@ -217,7 +219,7 @@ func (t Trade) Run(state *State) RoutineResult {
 		return RoutineResult{}
 	}
 
-	buyAmount := min(state.Ship.Cargo.GetRemainingCapacity(), tg.TradeVolume, state.Agent.Credits/tg.PurchasePrice)
+	buyAmount := min(state.Ship.Cargo.GetRemainingCapacity(), state.Agent.Credits/tg.PurchasePrice)
 
 	if buyAmount <= 0 {
 		state.Log("We can't currently buy anything...")
@@ -228,7 +230,7 @@ func (t Trade) Run(state *State) RoutineResult {
 		}
 
 		return RoutineResult{
-			WaitSeconds: 90,
+			WaitForEvent: "sellComplete",
 		}
 	}
 
@@ -244,6 +246,8 @@ func (t Trade) Run(state *State) RoutineResult {
 			state.Log(err.Message)
 			break
 		} else {
+			state.Agent.Credits = pr.Agent.Credits
+			metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(pr.Agent.Credits))
 			database.LogTransaction(*pr.Transaction)
 			successfulBuy = true
 		}
