@@ -52,10 +52,6 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
-	state.Ship.Update(state.Context)
-
-	fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(state.Ship.Fuel.Current))
-
 	dbTargetWaypoint := database.GetWaypoint(n.waypoint)
 	targetData := dbTargetWaypoint.GetData()
 	dbWaypoint := database.GetWaypoint(state.Ship.Nav.WaypointSymbol)
@@ -230,8 +226,9 @@ func (n NavigateTo) Run(state *State) RoutineResult {
 		}
 	}
 
-	state.Ship.EnsureFlightMode(state.Context, "CRUISE")
 	state.Log(fmt.Sprintf("Navigating until %s", &state.Ship.Nav.Route.Arrival))
+	state.Ship.Update(state.Context)
+	fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(state.Ship.Fuel.Current))
 	return RoutineResult{
 		WaitUntil:  &state.Ship.Nav.Route.Arrival,
 		SetRoutine: n.next,
