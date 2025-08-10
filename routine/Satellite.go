@@ -28,8 +28,16 @@ func (s Satellite) Run(state *State) RoutineResult {
 
 	waypointData, _ := state.Ship.Nav.WaypointSymbol.GetWaypointData(state.Context)
 
-	mkt, _ := waypointData.Symbol.GetMarket(state.Context)
-	syd, _ := waypointData.Symbol.GetShipyard(state.Context)
+	var mkt *entity.Market
+	var syd *entity.ShipyardStock
+
+	if waypointData.HasTrait(constant.TraitMarketplace) {
+		mkt, _ = waypointData.Symbol.GetMarket(state.Context)
+	}
+	
+	if waypointData.HasTrait(constant.TraitShipyard) {
+		syd, _ = waypointData.Symbol.GetShipyard(state.Context)
+	}
 
 	database.VisitWaypoint(waypointData, mkt, syd)
 
@@ -221,14 +229,8 @@ func (s Satellite) Run(state *State) RoutineResult {
 	// At this point we should be on the shipyard and waiting, so let's get the next sellComplete event and check there
 
 	state.Log("Waiting for a sell to complete")
-	for {
-		event := <-state.EventBus
-		switch event.Name {
-		case "sellComplete", "contractComplete":
-			//agent := event.Data.(*entity.Agent)
-			state.Log("Detected a sell complete")
-			return RoutineResult{}
-		}
+	return RoutineResult{
+		WaitForEvent: "sellComplete",
 	}
 }
 
