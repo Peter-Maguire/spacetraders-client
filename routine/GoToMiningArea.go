@@ -179,7 +179,7 @@ func (g GoToMiningArea) ScoreWaypoint(state *State, hasHauler bool, waypoint ent
 	}
 
 	if len(database.GetUnexpiredSurveysForWaypoint(waypoint.Symbol)) > 0 {
-		score += 10
+		score += state.Config.GetInt("miningAreaSurveyBoost", 10)
 	}
 
 	if hasHauler {
@@ -203,9 +203,9 @@ func (g GoToMiningArea) ScoreWaypoint(state *State, hasHauler bool, waypoint ent
 				buysOres = true
 				// TODO: figure out a better way to incorporate price
 				if hasHauler {
-					score += tg.SellPrice * 20
+					score += tg.SellPrice * state.Config.GetInt("miningAreaHaulerSellPriceMultiplier", 20)
 				} else {
-					score += tg.SellPrice
+					score += tg.SellPrice * state.Config.GetInt("miningAreaNoHaulerSellPriceMultiplier", 1)
 				}
 			}
 		}
@@ -224,7 +224,7 @@ func (g GoToMiningArea) ScoreWaypoint(state *State, hasHauler bool, waypoint ent
 
 	if closestWaypoint == nil {
 		//fmt.Printf("No closest waypoint found for %s\n", waypoint.Symbol)
-		return true, score - 2000
+		return true, score - state.Config.GetInt("miningAreaNoMarketPenalty", 2000)
 	}
 
 	score -= closestDistance

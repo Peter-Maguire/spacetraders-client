@@ -76,16 +76,17 @@ func broadcastLoop() {
 }
 
 type ShipData struct {
-	Stopped        bool             `json:"stopped"`
-	StoppedReason  string           `json:"stoppedReason,omitempty"`
-	WaitingForHttp bool             `json:"waitingForHttp"`
-	AsleepUntil    *time.Time       `json:"asleepUntil"`
-	ShipName       string           `json:"name"`
-	ShipType       string           `json:"type"`
-	Routine        string           `json:"routine"`
-	Nav            entity.ShipNav   `json:"nav"`
-	Cargo          entity.ShipCargo `json:"cargo"`
-	Fuel           entity.ShipFuel  `json:"fuel"`
+	Stopped          bool                     `json:"stopped"`
+	StoppedReason    string                   `json:"stoppedReason,omitempty"`
+	WaitingForHttp   bool                     `json:"waitingForHttp"`
+	AsleepUntil      *time.Time               `json:"asleepUntil"`
+	ShipName         string                   `json:"name"`
+	ShipType         string                   `json:"type"`
+	Routine          string                   `json:"routine"`
+	Nav              entity.ShipNav           `json:"nav"`
+	Cargo            entity.ShipCargo         `json:"cargo"`
+	Fuel             entity.ShipFuel          `json:"fuel"`
+	ConstructionSite *entity.ConstructionSite `json:"constructionSite"`
 }
 
 type HttpData struct {

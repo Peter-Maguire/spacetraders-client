@@ -54,7 +54,7 @@ func (b BuildJumpGate) Run(state *State) RoutineResult {
 	}
 
 	return RoutineResult{
-		SetRoutine: ProcureConstructionSiteItem{next: b.next},
+		SetRoutine: ProcureConstructionSiteItem{next: b},
 	}
 }
 

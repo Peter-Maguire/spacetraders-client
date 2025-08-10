@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"spacetraders/constant"
+	"spacetraders/database"
 	"spacetraders/entity"
 	"spacetraders/ui"
 	"sync"
@@ -20,6 +21,7 @@ type State struct {
 	ConstructionSite *entity.ConstructionSite `json:"-"`
 	Survey           *entity.Survey
 	Ship             *entity.Ship
+	Config           *database.AgentConfig
 
 	Haulers  []*entity.Ship
 	EventBus chan OrchestratorEvent

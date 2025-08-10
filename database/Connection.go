@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
-	"spacetraders/entity"
 	"time"
 )
 
@@ -33,8 +32,6 @@ func Init() {
 		fmt.Println("db error", err)
 		os.Exit(1)
 	}
-
-	db.AutoMigrate(&Transaction{})
 }
 
 func Reset() {
@@ -42,12 +39,12 @@ func Reset() {
 	db.Exec("DROP TABLE market_rates")
 	db.Exec("DROP TABLE market_exchanges")
 	db.Exec("DROP TABLE ship_costs")
-	//db.Exec("DROP TABLE agents")
 	db.Exec("DROP TABLE surveys")
 	db.Exec("DROP TABLE systems")
 	db.Exec("DROP TABLE waypoints")
 	db.Exec("DROP TABLE transactions")
-	err := db.AutoMigrate(&MarketRates{}, &ShipCost{}, &MarketExchange{}, &Agent{}, &Waypoint{}, &System{}, &Survey{}, &entity.MarketTransaction{})
+	db.Exec(`UPDATE agents SET token=''`)
+	err := db.AutoMigrate(&MarketRates{}, &ShipCost{}, &MarketExchange{}, &Waypoint{}, &System{}, &Survey{}, &Transaction{})
 	if err != nil {
 		fmt.Println("automigrate error", err)
 		os.Exit(1)

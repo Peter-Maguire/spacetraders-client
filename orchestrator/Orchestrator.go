@@ -23,11 +23,11 @@ type Orchestrator struct {
 	StatesMutex sync.Mutex
 	Agent       *entity.Agent
 	Contract    *entity.Contract
-	Haulers     []*entity.Ship
 	Channel     chan routine.OrchestratorEvent
 	Shipyard    entity.Waypoint
 	Context     context.Context
 	Cache       *cache.Cache
+	Config      *database.AgentConfig
 }
 
 var (
@@ -42,7 +42,7 @@ var (
 	}, []string{"agent", "name", "state"})
 )
 
-func Init(token string) *Orchestrator {
+func Init(agentConfig database.Agent) *Orchestrator {
 	//TODO:
 	// There should be an overall goal for stages of development which determines the actions of each type
 	// In no particular order, these are the various stages I see
@@ -54,7 +54,7 @@ func Init(token string) *Orchestrator {
 	// - It would be great to be able to set specific parameters (e.g how many ships of each type to buy, wait times, etc)
 	//   between different agents, and compare the outcomes for each agent per reset
 
-	ctx := context.WithValue(context.Background(), "token", token)
+	ctx := context.WithValue(context.Background(), "token", agentConfig.Token)
 
 	agent, err := entity.GetAgent(ctx)
 
@@ -122,6 +122,7 @@ func Init(token string) *Orchestrator {
 		Channel:  make(chan routine.OrchestratorEvent),
 		Context:  ctx,
 		Cache:    cache.New(5*time.Minute, 10*time.Minute),
+		Config:   &agentConfig.Config,
 	}
 
 	go orc.start()
@@ -140,11 +141,6 @@ func (o *Orchestrator) start() {
 	for _, ship := range *ships {
 		agentShips.WithLabelValues(o.Agent.Symbol, string(ship.Registration.Role), string(ship.Nav.SystemSymbol), string(ship.Nav.WaypointSymbol)).Add(1)
 		ui.MainLog(fmt.Sprintf("%s: %s type", ship.Registration.Name, ship.Registration.Role))
-		if ship.Registration.Role == "HAULER" {
-			ui.MainLog(fmt.Sprintf("%s is HAULER", ship.Registration))
-			shipCopy := ship
-			o.Haulers = append(o.Haulers, &shipCopy)
-		}
 	}
 
 	go o.runEvents()
@@ -165,8 +161,8 @@ func (o *Orchestrator) start() {
 			Ship:        &shipPtr,
 			States:      &o.States,
 			StatesMutex: &o.StatesMutex,
-			Haulers:     o.Haulers,
 			EventBus:    o.Channel,
+			Config:      o.Config,
 			Phase:       o,
 		}
 		state.Context = context.WithValue(o.Context, "state", &state)
@@ -186,8 +182,8 @@ func (o *Orchestrator) runEvents() {
 				Agent:    o.Agent,
 				Contract: o.Contract,
 				Ship:     ship,
-				Haulers:  o.Haulers,
 				EventBus: o.Channel,
+				Config:   o.Config,
 				States:   &o.States,
 			}
 			newState.Context = context.WithValue(o.Context, "state", &newState)

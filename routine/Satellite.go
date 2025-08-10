@@ -42,7 +42,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 		if len(mkt.TradeGoods) == 0 {
 			state.Log("No trade goods... time desync?")
 			return RoutineResult{
-				WaitSeconds: 5,
+				WaitSeconds: 2,
 			}
 		}
 		database.StoreMarketRates(system, waypointData, mkt.TradeGoods)
@@ -264,11 +264,11 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		state.Log(fmt.Sprintf("%dx of type %s", a, t))
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] < 4 {
+	if shipsOfEachType[constant.ShipRoleExcavator] < state.Config.GetInt("maxExcavatorsBeforeHauler", 4) {
 		return []string{"SHIP_LIGHT_HAULER", "SHIP_MINING_DRONE"}
 	}
 
-	if shipsOfEachType[constant.ShipRoleExcavator] > 2 && state.Contract != nil && !state.Contract.Fulfilled && state.Agent.Credits < min(state.Contract.Terms.Payment.OnAccepted, 200000) {
+	if shipsOfEachType[constant.ShipRoleExcavator] > 2 && state.Contract != nil && !state.Contract.Fulfilled && state.Agent.Credits < min(state.Contract.Terms.Payment.OnAccepted, state.Config.GetInt("minCreditsToIgnoreContract", 200000)) {
 		for _, deliverable := range state.Contract.Terms.Deliver {
 			if !util.IsMineable(deliverable.TradeSymbol) {
 				state.Log(fmt.Sprintf("We don't want to buy a ship right now as we're doing a contract for unmineable %s", deliverable.TradeSymbol))
@@ -283,7 +283,7 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		}
 	}
 
-	if shipsOfEachType[constant.ShipRoleTransport] < 4 {
+	if shipsOfEachType[constant.ShipRoleTransport] < state.Config.GetInt("maxTraders", 4) {
 		return []string{"SHIP_LIGHT_SHUTTLE"}
 	}
 
@@ -295,18 +295,18 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		return []string{"SHIP_SURVEYOR"}
 	}
 
-	if shipsOfEachType[constant.ShipRoleSatellite] < 3 {
+	if shipsOfEachType[constant.ShipRoleSatellite] < state.Config.GetInt("maxSatellites", 3) {
 		return []string{"SHIP_PROBE"}
 	}
 
-	// Ratio of 1 hauler for every 9 excavators
-	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < 1/5 {
+	// Ratio of 1 hauler for every 5 excavators
+	if shipsOfEachType[constant.ShipRoleHauler]/shipsOfEachType[constant.ShipRoleExcavator] < state.Config.GetInt("haulerToExcavatorRatio", 1/5) {
 		return []string{"SHIP_LIGHT_HAULER"}
 	}
 
-	if len(*state.States) > 30 {
+	if len(*state.States) > state.Config.GetInt("maxShips", 30) {
 		return []string{}
 	}
 
-	return []string{"SHIP_LIGHT_SHUTTLE"}
+	return []string{state.Config.GetString("defaultShipBuy", "SHIP_LIGHT_SHUTTLE")}
 }

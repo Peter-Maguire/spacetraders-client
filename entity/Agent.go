@@ -13,17 +13,25 @@ type Agent struct {
 	Credits      int      `json:"credits"`
 }
 
-type AgentRegister struct {
+type AgentRegistration struct {
 	Faction string `json:"faction"`
 	Symbol  string `json:"symbol"`
 }
 
-//func RegisterAgent(symbol string, faction string) {
-//	return http.Request[Agent]("POST", "", AgentRegister{
-//		Faction: faction,
-//		Symbol:  symbol,
-//	})
-//}
+type RegisterAgentResponse struct {
+	Token    string    `json:"token"`
+	Agent    *Agent    `json:"agent"`
+	Faction  *Faction  `json:"faction"`
+	Contract *Contract `json:"contract"`
+	Ships    []*Ship   `json:"ships"`
+}
+
+func RegisterAgent(ctx context.Context, symbol string, faction string) (*RegisterAgentResponse, *http.HttpError) {
+	return http.Request[RegisterAgentResponse](ctx, "POST", "register", AgentRegistration{
+		Faction: faction,
+		Symbol:  symbol,
+	})
+}
 
 func GetAgent(ctx context.Context) (*Agent, *http.HttpError) {
 	return http.Request[Agent](ctx, "GET", "my/agent", nil)

@@ -138,6 +138,10 @@ function updateState(data){
             }).join("</br>");
         }
 
+        if(sh.constructionSite) {
+            clone.querySelector(".constructionSite").innerText = `${sh.constructionSite.symbol}: ${sh.constructionSite.materials.map((m)=>`${m.tradeSymbol} ${m.required}/${m.fulfilled}\n`)}`;
+        }
+
 
         // TODO: make this a function
         let shipType = document.createElement("li")

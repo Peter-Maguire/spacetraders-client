@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -54,7 +55,7 @@ func main() {
 	st.ServerStart, _ = time.Parse(time.DateOnly, serverStatus.ResetDate)
 	st.ServerEnd, _ = time.Parse(time.RFC3339, serverStatus.ServerResets.Next)
 
-	if os.Getenv("TOKEN_0") == "" {
+	if os.Getenv("RESET") == "true" {
 		fmt.Println("Resetting...")
 		time.Sleep(10 * time.Second)
 		database.Init()
@@ -75,24 +76,26 @@ func main() {
 	http.Init()
 
 	fmt.Println("Starting Orchestrators...")
-	i := 0
-	tokens := make([]string, 0)
-	for {
-		token := os.Getenv(fmt.Sprintf("TOKEN_%d", i))
-		if token == "" {
-			break
+	agents := database.GetEnabledAgents()
+	fmt.Printf("%d agents enabled\n", len(agents))
+
+	ctx := context.WithValue(context.Background(), "token", os.Getenv("ACCOUNT_TOKEN"))
+
+	orcs = make([]*orchestrator.Orchestrator, len(agents))
+	for i, agent := range agents {
+
+		if agent.Token == "" {
+			fmt.Println("Creating new agent", agent.Symbol)
+			registerResponse, err := entity.RegisterAgent(ctx, agent.Symbol, agent.Config.GetString("faction", "COSMIC"))
+			if err != nil {
+				panic(err)
+			}
+			agent.Token = registerResponse.Token
+			database.SetAgentToken(agent.Symbol, agent.Token)
 		}
 
-		tokens = append(tokens, token)
-		i++
-	}
-
-	orcs = make([]*orchestrator.Orchestrator, len(tokens))
-	st.Orchestrators = make([]entity.Orchestrator, len(tokens))
-	for i, token := range tokens {
-		orc := orchestrator.Init(token)
+		orc := orchestrator.Init(agent)
 		orcs[i] = orc
-		st.Orchestrators[i] = orc
 	}
 
 	if enableUi {
@@ -122,15 +125,16 @@ func updateShipStates() {
 				if state != nil && state.Ship != nil {
 
 					ship := ui.ShipData{
-						Stopped:        state.CurrentRoutine == nil,
-						StoppedReason:  state.StoppedReason,
-						WaitingForHttp: state.WaitingForHttp,
-						AsleepUntil:    state.AsleepUntil,
-						ShipName:       state.Ship.Symbol,
-						ShipType:       string(state.Ship.Registration.Role),
-						Nav:            *state.Ship.Nav,
-						Cargo:          *state.Ship.Cargo,
-						Fuel:           *state.Ship.Fuel,
+						Stopped:          state.CurrentRoutine == nil,
+						StoppedReason:    state.StoppedReason,
+						WaitingForHttp:   state.WaitingForHttp,
+						AsleepUntil:      state.AsleepUntil,
+						ShipName:         state.Ship.Symbol,
+						ShipType:         string(state.Ship.Registration.Role),
+						Nav:              *state.Ship.Nav,
+						Cargo:            *state.Ship.Cargo,
+						Fuel:             *state.Ship.Fuel,
+						ConstructionSite: state.ConstructionSite,
 					}
 
 					if state.CurrentRoutine == nil {
