@@ -80,13 +80,19 @@ func (s *Ship) Dock(ctx context.Context) error {
 	return err
 }
 
-// TODO: this doesn't respond with ship
-func (s *Ship) Refuel(ctx context.Context) *http.HttpError {
-	shipRefuelUpdate, err := http.Request[Ship](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), nil)
+type RefuelResponse struct {
+	Agent       *Agent            `json:"agent"`
+	Fuel        *ShipFuel         `json:"fuel"`
+	Cargo       *ShipCargo        `json:"cargo"`
+	Transaction MarketTransaction `json:"transaction"`
+}
+
+func (s *Ship) Refuel(ctx context.Context) (*RefuelResponse, *http.HttpError) {
+	shipRefuelUpdate, err := http.Request[RefuelResponse](ctx, "POST", fmt.Sprintf("my/ships/%s/refuel", s.Symbol), nil)
 	if shipRefuelUpdate != nil {
 		s.Fuel = shipRefuelUpdate.Fuel
 	}
-	return err
+	return shipRefuelUpdate, err
 }
 
 func (s *Ship) RefuelFromCargo(ctx context.Context, amount int) *http.HttpError {

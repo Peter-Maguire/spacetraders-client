@@ -38,7 +38,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 			fuelTradeGood := market.GetTradeGood(string(constant.ItemFuel))
 			if fuelTradeGood != nil {
 				state.Ship.EnsureNavState(state.Context, entity.NavDocked)
-				refuelErr := state.Ship.Refuel(state.Context)
+				rr, refuelErr := state.Ship.Refuel(state.Context)
 				if refuelErr != nil {
 					if refuelErr.Code == http.ErrMarketTradeInsufficientCredits {
 						state.Log("Waiting for refuel")
@@ -48,6 +48,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 					}
 					state.Log(refuelErr.Message)
 				} else {
+					database.LogTransaction(rr.Transaction)
 					return RoutineResult{SetRoutine: r.next}
 				}
 			}
@@ -161,11 +162,11 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 		state.Log("Trying to refuel here")
 		_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
-		refuelErr := state.Ship.Refuel(state.Context)
+		rr, refuelErr := state.Ship.Refuel(state.Context)
 
 		if refuelErr == nil {
 			state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
-
+			database.LogTransaction(rr.Transaction)
 			return RoutineResult{
 				SetRoutine: r.next,
 			}

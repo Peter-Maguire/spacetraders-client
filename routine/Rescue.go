@@ -95,7 +95,10 @@ func (r Rescue) Run(state *State) RoutineResult {
 
 		database.LogTransaction(*pr.Transaction)
 
-		state.Ship.Refuel(state.Context)
+		rr, _ := state.Ship.Refuel(state.Context)
+		if rr != nil {
+			database.LogTransaction(rr.Transaction)
+		}
 	}
 
 	if state.Ship.Nav.WaypointSymbol != ship.Nav.WaypointSymbol {

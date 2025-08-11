@@ -302,7 +302,10 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 
 	if marketFuel != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity {
 		state.Log("Refuelling whilst I have the opportunity")
-		_ = state.Ship.Refuel(state.Context)
+		rr, _ := state.Ship.Refuel(state.Context)
+		if rr != nil {
+			database.LogTransaction(rr.Transaction)
+		}
 	}
 
 	if !soldSuccessfully {

@@ -205,7 +205,10 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 	if sellFuel != nil && state.Ship.Fuel.Capacity-state.Ship.Fuel.Current > 100 {
 		state.Log("Refuelling whilst I can")
-		_ = state.Ship.Refuel(state.Context)
+		rr, _ := state.Ship.Refuel(state.Context)
+		if rr != nil {
+			database.LogTransaction(rr.Transaction)
+		}
 	}
 
 	if purchaseAmount >= unitsRemaining || purchaseAmount >= state.Ship.Cargo.GetRemainingCapacity() {

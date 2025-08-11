@@ -75,7 +75,10 @@ func (e Explore) Run(state *State) RoutineResult {
 		if fuelTrader != nil && state.Ship.Fuel.Current < state.Ship.Fuel.Capacity/2 {
 			state.Log("Refuelling here")
 			_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
-			_ = state.Ship.Refuel(state.Context)
+			rr, _ := state.Ship.Refuel(state.Context)
+			if rr != nil {
+				database.LogTransaction(rr.Transaction)
+			}
 		}
 
 		antiMatterTrader := marketData.GetTradeGood("ANTIMATTER")
