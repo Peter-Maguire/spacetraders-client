@@ -254,7 +254,7 @@ func (t Trade) Run(state *State) RoutineResult {
 	}
 	if !successfulBuy {
 		return RoutineResult{
-			WaitSeconds: 90,
+			WaitForEvent: "sellComplete",
 		}
 	}
 
