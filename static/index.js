@@ -103,6 +103,7 @@ function updateState(data){
     } else {
         agents = data.agents;
         contracts = data.contracts;
+        document.getElementById("credits").innerText = agents[currentAgent].credits.toLocaleString() + " credits"
     }
 
     shipStates = ship;
