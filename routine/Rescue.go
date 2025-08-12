@@ -99,6 +99,8 @@ func (r Rescue) Run(state *State) RoutineResult {
 		if rr != nil {
 			database.LogTransaction(rr.Transaction)
 		}
+
+		return RoutineResult{}
 	}
 
 	if state.Ship.Nav.WaypointSymbol != ship.Nav.WaypointSymbol {
