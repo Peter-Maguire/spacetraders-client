@@ -83,6 +83,11 @@ func (r Rescue) Run(state *State) RoutineResult {
 			return RoutineResult{}
 		}
 
+		rr, _ := state.Ship.Refuel(state.Context)
+		if rr != nil {
+			database.LogTransaction("rescue_refuel", rr.Transaction)
+		}
+
 		// TODO: should there be a common error handling system?
 		pr, err := state.Ship.Purchase(state.Context, "FUEL", 1)
 		if err != nil {
@@ -94,11 +99,6 @@ func (r Rescue) Run(state *State) RoutineResult {
 		}
 
 		database.LogTransaction("rescue", *pr.Transaction)
-
-		rr, _ := state.Ship.Refuel(state.Context)
-		if rr != nil {
-			database.LogTransaction("rescue_refuel", rr.Transaction)
-		}
 
 		return RoutineResult{}
 	}
