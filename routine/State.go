@@ -24,7 +24,7 @@ type State struct {
 	Config           *database.AgentConfig
 
 	Haulers  []*entity.Ship
-	EventBus chan OrchestratorEvent
+	EventBus *chan OrchestratorEvent
 
 	AsleepUntil     *time.Time
 	WaitingForEvent string
@@ -56,7 +56,7 @@ func (s *State) Log(message string) {
 }
 
 func (s *State) FireEvent(event string, data any) {
-	s.EventBus <- OrchestratorEvent{
+	*s.EventBus <- OrchestratorEvent{
 		Name: event,
 		Data: data,
 	}

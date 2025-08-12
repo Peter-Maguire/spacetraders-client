@@ -34,7 +34,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 	if waypointData.HasTrait(constant.TraitMarketplace) {
 		mkt, _ = waypointData.Symbol.GetMarket(state.Context)
 	}
-	
+
 	if waypointData.HasTrait(constant.TraitShipyard) {
 		syd, _ = waypointData.Symbol.GetShipyard(state.Context)
 	}
@@ -221,7 +221,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 			}
 			database.LogTransaction(*result.Transaction)
 
-			state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
+			*state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
 			break
 		}
 	}

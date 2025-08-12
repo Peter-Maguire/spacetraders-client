@@ -161,7 +161,7 @@ func (o *Orchestrator) start() {
 			Ship:        &shipPtr,
 			States:      &o.States,
 			StatesMutex: &o.StatesMutex,
-			EventBus:    o.Channel,
+			EventBus:    &o.Channel,
 			Config:      o.Config,
 			Phase:       o,
 		}
@@ -182,7 +182,7 @@ func (o *Orchestrator) runEvents() {
 				Agent:    o.Agent,
 				Contract: o.Contract,
 				Ship:     ship,
-				EventBus: o.Channel,
+				EventBus: &o.Channel,
 				Config:   o.Config,
 				States:   &o.States,
 			}
@@ -288,7 +288,7 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 		if routineResult.WaitForEvent != "" {
 			state.WaitingForEvent = routineResult.WaitForEvent
 			for {
-				event := <-state.EventBus
+				event := <-*state.EventBus
 				switch event.Name {
 				case routineResult.WaitForEvent:
 					break
