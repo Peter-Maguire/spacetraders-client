@@ -47,6 +47,8 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 			}
 		}
 
+		fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(state.Ship.Fuel.Current))
+
 		return RoutineResult{
 			WaitSeconds: 60,
 		}
@@ -59,6 +61,7 @@ func (a AwaitRescue) Run(state *State) RoutineResult {
 			WaitSeconds: 60,
 		}
 	} else {
+		fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(state.Ship.Fuel.Current))
 		state.Log("rescued!")
 		return RoutineResult{SetRoutine: a.next}
 	}

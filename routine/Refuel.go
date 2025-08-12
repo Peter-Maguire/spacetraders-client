@@ -48,6 +48,8 @@ func (r Refuel) Run(state *State) RoutineResult {
 					}
 					state.Log(refuelErr.Message)
 				} else {
+					state.Ship.Fuel.Current = rr.Fuel.Current
+					fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(rr.Fuel.Current))
 					database.LogTransaction("refuel_1", rr.Transaction)
 					return RoutineResult{SetRoutine: r.next}
 				}
@@ -166,6 +168,8 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 		if refuelErr == nil {
 			state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
+			state.Ship.Fuel.Current = rr.Fuel.Current
+			fuelLevel.WithLabelValues(state.Ship.Symbol, state.Agent.Symbol).Set(float64(rr.Fuel.Current))
 			database.LogTransaction("refuel_2", rr.Transaction)
 			return RoutineResult{
 				SetRoutine: r.next,
