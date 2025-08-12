@@ -100,7 +100,7 @@ func (p ProcureConstructionSiteItem) Run(state *State) RoutineResult {
 				WaitSeconds: 60,
 			}
 		}
-		database.LogTransaction(*pr.Transaction)
+		database.LogTransaction("construction", *pr.Transaction)
 	}
 
 	state.Ship.GetCargo(state.Context)

@@ -175,7 +175,7 @@ func (t Trade) Run(state *State) RoutineResult {
 				}
 				if sr != nil {
 					sellSuccess = true
-					database.LogTransaction(sr.Transaction)
+					database.LogTransaction("trade", sr.Transaction)
 					state.Ship.Cargo.Inventory = sr.Cargo.Inventory
 					state.Agent.Credits = sr.Agent.Credits
 					metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(sr.Agent.Credits))
@@ -248,7 +248,7 @@ func (t Trade) Run(state *State) RoutineResult {
 		} else {
 			state.Agent.Credits = pr.Agent.Credits
 			metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(pr.Agent.Credits))
-			database.LogTransaction(*pr.Transaction)
+			database.LogTransaction("trade", *pr.Transaction)
 			successfulBuy = true
 		}
 	}

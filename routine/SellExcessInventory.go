@@ -288,7 +288,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		if err != nil {
 			state.Log("Failed to sell:" + err.Error())
 		} else {
-			database.LogTransaction(sellResult.Transaction)
+			database.LogTransaction("mining", sellResult.Transaction)
 			soldSuccessfully = true
 			state.Log(fmt.Sprintf("We now have %d credits", sellResult.Agent.Credits))
 			metrics.NumCredits.WithLabelValues(state.Agent.Symbol).Set(float64(sellResult.Agent.Credits))
@@ -304,7 +304,7 @@ func (s SellExcessInventory) Run(state *State) RoutineResult {
 		state.Log("Refuelling whilst I have the opportunity")
 		rr, _ := state.Ship.Refuel(state.Context)
 		if rr != nil {
-			database.LogTransaction(rr.Transaction)
+			database.LogTransaction("mining_refuel", rr.Transaction)
 		}
 	}
 

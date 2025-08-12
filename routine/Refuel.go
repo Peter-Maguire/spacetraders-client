@@ -48,7 +48,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 					}
 					state.Log(refuelErr.Message)
 				} else {
-					database.LogTransaction(rr.Transaction)
+					database.LogTransaction("refuel_1", rr.Transaction)
 					return RoutineResult{SetRoutine: r.next}
 				}
 			}
@@ -166,7 +166,7 @@ func (r Refuel) Run(state *State) RoutineResult {
 
 		if refuelErr == nil {
 			state.Ship.EnsureFlightMode(state.Context, constant.FlightModeCruise)
-			database.LogTransaction(rr.Transaction)
+			database.LogTransaction("refuel_2", rr.Transaction)
 			return RoutineResult{
 				SetRoutine: r.next,
 			}

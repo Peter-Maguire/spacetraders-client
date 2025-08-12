@@ -77,7 +77,7 @@ func (e Explore) Run(state *State) RoutineResult {
 			_ = state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 			rr, _ := state.Ship.Refuel(state.Context)
 			if rr != nil {
-				database.LogTransaction(rr.Transaction)
+				database.LogTransaction("explore_refuel", rr.Transaction)
 			}
 		}
 

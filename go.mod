@@ -6,6 +6,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.15.1
+	github.com/solarlune/paths v0.0.0-20231114192052-27926568823f
 	github.com/stretchr/testify v1.8.1
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.25.1

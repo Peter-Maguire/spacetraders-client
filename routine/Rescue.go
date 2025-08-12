@@ -93,11 +93,11 @@ func (r Rescue) Run(state *State) RoutineResult {
 			}
 		}
 
-		database.LogTransaction(*pr.Transaction)
+		database.LogTransaction("rescue", *pr.Transaction)
 
 		rr, _ := state.Ship.Refuel(state.Context)
 		if rr != nil {
-			database.LogTransaction(rr.Transaction)
+			database.LogTransaction("rescue_refuel", rr.Transaction)
 		}
 
 		return RoutineResult{}

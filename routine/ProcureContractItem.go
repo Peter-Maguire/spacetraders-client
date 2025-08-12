@@ -199,7 +199,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		}
 	}
 
-	database.LogTransaction(*pr.Transaction)
+	database.LogTransaction("contract", *pr.Transaction)
 
 	sellFuel := market.GetTradeGood("FUEL")
 
@@ -207,7 +207,7 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 		state.Log("Refuelling whilst I can")
 		rr, _ := state.Ship.Refuel(state.Context)
 		if rr != nil {
-			database.LogTransaction(rr.Transaction)
+			database.LogTransaction("contract_refuel", rr.Transaction)
 		}
 	}
 

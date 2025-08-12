@@ -219,7 +219,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 				state.Log(fmt.Sprintf("Error buying ship: %s", err.Error()))
 				continue
 			}
-			database.LogTransaction(*result.Transaction)
+			database.LogTransaction("satellite", *result.Transaction)
 
 			*state.EventBus <- OrchestratorEvent{Name: "newShip", Data: result.Ship}
 			break
