@@ -287,13 +287,14 @@ func (o *Orchestrator) routineLoop(state *routine.State) {
 
 		if routineResult.WaitForEvent != "" {
 			state.WaitingForEvent = routineResult.WaitForEvent
-			for {
-				event := <-*state.EventBus
-				switch event.Name {
-				case routineResult.WaitForEvent:
-					break
-				}
-			}
+			time.Sleep(90 * time.Second)
+			//for {
+			//	event := <-*state.EventBus
+			//	switch event.Name {
+			//	case routineResult.WaitForEvent:
+			//		break
+			//	}
+			//}
 		}
 	}
 	state.CurrentRoutine = nil
