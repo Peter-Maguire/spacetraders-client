@@ -122,6 +122,7 @@ func (t Trade) Run(state *State) RoutineResult {
 				bestOpportunity = &op
 				break
 			}
+			state.Log(fmt.Sprintf("Ships at waypoint %d", len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint))))
 			if len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint)) > opsPerWaypoint[op.MarketFrom.Waypoint] {
 				continue
 			}
