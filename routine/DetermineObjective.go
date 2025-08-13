@@ -79,8 +79,25 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleTransport {
+
+		transporters := state.GetShipsWithRole(constant.ShipRoleTransport)
+
+		if len(transporters) > 10 && transporters[0].Symbol == state.Ship.Symbol {
+			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeJumpGate)
+			for _, waypoint := range *waypoints {
+				if waypoint.SystemSymbol == state.Ship.Nav.SystemSymbol && waypoint.Type == constant.WaypointTypeJumpGate {
+					fullWp, _ := waypoint.GetFullWaypoint(state.Context)
+					if fullWp.IsUnderConstruction {
+						return RoutineResult{
+							SetRoutine: BuildJumpGate{next: d},
+						}
+					}
+				}
+			}
+		}
+
 		return RoutineResult{
-			WaitSeconds: rand.Intn(10),
+			WaitSeconds: rand.Intn(90),
 			SetRoutine:  Trade{},
 		}
 	}

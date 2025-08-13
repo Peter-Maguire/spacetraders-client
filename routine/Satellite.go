@@ -230,7 +230,7 @@ func (s Satellite) Run(state *State) RoutineResult {
 
 	state.Log("Waiting for a sell to complete")
 	return RoutineResult{
-		WaitForEvent: "sellComplete",
+		WaitSeconds: 60,
 	}
 }
 

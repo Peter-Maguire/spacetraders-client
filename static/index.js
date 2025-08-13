@@ -106,6 +106,10 @@ function updateState(data){
         document.getElementById("credits").innerText = agents[currentAgent].credits.toLocaleString() + " credits"
     }
 
+    if(ship?.[0]?.constructionSite) {
+        document.getElementById("constructionSite").innerText = `${ship[0].constructionSite.symbol}: ${ship[0].constructionSite.materials.map((m)=>`${m.tradeSymbol} ${m.fulfilled}/${m.required}`)}`;
+    }
+
     shipStates = ship;
     drawMap();
     ships.innerText = "";
@@ -139,11 +143,6 @@ function updateState(data){
                 return `${cargo.symbol} x${cargo.units}`
             }).join("</br>");
         }
-
-        if(sh.constructionSite) {
-            clone.querySelector(".constructionSite").innerText = `${sh.constructionSite.symbol}: ${sh.constructionSite.materials.map((m)=>`${m.tradeSymbol} ${m.required}/${m.fulfilled}\n`)}`;
-        }
-
 
         // TODO: make this a function
         let shipType = document.createElement("li")

@@ -102,6 +102,15 @@ func (t Trade) Run(state *State) RoutineResult {
 		return profitOpportunities[i].Profit > profitOpportunities[j].Profit
 	})
 
+	traders := state.GetShipsWithRole(constant.ShipRoleTransport)
+	traderNumber := 0
+	for i, trader := range traders {
+		if trader.Symbol == state.Ship.Symbol {
+			traderNumber = i
+			break
+		}
+	}
+
 	opsPerWaypoint := make(map[entity.Waypoint]int)
 	for _, op := range profitOpportunities {
 		opsPerWaypoint[op.MarketFrom.Waypoint]++
@@ -117,15 +126,23 @@ func (t Trade) Run(state *State) RoutineResult {
 	}
 
 	if bestOpportunity == nil {
-		for _, op := range profitOpportunities {
+		for i, op := range profitOpportunities {
 			if op.MarketFrom.Waypoint == state.Ship.Nav.WaypointSymbol {
 				bestOpportunity = &op
 				break
 			}
-			state.Log(fmt.Sprintf("Ships at waypoint %d", len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint))))
-			if len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint)) > opsPerWaypoint[op.MarketFrom.Waypoint] {
+			shipsHere := len(state.GetShipsWithRoleAtOrGoingToWaypoint(constant.ShipRoleTransport, op.MarketFrom.Waypoint))
+			state.Log(fmt.Sprintf("Ships at waypoint = %d ops = %d trader = %d i = %d", shipsHere, opsPerWaypoint[op.MarketFrom.Waypoint], traderNumber, i))
+			if shipsHere > opsPerWaypoint[op.MarketFrom.Waypoint] {
+				fmt.Println("Skipping because shipsHere > ops")
 				continue
 			}
+
+			if shipsHere > 0 && i < traderNumber {
+				fmt.Println("Skipping because i < traderNumber")
+				continue
+			}
+
 			bestOpportunity = &op
 			break
 		}
