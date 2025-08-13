@@ -138,6 +138,8 @@ func (t Trade) Run(state *State) RoutineResult {
 				continue
 			}
 
+			// TODO: this whole bit should work off how many of this item exist in other ships cargos
+
 			if shipsHere > 0 && i < traderNumber {
 				fmt.Println("Skipping because i < traderNumber")
 				continue
@@ -255,13 +257,14 @@ func (t Trade) Run(state *State) RoutineResult {
 	state.Log(fmt.Sprintf("Trying to buy %dx %s", buyAmount, bestOpportunity.MarketFrom.Good))
 	state.Ship.EnsureNavState(state.Context, entity.NavDocked)
 
-	numBuys := buyAmount / tg.TradeVolume
+	numBuys := max(buyAmount/tg.TradeVolume, 1)
 
+	state.Log(fmt.Sprintf("Need to do %d buys", numBuys))
 	successfulBuy := false
 	for i := 0; i < numBuys; i++ {
 		pr, err := state.Ship.Purchase(state.Context, tg.Symbol, min(buyAmount, tg.TradeVolume))
 		if err != nil {
-			state.Log(err.Message)
+			state.Log(fmt.Sprintf("Purchase failed: %s", err))
 			break
 		} else {
 			state.Agent.Credits = pr.Agent.Credits
@@ -271,6 +274,7 @@ func (t Trade) Run(state *State) RoutineResult {
 		}
 	}
 	if !successfulBuy {
+		state.Log("Purchase did not complete successfully")
 		return RoutineResult{
 			WaitForEvent: "sellComplete",
 		}
