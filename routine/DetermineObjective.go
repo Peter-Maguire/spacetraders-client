@@ -82,7 +82,15 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 
 		transporters := state.GetShipsWithRole(constant.ShipRoleTransport)
 
-		if len(transporters) > 10 && transporters[0].Symbol == state.Ship.Symbol {
+		trNum := 0
+		for i, tr := range transporters {
+			if tr.Symbol == state.Ship.Symbol {
+				trNum = i
+				break
+			}
+		}
+
+		if len(transporters) > 10 && trNum < 6 {
 			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeJumpGate)
 			for _, waypoint := range *waypoints {
 				if waypoint.SystemSymbol == state.Ship.Nav.SystemSymbol && waypoint.Type == constant.WaypointTypeJumpGate {

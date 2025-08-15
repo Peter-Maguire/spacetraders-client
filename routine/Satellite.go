@@ -306,7 +306,7 @@ func (s Satellite) GetShipToBuy(state *State) []string {
 		return []string{"SHIP_LIGHT_HAULER"}
 	}
 
-	if len(*state.States) > state.Config.GetInt("maxShips", 30) {
+	if len(*state.States) > state.Config.GetInt("maxShips", 40) {
 		return []string{}
 	}
 
