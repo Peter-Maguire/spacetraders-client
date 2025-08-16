@@ -2,11 +2,13 @@ package ui
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"spacetraders/entity"
+
+	sentryhttp "github.com/getsentry/sentry-go/http"
+	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"time"
 )
@@ -23,8 +25,11 @@ func Init(st *entity.SpaceTraders) *WebUI {
 	}
 	go broadcastLoop()
 	go webUi.initApi()
-	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/ws", ws)
+
+	sentryHandler := sentryhttp.New(sentryhttp.Options{})
+
+	http.Handle("/metrics", sentryHandler.Handle(promhttp.Handler()))
+	http.HandleFunc("/ws", sentryHandler.HandleFunc(ws))
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/", fs)
 	http.ListenAndServe("0.0.0.0:8080", nil)

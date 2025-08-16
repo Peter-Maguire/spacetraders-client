@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"os"
 	"spacetraders/database"
 	"spacetraders/entity"
@@ -12,6 +10,10 @@ import (
 	"spacetraders/orchestrator"
 	"spacetraders/ui"
 	"time"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var enableUi = false
@@ -42,6 +44,12 @@ var (
 )
 
 func main() {
+
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn: os.Getenv("SENTRY_DSN"),
+	}); err != nil {
+		fmt.Printf("Sentry initialization failed: %v\n", err)
+	}
 
 	st := entity.SpaceTraders{}
 	serverStatus, err := entity.GetServerStatus()
