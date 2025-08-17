@@ -15,8 +15,7 @@ func (p ProcureConstructionSiteItem) Run(state *State) RoutineResult {
 
 	if state.ConstructionSite == nil {
 		return RoutineResult{
-			Stop:       true,
-			StopReason: "No construction site found",
+			SetRoutine: SellExcessInventory{next: p.next},
 		}
 	}
 

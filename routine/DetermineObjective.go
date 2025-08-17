@@ -90,7 +90,7 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 			}
 		}
 
-		if len(transporters) > 10 && trNum < 6 {
+		if len(transporters) > 10 && trNum < 6 && state.Config.GetBool("buildJumpGate", false) {
 			waypoints, _ := state.Ship.Nav.WaypointSymbol.GetSystemName().GetWaypointsOfType(state.Context, constant.WaypointTypeJumpGate)
 			for _, waypoint := range *waypoints {
 				if waypoint.SystemSymbol == state.Ship.Nav.SystemSymbol && waypoint.Type == constant.WaypointTypeJumpGate {
