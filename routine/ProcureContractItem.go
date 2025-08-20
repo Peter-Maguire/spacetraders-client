@@ -120,6 +120,19 @@ func (p ProcureContractItem) Run(state *State) RoutineResult {
 
 		state.Log(fmt.Sprintf("Cost of retrieving %dx %s at cheapest market (%s) is %d", unitsRemaining, p.deliverable.TradeSymbol, markets[0].Waypoint, marketCosts[markets[0].Waypoint]))
 
+		if len(markets) == 0 {
+			return RoutineResult{
+				Stop:       true,
+				StopReason: "Unable to find a market",
+			}
+		}
+
+		if state.Contract == nil {
+			return RoutineResult{
+				SetRoutine: DetermineObjective{},
+			}
+		}
+
 		if marketCosts[markets[0].Waypoint] > state.Contract.Terms.Payment.GetTotalPayment() {
 			if util.IsMineable(p.deliverable.TradeSymbol) {
 				return RoutineResult{

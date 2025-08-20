@@ -52,6 +52,11 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 		}
 	}
 
+	transporters := state.GetShipsWithRole(constant.ShipRoleTransport)
+	if len(transporters) > 10 && state.Ship.Registration.Role == constant.ShipRoleCommand {
+		return RoutineResult{SetRoutine: BuildJumpGate{next: d}}
+	}
+
 	if (state.Ship.Registration.Role == constant.ShipRoleCommand && goodUnvisitedWaypoints) || state.Ship.Registration.Role == constant.ShipRoleSatellite {
 		return RoutineResult{
 			SetRoutine: Satellite{},
@@ -79,8 +84,6 @@ func (d DetermineObjective) Run(state *State) RoutineResult {
 	}
 
 	if state.Ship.Registration.Role == constant.ShipRoleTransport {
-
-		transporters := state.GetShipsWithRole(constant.ShipRoleTransport)
 
 		trNum := 0
 		for i, tr := range transporters {
